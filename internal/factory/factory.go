@@ -3,7 +3,9 @@ package factory
 import (
 	"net/http"
 	"sync"
+	"time"
 
+	"github.com/inhandnet/incloud-cli/internal/api"
 	"github.com/inhandnet/incloud-cli/internal/config"
 	"github.com/inhandnet/incloud-cli/internal/iostreams"
 )
@@ -55,23 +57,65 @@ func (f *Factory) HttpClient() (*http.Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	token := ctx.EffectiveToken()
 	return &http.Client{
 		Transport: &tokenTransport{
-			token: token,
-			base:  http.DefaultTransport,
+			token:        ctx.EffectiveToken(),
+			refreshToken: ctx.RefreshToken,
+			host:         ctx.Host,
+			clientID:     ctx.ClientID,
+			onRefresh: func(accessToken, refreshToken string, expiry time.Time) {
+				ctx.Token = accessToken
+				if refreshToken != "" {
+					ctx.RefreshToken = refreshToken
+				}
+				if !expiry.IsZero() {
+					ctx.ExpiresAt = expiry
+				}
+				f.SaveConfig()
+			},
+			base: http.DefaultTransport,
 		},
 	}, nil
 }
 
 type tokenTransport struct {
-	token string
-	base  http.RoundTripper
+	token        string
+	refreshToken string
+	host         string
+	clientID     string
+	onRefresh    func(accessToken, refreshToken string, expiry time.Time)
+	base         http.RoundTripper
 }
 
 func (t *tokenTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	if t.token != "" {
 		req.Header.Set("Authorization", "Bearer "+t.token)
 	}
-	return t.base.RoundTrip(req)
+	resp, err := t.base.RoundTrip(req)
+	if err != nil {
+		return resp, err
+	}
+
+	// Auto-refresh on 401
+	if resp.StatusCode == 401 && t.refreshToken != "" {
+		resp.Body.Close()
+
+		newToken, err := api.RefreshAccessToken(t.host, t.clientID, t.refreshToken)
+		if err != nil {
+			return resp, nil // return original 401
+		}
+
+		t.token = newToken.AccessToken
+		if newToken.RefreshToken != "" {
+			t.refreshToken = newToken.RefreshToken
+		}
+		if t.onRefresh != nil {
+			t.onRefresh(newToken.AccessToken, newToken.RefreshToken, newToken.Expiry)
+		}
+
+		// Retry request with new token
+		req.Header.Set("Authorization", "Bearer "+t.token)
+		return t.base.RoundTrip(req)
+	}
+	return resp, err
 }
