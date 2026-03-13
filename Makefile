@@ -11,7 +11,7 @@ install:
 	CGO_ENABLED=0 go install -ldflags "$(LDFLAGS)" ./cmd/incloud
 
 test:
-	go test ./... -v
+	CGO_ENABLED=0 go test ./... -v
 
 lint:
 	golangci-lint run ./...
