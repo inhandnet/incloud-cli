@@ -101,7 +101,7 @@ func WaitForCallback(port int, timeout time.Duration) (string, error) {
 			return
 		}
 		w.Header().Set("Content-Type", "text/html")
-		fmt.Fprint(w, `<html><body><h2>Login successful!</h2><p>You can close this tab.</p></body></html>`)
+		fmt.Fprint(w, `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Login Successful</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;background:#f0fdf4;padding-bottom:20vh}.card{text-align:center;padding:3rem;background:#fff;border-radius:16px;box-shadow:0 4px 24px rgba(0,0,0,.08)}.icon{width:64px;height:64px;margin:0 auto 1.5rem;background:#22c55e;border-radius:50%;display:flex;align-items:center;justify-content:center}.icon svg{width:32px;height:32px;stroke:#fff;stroke-width:3;fill:none}h1{font-size:1.5rem;color:#111;margin-bottom:.5rem}p{color:#666;font-size:.95rem}</style></head><body><div class="card"><div class="icon"><svg viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg></div><h1>Login Successful</h1><p>This tab will close in <span id="c">5</span> seconds...</p></div><script>var n=5,e=document.getElementById("c");var t=setInterval(function(){n--;e.textContent=n;if(n<=0){clearInterval(t);window.close()}},1000)</script></body></html>`)
 		codeCh <- code
 	})
 
