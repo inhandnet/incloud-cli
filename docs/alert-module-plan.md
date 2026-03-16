@@ -35,8 +35,8 @@
 
 ### 告警统计 (`incloud alert top`)
 
-- [ ] `alert top devices` — Top-K 告警最多的设备（支持 --after/--before/--group/--n）
-- [ ] `alert top types` — Top-K 告警类型排名
+- [x] `alert top devices` — Top-K 告警最多的设备（支持 --after/--before/--group/--n）
+- [x] `alert top types` — Top-K 告警类型排名
 
 ---
 

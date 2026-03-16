@@ -17,6 +17,7 @@ func NewCmdAlert(f *factory.Factory) *cobra.Command {
 	cmd.AddCommand(NewCmdGet(f))
 	cmd.AddCommand(NewCmdAck(f))
 	cmd.AddCommand(NewCmdExport(f))
+	cmd.AddCommand(NewCmdTop(f))
 
 	return cmd
 }
