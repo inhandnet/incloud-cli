@@ -47,7 +47,7 @@ func NewCmdStatus(f *factory.Factory) *cobra.Command {
 
 			// Try auto-refresh if token expired but refresh token is available
 			if tokenExpired && ctx.RefreshToken != "" && ctx.ClientID != "" {
-				newToken, err := api.RefreshAccessToken(ctx.Host, ctx.ClientID, ctx.RefreshToken)
+				newToken, err := api.RefreshAccessToken(ctx.Host, ctx.ClientID, ctx.ClientSecret, ctx.RefreshToken)
 				if err == nil {
 					ctx.Token = newToken.AccessToken
 					if newToken.RefreshToken != "" {

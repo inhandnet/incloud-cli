@@ -12,6 +12,7 @@ type TokenTransport struct {
 	RefreshToken string
 	Host         string
 	ClientID     string
+	ClientSecret string
 	OnRefresh    func(accessToken, refreshToken string, expiry time.Time)
 	Base         http.RoundTripper
 }
@@ -29,7 +30,7 @@ func (t *TokenTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	if resp.StatusCode == 401 && t.RefreshToken != "" {
 		resp.Body.Close()
 
-		newToken, err := RefreshAccessToken(t.Host, t.ClientID, t.RefreshToken)
+		newToken, err := RefreshAccessToken(t.Host, t.ClientID, t.ClientSecret, t.RefreshToken)
 		if err != nil {
 			return resp, nil // return original 401
 		}

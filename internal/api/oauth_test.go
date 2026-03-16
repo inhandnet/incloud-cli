@@ -11,7 +11,7 @@ import (
 	"golang.org/x/oauth2"
 )
 
-func TestFetchClientID(t *testing.T) {
+func TestFetchOAuthClient(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/api/v1/frontend/settings" {
 			t.Errorf("unexpected path: %s", r.URL.Path)
@@ -19,25 +19,29 @@ func TestFetchClientID(t *testing.T) {
 		_ = json.NewEncoder(w).Encode(map[string]any{
 			"result": map[string]any{
 				"authProvider": map[string]any{
-					"clientId":  "test-client-id",
-					"authority": "https://auth.example.com/",
+					"clientId":     "test-client-id",
+					"clientSecret": "test-secret",
+					"authority":    "https://auth.example.com/",
 				},
 			},
 		})
 	}))
 	defer server.Close()
 
-	clientID, err := FetchClientID(context.Background(), server.URL)
+	client, err := FetchOAuthClient(context.Background(), server.URL)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if clientID != "test-client-id" {
-		t.Errorf("expected 'test-client-id', got %q", clientID)
+	if client.ClientID != "test-client-id" {
+		t.Errorf("expected 'test-client-id', got %q", client.ClientID)
+	}
+	if client.ClientSecret != "test-secret" {
+		t.Errorf("expected 'test-secret', got %q", client.ClientSecret)
 	}
 }
 
 func TestNewOAuthConfig(t *testing.T) {
-	cfg := NewOAuthConfig("https://portal.example.com", "my-client", 18920)
+	cfg := NewOAuthConfig("https://portal.example.com", "my-client", "my-secret", 18920)
 	if cfg.ClientID != "my-client" {
 		t.Errorf("unexpected client ID: %s", cfg.ClientID)
 	}

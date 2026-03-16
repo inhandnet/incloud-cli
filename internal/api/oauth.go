@@ -17,53 +17,64 @@ const (
 	DefaultPort = 18920
 )
 
-// FetchClientID retrieves the OAuth client_id from the platform's frontend settings API.
-// This is the same endpoint the web Portal uses to get its auth config.
-func FetchClientID(ctx context.Context, host string) (string, error) {
+// OAuthClient holds the client_id and client_secret from the platform.
+type OAuthClient struct {
+	ClientID     string
+	ClientSecret string
+}
+
+// FetchOAuthClient retrieves OAuth client_id and client_secret from the platform's frontend settings API.
+func FetchOAuthClient(ctx context.Context, host string) (*OAuthClient, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, host+"/api/v1/frontend/settings", http.NoBody)
 	if err != nil {
-		return "", fmt.Errorf("creating request: %w", err)
+		return nil, fmt.Errorf("creating request: %w", err)
 	}
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return "", fmt.Errorf("fetching frontend settings: %w", err)
+		return nil, fmt.Errorf("fetching frontend settings: %w", err)
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	if resp.StatusCode != 200 {
-		return "", fmt.Errorf("frontend settings HTTP %d: %s", resp.StatusCode, string(body))
+		return nil, fmt.Errorf("frontend settings HTTP %d: %s", resp.StatusCode, string(body))
 	}
 
 	var settings struct {
 		Result struct {
 			AuthProvider struct {
-				ClientID string `json:"clientId"`
+				ClientID     string `json:"clientId"`
+				ClientSecret string `json:"clientSecret"`
 			} `json:"authProvider"`
 		} `json:"result"`
 	}
 	if err := json.Unmarshal(body, &settings); err != nil {
 		if len(body) > 0 && body[0] == '<' {
-			return "", fmt.Errorf("unexpected HTML response from %s — is the host URL correct?", host)
+			return nil, fmt.Errorf("unexpected HTML response from %s — is the host URL correct?", host)
 		}
-		return "", fmt.Errorf("parsing frontend settings: %w", err)
+		return nil, fmt.Errorf("parsing frontend settings: %w", err)
 	}
 	if settings.Result.AuthProvider.ClientID == "" {
-		return "", fmt.Errorf("clientId not found in frontend settings")
+		return nil, fmt.Errorf("clientId not found in frontend settings")
 	}
-	return settings.Result.AuthProvider.ClientID, nil
+	return &OAuthClient{
+		ClientID:     settings.Result.AuthProvider.ClientID,
+		ClientSecret: settings.Result.AuthProvider.ClientSecret,
+	}, nil
 }
 
 // NewOAuthConfig creates an oauth2.Config for the given host and client.
-func NewOAuthConfig(host, clientID string, port int) *oauth2.Config {
+func NewOAuthConfig(host, clientID, clientSecret string, port int) *oauth2.Config {
 	return &oauth2.Config{
-		ClientID: clientID,
+		ClientID:     clientID,
+		ClientSecret: clientSecret,
 		Endpoint: oauth2.Endpoint{
-			AuthURL:  host + "/oauth2/auth",
-			TokenURL: host + "/oauth2/token",
+			AuthURL:   host + "/oauth2/auth",
+			TokenURL:  host + "/oauth2/token",
+			AuthStyle: oauth2.AuthStyleInParams,
 		},
 		RedirectURL: fmt.Sprintf("http://localhost:%d/callback", port),
 		Scopes:      []string{"openid", "offline"},
@@ -120,11 +131,13 @@ func WaitForCallback(port int, timeout time.Duration) (string, error) {
 }
 
 // RefreshAccessToken uses the refresh_token to obtain a new access_token.
-func RefreshAccessToken(host, clientID, refreshToken string) (*oauth2.Token, error) {
+func RefreshAccessToken(host, clientID, clientSecret, refreshToken string) (*oauth2.Token, error) {
 	cfg := &oauth2.Config{
-		ClientID: clientID,
+		ClientID:     clientID,
+		ClientSecret: clientSecret,
 		Endpoint: oauth2.Endpoint{
-			TokenURL: host + "/oauth2/token",
+			TokenURL:  host + "/oauth2/token",
+			AuthStyle: oauth2.AuthStyleInParams,
 		},
 	}
 	token := &oauth2.Token{RefreshToken: refreshToken}

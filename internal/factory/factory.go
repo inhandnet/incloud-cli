@@ -63,6 +63,7 @@ func (f *Factory) HttpClient() (*http.Client, error) {
 			RefreshToken: ctx.RefreshToken,
 			Host:         ctx.Host,
 			ClientID:     ctx.ClientID,
+			ClientSecret: ctx.ClientSecret,
 			OnRefresh: func(accessToken, refreshToken string, expiry time.Time) {
 				ctx.Token = accessToken
 				if refreshToken != "" {

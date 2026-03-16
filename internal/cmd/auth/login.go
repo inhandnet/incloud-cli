@@ -77,20 +77,22 @@ func runLogin(f *factory.Factory, opts *LoginOptions) error {
 		return err
 	}
 
-	// 1. Resolve client_id: from flag or auto-detect from host
+	// 1. Resolve client credentials: from flag or auto-detect from host
 	clientID := opts.ClientID
+	var clientSecret string
 	if clientID == "" {
 		fmt.Fprintln(out, "Fetching OAuth client configuration...")
-		var err error
-		clientID, err = oauthapi.FetchClientID(context.Background(), opts.Host)
+		client, err := oauthapi.FetchOAuthClient(context.Background(), opts.Host)
 		if err != nil {
-			return fmt.Errorf("auto-detecting client_id from %s: %w\n  Hint: use --client-id to specify manually", opts.Host, err)
+			return fmt.Errorf("auto-detecting client from %s: %w\n  Hint: use --client-id to specify manually", opts.Host, err)
 		}
+		clientID = client.ClientID
+		clientSecret = client.ClientSecret
 		fmt.Fprintf(out, "Using client: %s\n", iostreams.Gray(clientID))
 	}
 
 	// 2. Build OAuth config and generate PKCE verifier
-	oauthCfg := oauthapi.NewOAuthConfig(opts.Host, clientID, opts.Port)
+	oauthCfg := oauthapi.NewOAuthConfig(opts.Host, clientID, clientSecret, opts.Port)
 	verifier := oauth2.GenerateVerifier()
 	state := "incloud-cli-login"
 
@@ -134,6 +136,7 @@ func runLogin(f *factory.Factory, opts *LoginOptions) error {
 		Token:        token.AccessToken,
 		RefreshToken: token.RefreshToken,
 		ClientID:     clientID,
+		ClientSecret: clientSecret,
 	}
 	if !token.Expiry.IsZero() {
 		ctx.ExpiresAt = token.Expiry
