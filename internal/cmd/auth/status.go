@@ -6,6 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/inhandnet/incloud-cli/internal/api"
 	"github.com/inhandnet/incloud-cli/internal/factory"
 	"github.com/inhandnet/incloud-cli/internal/iostreams"
 )
@@ -42,13 +43,42 @@ func NewCmdStatus(f *factory.Factory) *cobra.Command {
 				fmt.Fprintf(out, "Org:      %s\n", ctx.Org)
 			}
 
-			switch {
-			case ctx.Token == "":
-				fmt.Fprintf(out, "Status:   %s\n", iostreams.Red("not logged in"))
-			case !ctx.ExpiresAt.IsZero() && ctx.ExpiresAt.Before(time.Now()):
-				fmt.Fprintf(out, "Status:   %s\n", iostreams.Yellow("token expired"))
-			default:
-				fmt.Fprintf(out, "Status:   %s\n", iostreams.Green("logged in"))
+			tokenExpired := !ctx.ExpiresAt.IsZero() && ctx.ExpiresAt.Before(time.Now())
+
+			// Try auto-refresh if token expired but refresh token is available
+			if tokenExpired && ctx.RefreshToken != "" && ctx.ClientID != "" {
+				newToken, err := api.RefreshAccessToken(ctx.Host, ctx.ClientID, ctx.RefreshToken)
+				if err == nil {
+					ctx.Token = newToken.AccessToken
+					if newToken.RefreshToken != "" {
+						ctx.RefreshToken = newToken.RefreshToken
+					}
+					if !newToken.Expiry.IsZero() {
+						ctx.ExpiresAt = newToken.Expiry
+					}
+					_ = f.SaveConfig()
+					tokenExpired = false
+					fmt.Fprintf(out, "Status:   %s\n", iostreams.Green("logged in (token refreshed)"))
+				} else {
+					fmt.Fprintf(out, "Status:   %s\n", iostreams.Red("token expired, refresh failed — please login again"))
+				}
+			} else {
+				switch {
+				case ctx.Token == "":
+					fmt.Fprintf(out, "Status:   %s\n", iostreams.Red("not logged in"))
+				case tokenExpired:
+					fmt.Fprintf(out, "Status:   %s\n", iostreams.Red("token expired, please login again"))
+				default:
+					fmt.Fprintf(out, "Status:   %s\n", iostreams.Green("logged in"))
+				}
+			}
+
+			if !ctx.ExpiresAt.IsZero() {
+				label := "Expires:  "
+				if tokenExpired {
+					label = "Expired:  "
+				}
+				fmt.Fprintf(out, "%s%s\n", label, ctx.ExpiresAt.Local().Format("2006-01-02 15:04:05"))
 			}
 
 			return nil
