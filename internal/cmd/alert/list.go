@@ -111,33 +111,7 @@ func NewCmdList(f *factory.Factory) *cobra.Command {
 			if opts.Sort != "" {
 				q.Set("sort", opts.Sort)
 			}
-			if opts.From != "" {
-				q.Set("from", opts.From)
-			}
-			if opts.To != "" {
-				q.Set("to", opts.To)
-			}
-			if opts.Status != "" {
-				q.Set("status", opts.Status)
-			}
-			if opts.Priority != 0 {
-				q.Set("priority", strconv.Itoa(opts.Priority))
-			}
-			if opts.Device != "" {
-				q.Set("deviceId", opts.Device)
-			}
-			if opts.Group != "" {
-				q.Set("deviceGroupId", opts.Group)
-			}
-			for _, t := range opts.Type {
-				q.Add("type", t)
-			}
-			if opts.Ack != "" {
-				q.Set("ack", opts.Ack)
-			}
-			if opts.Query != "" {
-				q.Set("entityName", opts.Query)
-			}
+			applyProbeParams(q, opts.From, opts.To, opts.Status, opts.Priority, opts.Device, opts.Group, opts.Type, opts.Ack, opts.Query)
 			u.RawQuery = q.Encode()
 
 			req, err := http.NewRequestWithContext(context.Background(), "GET", u.String(), http.NoBody)
