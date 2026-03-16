@@ -2,6 +2,13 @@
 
 > 基于 nezha-alert 的 API 调研。告警创建/关闭/删除为 InternalApi，CLI 主要实现查询和告警规则管理。
 
+## 设计备注
+
+### 时间参数统一
+
+全局统一使用 `--after / --before`（与后端 API 参数名一致）。
+`alert list` 当前使用 `--from/--to`，后续迁移为 `--after/--before`（保留 `--from/--to` 为隐藏别名兼容）。
+
 ## 子模块划分
 
 | # | 子模块 | CLI 路径 | 用户可用端点 | 说明 |
@@ -16,22 +23,21 @@
 
 ### 告警查询 (`incloud alert`)
 
-- [x] `alert list` — 列出告警（分页，支持 --from/--to/--status/--priority/--device/--group/--type 过滤）
+- [x] `alert list` — 列出告警（分页，支持 --after/--before/--status/--priority/--device/--group/--type 过滤）
 - [x] `alert get <id>` — 查看告警详情
 - [x] `alert ack <ids...>` — 确认告警（支持多个 ID）
 - [x] `alert ack --all` — 确认所有告警
 - [x] `alert ack-stats` — 查看未确认告警数量
+- [x] `alert export` — 导出告警列表
 - [ ] `alert device-status <deviceIds...>` — 批量查看设备告警状态
-- [ ] `alert export` — 导出告警列表
 
 ### 告警规则 (`incloud alert rule`)
 
-- [ ] `alert rule list` — 列出告警规则
-- [ ] `alert rule get <id>` — 查看规则详情
-- [ ] `alert rule create` — 创建告警规则（指定设备组、规则类型、通知渠道/用户/Webhook/时间窗口）
-- [ ] `alert rule update <id>` — 更新告警规则
-- [ ] `alert rule delete <id>` — 删除告警规则
-- [ ] `alert rule delete --bulk <ids>` — 批量删除告警规则
+- [x] `alert rule list` — 列出告警规则
+- [x] `alert rule get <id>` — 查看规则详情
+- [x] `alert rule create` — 创建告警规则（指定设备组、规则类型、通知渠道/用户/Webhook/时间窗口）
+- [x] `alert rule update <id>` — 更新告警规则（全量替换 rules + notify，不可修改 groupIds）
+- [x] `alert rule delete <id...>` — 删除告警规则（多 ID 自动批量删除）
 
 ### 告警统计 (`incloud alert top`)
 
