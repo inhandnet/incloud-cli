@@ -37,7 +37,9 @@ incloud config use-context dev
 incloud auth login --context dev --host https://portal.nezha.inhand.dev
 ```
 
-登录使用 OAuth 2.0 PKCE 流程，会自动打开浏览器完成授权。
+登录使用 OAuth 2.0 Authorization Code + PKCE 流程，会自动打开浏览器完成授权。
+
+CLI 复用平台前端的 SPA OAuth client，登录时自动从平台 API 获取 `client_id` 和 `client_secret`，通过 `client_secret_post` 方式发送凭证（与前端行为一致）。也可通过 `--client-id` 手动指定。
 
 ### 3. 验证
 

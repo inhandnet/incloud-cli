@@ -56,12 +56,6 @@ incloud version
 
 路径：`~/.config/incloud/config.yaml`（权限 0600）
 
-## Dev 环境 OAuth Client 配置
+## OAuth 认证机制
 
-登录使用 dev 环境的 Portal SPA client，已做以下变更以支持 CLI PKCE 流程：
-
-- **Client ID**：`f7fc46d9-f96d-495c-9bcb-18f7fd39f891`（nezha SPA）
-- **新增 redirect_uri**：`http://localhost:18920/callback`（CLI 默认回调端口）
-- **token_endpoint_auth_method** 改为 `none`（PKCE public client，不需要 client_secret）
-
-> universal-login 对 client 有额外校验，只有已存在的 SPA client 才能通过登录流程，因此不能单独为 CLI 创建新 client。
+CLI 复用前端 SPA 的 Hydra OAuth2 client（`token_endpoint_auth_method: client_secret_post`），登录时自动从 `GET /api/v1/frontend/settings` 获取 `clientId` 和 `clientSecret`。SPA client 的 `redirect_uris` 中需包含 `http://localhost:18920/callback`。
