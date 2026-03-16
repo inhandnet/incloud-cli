@@ -109,7 +109,7 @@ func NewCmdLogSyslog(f *factory.Factory) *cobra.Command {
 					return fmt.Errorf("parsing response: %w", err)
 				}
 				for _, line := range sr.Result {
-					fmt.Fprintln(f.IO.Out, line)
+					fmt.Fprint(f.IO.Out, line)
 				}
 			}
 
