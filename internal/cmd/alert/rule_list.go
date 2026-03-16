@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -16,13 +17,13 @@ import (
 )
 
 type RuleListOptions struct {
-	Page    int
-	Limit   int
-	Sort    string
-	Columns []string
+	Page   int
+	Limit  int
+	Sort   string
+	Fields []string
 }
 
-var defaultRuleListColumns = []string{"_id", "groupIds", "rules", "notify.channels", "createdAt"}
+var defaultRuleListFields = []string{"_id", "groupIds", "rules", "notify.channels", "createdAt"}
 
 func NewCmdRuleList(f *factory.Factory) *cobra.Command {
 	opts := &RuleListOptions{}
@@ -36,13 +37,13 @@ func NewCmdRuleList(f *factory.Factory) *cobra.Command {
   incloud alert rule list
 
   # Paginate
-  incloud alert rule list --page 1 --limit 50
+  incloud alert rule list --page 2 --limit 50
 
   # Table output
   incloud alert rule list -o table
 
-  # Table with selected columns
-  incloud alert rule list -o table -c _id -c groupIds -c rules`,
+  # Table with selected fields
+  incloud alert rule list -o table -f _id -f groupIds -f rules`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, err := f.Config()
 			if err != nil {
@@ -64,10 +65,19 @@ func NewCmdRuleList(f *factory.Factory) *cobra.Command {
 			}
 
 			q := u.Query()
-			q.Set("page", strconv.Itoa(opts.Page))
-			q.Set("size", strconv.Itoa(opts.Limit))
+			q.Set("page", strconv.Itoa(opts.Page-1))
+			q.Set("limit", strconv.Itoa(opts.Limit))
 			if opts.Sort != "" {
 				q.Set("sort", opts.Sort)
+			}
+
+			output, _ := cmd.Flags().GetString("output")
+			fields := opts.Fields
+			if len(fields) == 0 && output == "table" && f.IO.IsStdoutTTY() {
+				fields = defaultRuleListFields
+			}
+			if len(fields) > 0 {
+				q.Set("fields", strings.Join(fields, ","))
 			}
 			u.RawQuery = q.Encode()
 
@@ -91,14 +101,9 @@ func NewCmdRuleList(f *factory.Factory) *cobra.Command {
 				return fmt.Errorf("HTTP %d: %s", resp.StatusCode, string(body))
 			}
 
-			output, _ := cmd.Flags().GetString("output")
 			switch output {
 			case "table":
-				columns := opts.Columns
-				if len(columns) == 0 && f.IO.IsStdoutTTY() {
-					columns = defaultRuleListColumns
-				}
-				if err := iostreams.FormatTable(body, f.IO, columns); err != nil {
+				if err := iostreams.FormatTable(body, f.IO, fields); err != nil {
 					return err
 				}
 			case "yaml":
@@ -119,10 +124,10 @@ func NewCmdRuleList(f *factory.Factory) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().IntVar(&opts.Page, "page", 0, "Page number (default 0)")
-	cmd.Flags().IntVar(&opts.Limit, "limit", 20, "Number of items per page (default 20)")
+	cmd.Flags().IntVar(&opts.Page, "page", 1, "Page number (starting from 1)")
+	cmd.Flags().IntVar(&opts.Limit, "limit", 20, "Number of items per page")
 	cmd.Flags().StringVar(&opts.Sort, "sort", "", `Sort order (e.g. "createdAt,desc")`)
-	cmd.Flags().StringArrayVarP(&opts.Columns, "column", "c", nil, "Columns to show in table output")
+	cmd.Flags().StringArrayVarP(&opts.Fields, "fields", "f", nil, "Fields to return and display")
 
 	return cmd
 }

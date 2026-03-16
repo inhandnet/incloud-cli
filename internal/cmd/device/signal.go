@@ -15,12 +15,12 @@ import (
 )
 
 type SignalOptions struct {
-	After   string
-	Before  string
-	Columns []string
+	After  string
+	Before string
+	Fields []string
 }
 
-var defaultSignalColumns = []string{"time", "type", "rsrp", "rsrq", "sinr", "networkType", "carrier", "band"}
+var defaultSignalFields = []string{"time", "type", "rsrp", "rsrq", "sinr", "networkType", "carrier", "band"}
 
 func NewCmdSignal(f *factory.Factory) *cobra.Command {
 	opts := &SignalOptions{}
@@ -35,8 +35,8 @@ func NewCmdSignal(f *factory.Factory) *cobra.Command {
   # Filter by time range
   incloud device signal 507f1f77bcf86cd799439011 --after 2024-01-01T00:00:00 --before 2024-01-02T00:00:00
 
-  # Table output with selected columns
-  incloud device signal 507f1f77bcf86cd799439011 -o table -c time -c rsrp -c sinr`,
+  # Table output with selected fields
+  incloud device signal 507f1f77bcf86cd799439011 -o table -f time -f rsrp -f sinr`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			deviceID := args[0]
@@ -96,11 +96,11 @@ func NewCmdSignal(f *factory.Factory) *cobra.Command {
 				if err != nil {
 					return err
 				}
-				columns := opts.Columns
-				if len(columns) == 0 && f.IO.IsStdoutTTY() {
-					columns = defaultSignalColumns
+				fields := opts.Fields
+				if len(fields) == 0 && f.IO.IsStdoutTTY() {
+					fields = defaultSignalFields
 				}
-				if err := iostreams.FormatTable(flat, f.IO, columns); err != nil {
+				if err := iostreams.FormatTable(flat, f.IO, fields); err != nil {
 					return err
 				}
 			case "yaml":
@@ -123,7 +123,7 @@ func NewCmdSignal(f *factory.Factory) *cobra.Command {
 
 	cmd.Flags().StringVar(&opts.After, "after", "", "Start time (ISO 8601, e.g. 2024-01-01T00:00:00)")
 	cmd.Flags().StringVar(&opts.Before, "before", "", "End time (ISO 8601, e.g. 2024-01-02T00:00:00)")
-	cmd.Flags().StringArrayVarP(&opts.Columns, "column", "c", nil, "Columns to show in table output")
+	cmd.Flags().StringArrayVarP(&opts.Fields, "fields", "f", nil, "Fields to return and display")
 
 	return cmd
 }

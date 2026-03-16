@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -16,14 +17,14 @@ import (
 )
 
 type PresenceEventsOptions struct {
-	Page    int
-	Limit   int
-	After   string
-	Before  string
-	Columns []string
+	Page   int
+	Limit  int
+	After  string
+	Before string
+	Fields []string
 }
 
-var defaultPresenceEventsColumns = []string{"timestamp", "eventType", "ipAddress", "disconnectReason"}
+var defaultPresenceEventsFields = []string{"timestamp", "eventType", "ipAddress", "disconnectReason"}
 
 func NewCmdPresenceEvents(f *factory.Factory) *cobra.Command {
 	opts := &PresenceEventsOptions{}
@@ -36,13 +37,13 @@ func NewCmdPresenceEvents(f *factory.Factory) *cobra.Command {
   incloud device presence events 68d4f9818e517662696751ec
 
   # With pagination
-  incloud device presence events 68d4f9818e517662696751ec --page 0 --limit 10
+  incloud device presence events 68d4f9818e517662696751ec --page 2 --limit 10
 
   # Filter by time range
   incloud device presence events 68d4f9818e517662696751ec --after 2025-01-01T00:00:00 --before 2025-12-31T23:59:59
 
-  # Table output with selected columns
-  incloud device presence events 68d4f9818e517662696751ec -o table -c timestamp -c eventType`,
+  # Table output with selected fields
+  incloud device presence events 68d4f9818e517662696751ec -o table -f timestamp -f eventType`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			deviceID := args[0]
@@ -67,13 +68,22 @@ func NewCmdPresenceEvents(f *factory.Factory) *cobra.Command {
 			}
 
 			q := u.Query()
-			q.Set("page", strconv.Itoa(opts.Page))
+			q.Set("page", strconv.Itoa(opts.Page-1))
 			q.Set("limit", strconv.Itoa(opts.Limit))
 			if opts.After != "" {
 				q.Set("from", opts.After)
 			}
 			if opts.Before != "" {
 				q.Set("to", opts.Before)
+			}
+
+			output, _ := cmd.Flags().GetString("output")
+			fields := opts.Fields
+			if len(fields) == 0 && output == "table" && f.IO.IsStdoutTTY() {
+				fields = defaultPresenceEventsFields
+			}
+			if len(fields) > 0 {
+				q.Set("fields", strings.Join(fields, ","))
 			}
 			u.RawQuery = q.Encode()
 
@@ -97,14 +107,9 @@ func NewCmdPresenceEvents(f *factory.Factory) *cobra.Command {
 				return fmt.Errorf("HTTP %d: %s", resp.StatusCode, string(body))
 			}
 
-			output, _ := cmd.Flags().GetString("output")
 			switch output {
 			case "table":
-				columns := opts.Columns
-				if len(columns) == 0 && f.IO.IsStdoutTTY() {
-					columns = defaultPresenceEventsColumns
-				}
-				if err := iostreams.FormatTable(body, f.IO, columns); err != nil {
+				if err := iostreams.FormatTable(body, f.IO, fields); err != nil {
 					return err
 				}
 			case "yaml":
@@ -125,11 +130,11 @@ func NewCmdPresenceEvents(f *factory.Factory) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().IntVar(&opts.Page, "page", 0, "Page number (default 0)")
-	cmd.Flags().IntVar(&opts.Limit, "limit", 20, "Number of items per page (default 20)")
+	cmd.Flags().IntVar(&opts.Page, "page", 1, "Page number (starting from 1)")
+	cmd.Flags().IntVar(&opts.Limit, "limit", 20, "Number of items per page")
 	cmd.Flags().StringVar(&opts.After, "after", "", "Filter events after this time (ISO 8601)")
 	cmd.Flags().StringVar(&opts.Before, "before", "", "Filter events before this time (ISO 8601)")
-	cmd.Flags().StringArrayVarP(&opts.Columns, "column", "c", nil, "Columns to show in table output")
+	cmd.Flags().StringArrayVarP(&opts.Fields, "fields", "f", nil, "Fields to return and display")
 
 	return cmd
 }

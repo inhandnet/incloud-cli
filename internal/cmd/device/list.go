@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -23,10 +24,10 @@ type ListOptions struct {
 	Online  string
 	Product []string
 	Group   []string
-	Columns []string
+	Fields  []string
 }
 
-var defaultListColumns = []string{"_id", "name", "serialNumber", "online", "product", "firmware"}
+var defaultListFields = []string{"_id", "name", "serialNumber", "online", "product", "firmware"}
 
 func NewCmdList(f *factory.Factory) *cobra.Command {
 	opts := &ListOptions{}
@@ -40,7 +41,7 @@ func NewCmdList(f *factory.Factory) *cobra.Command {
   incloud device list
 
   # Paginate
-  incloud device list --page 1 --limit 50
+  incloud device list --page 2 --limit 50
 
   # Filter by online status
   incloud device list --online true
@@ -54,8 +55,8 @@ func NewCmdList(f *factory.Factory) *cobra.Command {
   # Sort results
   incloud device list --sort "name,asc"
 
-  # Table output with selected columns
-  incloud device list -o table -c name -c serialNumber -c online`,
+  # Table output with selected fields
+  incloud device list -o table -f name -f serialNumber -f online`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, err := f.Config()
 			if err != nil {
@@ -77,8 +78,8 @@ func NewCmdList(f *factory.Factory) *cobra.Command {
 			}
 
 			q := u.Query()
-			q.Set("page", strconv.Itoa(opts.Page))
-			q.Set("size", strconv.Itoa(opts.Limit))
+			q.Set("page", strconv.Itoa(opts.Page-1))
+			q.Set("limit", strconv.Itoa(opts.Limit))
 			if opts.Sort != "" {
 				q.Set("sort", opts.Sort)
 			}
@@ -93,6 +94,15 @@ func NewCmdList(f *factory.Factory) *cobra.Command {
 			}
 			for _, g := range opts.Group {
 				q.Add("devicegroupId", g)
+			}
+
+			output, _ := cmd.Flags().GetString("output")
+			fields := opts.Fields
+			if len(fields) == 0 && output == "table" && f.IO.IsStdoutTTY() {
+				fields = defaultListFields
+			}
+			if len(fields) > 0 {
+				q.Set("fields", strings.Join(fields, ","))
 			}
 			u.RawQuery = q.Encode()
 
@@ -116,14 +126,9 @@ func NewCmdList(f *factory.Factory) *cobra.Command {
 				return fmt.Errorf("HTTP %d: %s", resp.StatusCode, string(body))
 			}
 
-			output, _ := cmd.Flags().GetString("output")
 			switch output {
 			case "table":
-				columns := opts.Columns
-				if len(columns) == 0 && f.IO.IsStdoutTTY() {
-					columns = defaultListColumns
-				}
-				if err := iostreams.FormatTable(body, f.IO, columns); err != nil {
+				if err := iostreams.FormatTable(body, f.IO, fields); err != nil {
 					return err
 				}
 			case "yaml":
@@ -144,14 +149,14 @@ func NewCmdList(f *factory.Factory) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().IntVar(&opts.Page, "page", 0, "Page number (default 0)")
-	cmd.Flags().IntVar(&opts.Limit, "limit", 20, "Number of items per page (default 20)")
+	cmd.Flags().IntVar(&opts.Page, "page", 1, "Page number (starting from 1)")
+	cmd.Flags().IntVar(&opts.Limit, "limit", 20, "Number of items per page")
 	cmd.Flags().StringVar(&opts.Sort, "sort", "", "Sort order (e.g. \"createdAt,desc\")")
 	cmd.Flags().StringVarP(&opts.Query, "query", "q", "", "Search by name or serial number")
 	cmd.Flags().StringVar(&opts.Online, "online", "", "Filter by online status (true/false)")
 	cmd.Flags().StringArrayVar(&opts.Product, "product", nil, "Filter by product (can be repeated)")
 	cmd.Flags().StringArrayVar(&opts.Group, "group", nil, "Filter by device group ID (can be repeated)")
-	cmd.Flags().StringArrayVarP(&opts.Columns, "column", "c", nil, "Columns to show in table output")
+	cmd.Flags().StringArrayVarP(&opts.Fields, "fields", "f", nil, "Fields to return and display")
 
 	return cmd
 }

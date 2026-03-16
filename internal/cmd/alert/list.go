@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -28,11 +29,11 @@ type ListOptions struct {
 	Type     []string
 	Ack      string
 	Query    string
-	Columns  []string
+	Fields   []string
 	Count    bool
 }
 
-var defaultListColumns = []string{"_id", "type", "priority", "status", "entityName", "ack", "createdAt"}
+var defaultListFields = []string{"_id", "type", "priority", "status", "entityName", "ack", "createdAt"}
 
 func NewCmdList(f *factory.Factory) *cobra.Command {
 	opts := &ListOptions{}
@@ -46,7 +47,7 @@ func NewCmdList(f *factory.Factory) *cobra.Command {
   incloud alert list
 
   # Paginate
-  incloud alert list --page 1 --limit 50
+  incloud alert list --page 2 --limit 50
 
   # Filter by status
   incloud alert list --status ACTIVE
@@ -72,8 +73,8 @@ func NewCmdList(f *factory.Factory) *cobra.Command {
   # Sort results
   incloud alert list --sort "createdAt,desc"
 
-  # Table output with selected columns
-  incloud alert list -o table -c type -c status -c entityName
+  # Table output with selected fields
+  incloud alert list -o table -f type -f status -f entityName
 
   # Count unacknowledged alerts
   incloud alert list --ack false --count
@@ -103,15 +104,24 @@ func NewCmdList(f *factory.Factory) *cobra.Command {
 			q := u.Query()
 			if opts.Count {
 				q.Set("page", "0")
-				q.Set("size", "1")
+				q.Set("limit", "1")
 			} else {
-				q.Set("page", strconv.Itoa(opts.Page))
-				q.Set("size", strconv.Itoa(opts.Limit))
+				q.Set("page", strconv.Itoa(opts.Page-1))
+				q.Set("limit", strconv.Itoa(opts.Limit))
 			}
 			if opts.Sort != "" {
 				q.Set("sort", opts.Sort)
 			}
 			applyProbeParams(q, opts.From, opts.To, opts.Status, opts.Priority, opts.Device, opts.Group, opts.Type, opts.Ack, opts.Query)
+
+			output, _ := cmd.Flags().GetString("output")
+			fields := opts.Fields
+			if len(fields) == 0 && output == "table" && f.IO.IsStdoutTTY() {
+				fields = defaultListFields
+			}
+			if len(fields) > 0 {
+				q.Set("fields", strings.Join(fields, ","))
+			}
 			u.RawQuery = q.Encode()
 
 			req, err := http.NewRequestWithContext(context.Background(), "GET", u.String(), http.NoBody)
@@ -145,14 +155,9 @@ func NewCmdList(f *factory.Factory) *cobra.Command {
 				return nil
 			}
 
-			output, _ := cmd.Flags().GetString("output")
 			switch output {
 			case "table":
-				columns := opts.Columns
-				if len(columns) == 0 && f.IO.IsStdoutTTY() {
-					columns = defaultListColumns
-				}
-				if err := iostreams.FormatTable(body, f.IO, columns); err != nil {
+				if err := iostreams.FormatTable(body, f.IO, fields); err != nil {
 					return err
 				}
 			case "yaml":
@@ -173,8 +178,8 @@ func NewCmdList(f *factory.Factory) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().IntVar(&opts.Page, "page", 0, "Page number (default 0)")
-	cmd.Flags().IntVar(&opts.Limit, "limit", 20, "Number of items per page (default 20)")
+	cmd.Flags().IntVar(&opts.Page, "page", 1, "Page number (starting from 1)")
+	cmd.Flags().IntVar(&opts.Limit, "limit", 20, "Number of items per page")
 	cmd.Flags().StringVar(&opts.Sort, "sort", "", `Sort order (e.g. "createdAt,desc")`)
 	cmd.Flags().StringVar(&opts.From, "from", "", "Filter alerts from this time (e.g. 2024-01-01T00:00:00)")
 	cmd.Flags().StringVar(&opts.To, "to", "", "Filter alerts until this time (e.g. 2024-01-31T23:59:59)")
@@ -185,7 +190,7 @@ func NewCmdList(f *factory.Factory) *cobra.Command {
 	cmd.Flags().StringArrayVar(&opts.Type, "type", nil, "Filter by alert type (can be repeated)")
 	cmd.Flags().StringVar(&opts.Ack, "ack", "", "Filter by acknowledgement status (true/false)")
 	cmd.Flags().StringVarP(&opts.Query, "query", "q", "", "Search by entity name (fuzzy match)")
-	cmd.Flags().StringArrayVarP(&opts.Columns, "column", "c", nil, "Columns to show in table output")
+	cmd.Flags().StringArrayVarP(&opts.Fields, "fields", "f", nil, "Fields to return and display")
 	cmd.Flags().BoolVar(&opts.Count, "count", false, "Only print the total count of matching alerts")
 
 	return cmd

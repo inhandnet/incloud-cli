@@ -14,10 +14,10 @@ import (
 )
 
 type InterfaceOptions struct {
-	Columns []string
+	Fields []string
 }
 
-var defaultInterfaceColumns = []string{"name", "type", "state", "subnet", "publicIp"}
+var defaultInterfaceFields = []string{"name", "type", "state", "subnet", "publicIp"}
 
 // interfaceTypes lists the keys we extract from the API result, in display order.
 var interfaceTypes = []string{"cellular", "wan", "lan", "wifiSta"}
@@ -35,8 +35,8 @@ func NewCmdInterface(f *factory.Factory) *cobra.Command {
   # Table output
   incloud device interface 507f1f77bcf86cd799439011 -o table
 
-  # Table with selected columns
-  incloud device interface 507f1f77bcf86cd799439011 -o table -c name -c type -c state -c gateway`,
+  # Table with selected fields
+  incloud device interface 507f1f77bcf86cd799439011 -o table -f name -f type -f state -f gateway`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			deviceID := args[0]
@@ -83,11 +83,11 @@ func NewCmdInterface(f *factory.Factory) *cobra.Command {
 				if err != nil {
 					return fmt.Errorf("parsing interfaces: %w", err)
 				}
-				columns := opts.Columns
-				if len(columns) == 0 && f.IO.IsStdoutTTY() {
-					columns = defaultInterfaceColumns
+				fields := opts.Fields
+				if len(fields) == 0 && f.IO.IsStdoutTTY() {
+					fields = defaultInterfaceFields
 				}
-				if err := iostreams.FormatTable(flatData, f.IO, columns); err != nil {
+				if err := iostreams.FormatTable(flatData, f.IO, fields); err != nil {
 					return err
 				}
 			case "yaml":
@@ -108,7 +108,7 @@ func NewCmdInterface(f *factory.Factory) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringArrayVarP(&opts.Columns, "column", "c", nil, "Columns to show in table output")
+	cmd.Flags().StringArrayVarP(&opts.Fields, "fields", "f", nil, "Fields to return and display")
 
 	return cmd
 }

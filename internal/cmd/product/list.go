@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -16,16 +17,16 @@ import (
 )
 
 type ListOptions struct {
-	Page    int
-	Limit   int
-	Sort    string
-	Name    string
-	Type    string
-	Status  string
-	Columns []string
+	Page   int
+	Limit  int
+	Sort   string
+	Name   string
+	Type   string
+	Status string
+	Fields []string
 }
 
-var defaultListColumns = []string{"_id", "name", "productType", "status", "deprecated"}
+var defaultListFields = []string{"_id", "name", "productType", "status", "deprecated"}
 
 func NewCmdList(f *factory.Factory) *cobra.Command {
 	opts := &ListOptions{}
@@ -39,7 +40,7 @@ func NewCmdList(f *factory.Factory) *cobra.Command {
   incloud product list
 
   # Paginate
-  incloud product list --page 1 --limit 50
+  incloud product list --page 2 --limit 50
 
   # Filter by name (LIKE search)
   incloud product list --name IR615
@@ -50,8 +51,8 @@ func NewCmdList(f *factory.Factory) *cobra.Command {
   # Filter by status
   incloud product list --status PUBLISHED
 
-  # Table output with selected columns
-  incloud product list -o table -c name -c productType -c status`,
+  # Table output with selected fields
+  incloud product list -o table -f name -f productType -f status`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, err := f.Config()
 			if err != nil {
@@ -73,8 +74,8 @@ func NewCmdList(f *factory.Factory) *cobra.Command {
 			}
 
 			q := u.Query()
-			q.Set("page", strconv.Itoa(opts.Page))
-			q.Set("size", strconv.Itoa(opts.Limit))
+			q.Set("page", strconv.Itoa(opts.Page-1))
+			q.Set("limit", strconv.Itoa(opts.Limit))
 			if opts.Sort != "" {
 				q.Set("sort", opts.Sort)
 			}
@@ -86,6 +87,15 @@ func NewCmdList(f *factory.Factory) *cobra.Command {
 			}
 			if opts.Status != "" {
 				q.Set("status", opts.Status)
+			}
+
+			output, _ := cmd.Flags().GetString("output")
+			fields := opts.Fields
+			if len(fields) == 0 && output == "table" && f.IO.IsStdoutTTY() {
+				fields = defaultListFields
+			}
+			if len(fields) > 0 {
+				q.Set("fields", strings.Join(fields, ","))
 			}
 			u.RawQuery = q.Encode()
 
@@ -109,14 +119,9 @@ func NewCmdList(f *factory.Factory) *cobra.Command {
 				return fmt.Errorf("HTTP %d: %s", resp.StatusCode, string(body))
 			}
 
-			output, _ := cmd.Flags().GetString("output")
 			switch output {
 			case "table":
-				columns := opts.Columns
-				if len(columns) == 0 && f.IO.IsStdoutTTY() {
-					columns = defaultListColumns
-				}
-				if err := iostreams.FormatTable(body, f.IO, columns); err != nil {
+				if err := iostreams.FormatTable(body, f.IO, fields); err != nil {
 					return err
 				}
 			case "yaml":
@@ -137,13 +142,13 @@ func NewCmdList(f *factory.Factory) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().IntVar(&opts.Page, "page", 0, "Page number (default 0)")
-	cmd.Flags().IntVar(&opts.Limit, "limit", 20, "Number of items per page (default 20)")
+	cmd.Flags().IntVar(&opts.Page, "page", 1, "Page number (starting from 1)")
+	cmd.Flags().IntVar(&opts.Limit, "limit", 20, "Number of items per page")
 	cmd.Flags().StringVar(&opts.Sort, "sort", "", "Sort order (e.g. \"createdAt,desc\")")
 	cmd.Flags().StringVar(&opts.Name, "name", "", "Filter by name (LIKE search)")
 	cmd.Flags().StringVar(&opts.Type, "type", "", "Filter by product type")
 	cmd.Flags().StringVar(&opts.Status, "status", "", "Filter by status (INDEVELOPMENT|PUBLISHED)")
-	cmd.Flags().StringArrayVarP(&opts.Columns, "column", "c", nil, "Columns to show in table output")
+	cmd.Flags().StringArrayVarP(&opts.Fields, "fields", "f", nil, "Fields to return and display")
 
 	return cmd
 }

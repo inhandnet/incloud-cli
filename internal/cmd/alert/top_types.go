@@ -16,14 +16,14 @@ import (
 )
 
 type TopTypesOptions struct {
-	After   string
-	Before  string
-	Group   []string
-	N       int
-	Columns []string
+	After  string
+	Before string
+	Group  []string
+	N      int
+	Fields []string
 }
 
-var defaultTopTypesColumns = []string{"type", "value"}
+var defaultTopTypesFields = []string{"type", "value"}
 
 func NewCmdTopTypes(f *factory.Factory) *cobra.Command {
 	opts := &TopTypesOptions{}
@@ -45,8 +45,8 @@ func NewCmdTopTypes(f *factory.Factory) *cobra.Command {
   # Filter by device group
   incloud alert top types --group 507f1f77bcf86cd799439011
 
-  # Table output with selected columns
-  incloud alert top types -o table -c type -c value`,
+  # Table output with selected fields
+  incloud alert top types -o table -f type -f value`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, err := f.Config()
 			if err != nil {
@@ -103,11 +103,11 @@ func NewCmdTopTypes(f *factory.Factory) *cobra.Command {
 			output, _ := cmd.Flags().GetString("output")
 			switch output {
 			case "table":
-				columns := opts.Columns
-				if len(columns) == 0 && f.IO.IsStdoutTTY() {
-					columns = defaultTopTypesColumns
+				fields := opts.Fields
+				if len(fields) == 0 && f.IO.IsStdoutTTY() {
+					fields = defaultTopTypesFields
 				}
-				if err := iostreams.FormatTable(body, f.IO, columns); err != nil {
+				if err := iostreams.FormatTable(body, f.IO, fields); err != nil {
 					return err
 				}
 			case "yaml":
@@ -131,8 +131,8 @@ func NewCmdTopTypes(f *factory.Factory) *cobra.Command {
 	cmd.Flags().StringVar(&opts.After, "after", "", "Start time (e.g. 2024-01-01T00:00:00)")
 	cmd.Flags().StringVar(&opts.Before, "before", "", "End time (e.g. 2024-01-31T23:59:59)")
 	cmd.Flags().StringArrayVar(&opts.Group, "group", nil, "Filter by device group ID (can be repeated)")
-	cmd.Flags().IntVar(&opts.N, "n", 10, "Number of top types to return (default 10)")
-	cmd.Flags().StringArrayVarP(&opts.Columns, "column", "c", nil, "Columns to show in table output")
+	cmd.Flags().IntVar(&opts.N, "n", 10, "Number of top types to return")
+	cmd.Flags().StringArrayVarP(&opts.Fields, "fields", "f", nil, "Fields to return and display")
 
 	return cmd
 }
