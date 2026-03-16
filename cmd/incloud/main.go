@@ -8,6 +8,8 @@ import (
 	apiCmd "github.com/inhandnet/incloud-cli/internal/cmd/api"
 	authCmd "github.com/inhandnet/incloud-cli/internal/cmd/auth"
 	configCmd "github.com/inhandnet/incloud-cli/internal/cmd/config"
+	deviceCmd "github.com/inhandnet/incloud-cli/internal/cmd/device"
+	productCmd "github.com/inhandnet/incloud-cli/internal/cmd/product"
 	versionCmd "github.com/inhandnet/incloud-cli/internal/cmd/version"
 	"github.com/inhandnet/incloud-cli/internal/factory"
 )
@@ -20,6 +22,8 @@ func main() {
 	rootCmd.AddCommand(configCmd.NewCmdConfig(f))
 	rootCmd.AddCommand(apiCmd.NewCmdApi(f))
 	rootCmd.AddCommand(authCmd.NewCmdAuth(f))
+	rootCmd.AddCommand(deviceCmd.NewCmdDevice(f))
+	rootCmd.AddCommand(productCmd.NewCmdProduct(f))
 	rootCmd.AddCommand(versionCmd.NewCmdVersion(f, version))
 
 	if err := rootCmd.Execute(); err != nil {
