@@ -3,6 +3,8 @@ package auth
 import (
 	"context"
 	"fmt"
+	"net/url"
+	"strings"
 	"time"
 
 	"github.com/pkg/browser"
@@ -54,8 +56,26 @@ func NewCmdLogin(f *factory.Factory) *cobra.Command {
 	return cmd
 }
 
+func validateHost(host string) error {
+	u, err := url.Parse(host)
+	if err != nil || u.Scheme == "" || u.Host == "" {
+		return fmt.Errorf("invalid host URL %q: must be a valid http/https URL (e.g. https://portal.example.com)", host)
+	}
+	if u.Scheme != "http" && u.Scheme != "https" {
+		return fmt.Errorf("invalid host URL %q: scheme must be http or https", host)
+	}
+	if path := strings.TrimSuffix(u.Path, "/"); path != "" {
+		return fmt.Errorf("invalid host URL %q: should not include a path, use %s://%s instead", host, u.Scheme, u.Host)
+	}
+	return nil
+}
+
 func runLogin(f *factory.Factory, opts *LoginOptions) error {
 	out := f.IO.Out
+
+	if err := validateHost(opts.Host); err != nil {
+		return err
+	}
 
 	// 1. Resolve client_id: from flag or auto-detect from host
 	clientID := opts.ClientID

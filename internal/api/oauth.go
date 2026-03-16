@@ -46,6 +46,9 @@ func FetchClientID(ctx context.Context, host string) (string, error) {
 		} `json:"result"`
 	}
 	if err := json.Unmarshal(body, &settings); err != nil {
+		if len(body) > 0 && body[0] == '<' {
+			return "", fmt.Errorf("unexpected HTML response from %s — is the host URL correct?", host)
+		}
 		return "", fmt.Errorf("parsing frontend settings: %w", err)
 	}
 	if settings.Result.AuthProvider.ClientID == "" {
@@ -112,7 +115,7 @@ func WaitForCallback(port int, timeout time.Duration) (string, error) {
 	case err := <-errCh:
 		return "", err
 	case <-time.After(timeout):
-		return "", fmt.Errorf("login timed out after %s — no callback received", timeout)
+		return "", fmt.Errorf("login timed out after %s — check if the browser displayed an error (e.g. invalid client or redirect URI mismatch)", timeout)
 	}
 }
 
