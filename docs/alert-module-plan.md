@@ -16,11 +16,11 @@
 
 ### 告警查询 (`incloud alert`)
 
-- [ ] `alert list` — 列出告警（分页，支持 --from/--to/--status/--priority/--device/--group/--type 过滤）
-- [ ] `alert get <id>` — 查看告警详情
-- [ ] `alert ack <ids...>` — 确认告警（支持多个 ID）
-- [ ] `alert ack --all` — 确认所有告警
-- [ ] `alert ack-stats` — 查看未确认告警数量
+- [x] `alert list` — 列出告警（分页，支持 --from/--to/--status/--priority/--device/--group/--type 过滤）
+- [x] `alert get <id>` — 查看告警详情
+- [x] `alert ack <ids...>` — 确认告警（支持多个 ID）
+- [x] `alert ack --all` — 确认所有告警
+- [x] `alert ack-stats` — 查看未确认告警数量
 - [ ] `alert device-status <deviceIds...>` — 批量查看设备告警状态
 - [ ] `alert export` — 导出告警列表
 
