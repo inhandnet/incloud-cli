@@ -92,7 +92,7 @@ incloud version                                          # 查看版本
 | 格式 | TTY 行为 | 管道行为 |
 |------|---------|---------|
 | `json`（默认） | 彩色 pretty JSON | 紧凑 JSON |
-| `table` | 对齐表格 | TSV |
+| `table` | 对齐表格 + 分页摘要 | TSV |
 | `yaml` | YAML | YAML |
 
 ```bash
@@ -100,6 +100,29 @@ incloud api /api/v1/devices -o table                     # 表格输出
 incloud api /api/v1/devices -o table -c name -c status   # 选定列
 incloud api /api/v1/devices -o yaml                      # YAML 输出
 ```
+
+### 字段选择（`--fields`）
+
+领域命令（`device list`、`alert list` 等）支持 `--fields`/`-f` 控制返回和显示的字段：
+
+```bash
+incloud device list -o table -f name -f serialNumber -f online   # table 只显示指定字段
+incloud device list -o json -f name -f status                    # JSON 也只返回指定字段
+incloud device list -o table                                     # 不指定则使用默认字段集
+```
+
+`--fields` 会传给 API 的 `fields` 参数，减少数据传输量。
+
+### 分页
+
+```bash
+incloud device list --page 1 --limit 20          # 第一页（默认），每页 20 条
+incloud device list --page 2 --limit 50           # 第二页，每页 50 条
+```
+
+`--page` 从 1 开始。table 模式下会显示分页摘要：`Showing 20 of 96 results (Page 1 of 5)`。
+
+> 注意：通用 `api` 命令使用 `--column`/`-c` 做纯客户端列过滤，不传给 API。
 
 ## 环境变量
 
