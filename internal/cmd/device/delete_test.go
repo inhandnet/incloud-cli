@@ -74,6 +74,25 @@ func TestDeleteDevice_WithYesFlag(t *testing.T) {
 	}
 }
 
+func TestDeleteDevice_WithYesFlag_200Response(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"result":{"_id":"abc123","name":"test"}}`))
+	}))
+	defer server.Close()
+
+	f, errBuf := newTestFactory(t, server.URL)
+
+	cmd := NewCmdDelete(f)
+	cmd.SetArgs([]string{"abc123", "--yes"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !strings.Contains(errBuf.String(), "Device abc123 deleted.") {
+		t.Errorf("unexpected output: %s", errBuf.String())
+	}
+}
+
 func TestDeleteDevice_HTTPError(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)

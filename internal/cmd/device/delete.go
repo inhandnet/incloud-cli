@@ -71,7 +71,7 @@ func NewCmdDelete(f *factory.Factory) *cobra.Command {
 			}
 			defer resp.Body.Close()
 
-			if resp.StatusCode == http.StatusNoContent {
+			if resp.StatusCode == http.StatusNoContent || resp.StatusCode == http.StatusOK {
 				fmt.Fprintf(f.IO.ErrOut, "Device %s deleted.\n", id)
 				return nil
 			}
