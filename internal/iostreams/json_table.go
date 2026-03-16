@@ -162,7 +162,7 @@ func renderArray(tp *TablePrinter, items []any, columns []string, io *IOStreams)
 		}
 		row := make([]string, len(cols))
 		for j, col := range cols {
-			row[j] = formatValue(obj[col])
+			row[j] = formatValue(resolveField(obj, col))
 		}
 		tp.AddRow(row...)
 	}
@@ -177,8 +177,8 @@ func renderObject(tp *TablePrinter, obj map[string]any, columns []string, io *IO
 
 	c := NewColorizer(io.TermOutput())
 	for _, key := range cols {
-		val, ok := obj[key]
-		if !ok {
+		val := resolveField(obj, key)
+		if val == nil {
 			continue
 		}
 		k := key
@@ -212,6 +212,20 @@ func formatValue(v any) string {
 		}
 		return string(b)
 	}
+}
+
+// resolveField walks a dot-separated path (e.g. "actor.name") into nested maps.
+func resolveField(obj map[string]any, path string) any {
+	parts := strings.Split(path, ".")
+	var current any = obj
+	for _, p := range parts {
+		m, ok := current.(map[string]any)
+		if !ok {
+			return nil
+		}
+		current = m[p]
+	}
+	return current
 }
 
 func sortedKeys(m map[string]any) []string {
