@@ -1,8 +1,9 @@
 package config
 
 import (
-	"github.com/inhandnet/incloud-cli/internal/factory"
 	"github.com/spf13/cobra"
+
+	"github.com/inhandnet/incloud-cli/internal/factory"
 )
 
 func NewCmdConfig(f *factory.Factory) *cobra.Command {

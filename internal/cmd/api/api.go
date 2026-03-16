@@ -2,6 +2,7 @@ package api
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -10,9 +11,10 @@ import (
 	"os"
 	"strings"
 
+	"github.com/spf13/cobra"
+
 	"github.com/inhandnet/incloud-cli/internal/factory"
 	"github.com/inhandnet/incloud-cli/internal/iostreams"
-	"github.com/spf13/cobra"
 )
 
 type ApiOptions struct {
@@ -184,7 +186,7 @@ func buildRequest(opts *ApiOptions) (*http.Request, error) {
 		}
 	}
 
-	req, err := http.NewRequest(method, u.String(), body)
+	req, err := http.NewRequestWithContext(context.Background(), method, u.String(), body)
 	if err != nil {
 		return nil, err
 	}

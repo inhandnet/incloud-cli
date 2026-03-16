@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/spf13/cobra"
+
 	"github.com/inhandnet/incloud-cli/internal/factory"
 	"github.com/inhandnet/incloud-cli/internal/iostreams"
-	"github.com/spf13/cobra"
 )
 
 func NewCmdStatus(f *factory.Factory) *cobra.Command {
@@ -41,11 +42,12 @@ func NewCmdStatus(f *factory.Factory) *cobra.Command {
 				fmt.Fprintf(out, "Org:      %s\n", ctx.Org)
 			}
 
-			if ctx.Token == "" {
+			switch {
+			case ctx.Token == "":
 				fmt.Fprintf(out, "Status:   %s\n", iostreams.Red("not logged in"))
-			} else if !ctx.ExpiresAt.IsZero() && ctx.ExpiresAt.Before(time.Now()) {
+			case !ctx.ExpiresAt.IsZero() && ctx.ExpiresAt.Before(time.Now()):
 				fmt.Fprintf(out, "Status:   %s\n", iostreams.Yellow("token expired"))
-			} else {
+			default:
 				fmt.Fprintf(out, "Status:   %s\n", iostreams.Green("logged in"))
 			}
 

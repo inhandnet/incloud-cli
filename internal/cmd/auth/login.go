@@ -5,13 +5,14 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/pkg/browser"
+	"github.com/spf13/cobra"
+	"golang.org/x/oauth2"
+
 	oauthapi "github.com/inhandnet/incloud-cli/internal/api"
 	"github.com/inhandnet/incloud-cli/internal/config"
 	"github.com/inhandnet/incloud-cli/internal/factory"
 	"github.com/inhandnet/incloud-cli/internal/iostreams"
-	"github.com/pkg/browser"
-	"github.com/spf13/cobra"
-	"golang.org/x/oauth2"
 )
 
 type LoginOptions struct {
@@ -61,7 +62,7 @@ func runLogin(f *factory.Factory, opts *LoginOptions) error {
 	if clientID == "" {
 		fmt.Fprintln(out, "Fetching OAuth client configuration...")
 		var err error
-		clientID, err = oauthapi.FetchClientID(opts.Host)
+		clientID, err = oauthapi.FetchClientID(context.Background(), opts.Host)
 		if err != nil {
 			return fmt.Errorf("auto-detecting client_id from %s: %w\n  Hint: use --client-id to specify manually", opts.Host, err)
 		}

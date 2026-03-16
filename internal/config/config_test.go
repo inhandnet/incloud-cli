@@ -41,7 +41,7 @@ func TestSaveAndLoad(t *testing.T) {
 
 	// verify file permissions
 	info, _ := os.Stat(path)
-	if info.Mode().Perm() != 0600 {
+	if info.Mode().Perm() != 0o600 {
 		t.Errorf("expected 0600 permissions, got %o", info.Mode().Perm())
 	}
 

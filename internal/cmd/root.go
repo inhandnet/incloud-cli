@@ -3,8 +3,9 @@ package cmd
 import (
 	"os"
 
-	"github.com/inhandnet/incloud-cli/internal/factory"
 	"github.com/spf13/cobra"
+
+	"github.com/inhandnet/incloud-cli/internal/factory"
 )
 
 func NewCmdRoot(f *factory.Factory, version string) *cobra.Command {
@@ -22,7 +23,9 @@ func NewCmdRoot(f *factory.Factory, version string) *cobra.Command {
 	// Propagate --context flag to env so config.ActiveContext() picks it up
 	cmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
 		if ctx, _ := cmd.Flags().GetString("context"); ctx != "" {
-			os.Setenv("INCLOUD_CONTEXT", ctx)
+			if err := os.Setenv("INCLOUD_CONTEXT", ctx); err != nil {
+				return err
+			}
 		}
 		return nil
 	}

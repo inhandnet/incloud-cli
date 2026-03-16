@@ -3,9 +3,10 @@ package config
 import (
 	"fmt"
 
+	"github.com/spf13/cobra"
+
 	cfgpkg "github.com/inhandnet/incloud-cli/internal/config"
 	"github.com/inhandnet/incloud-cli/internal/factory"
-	"github.com/spf13/cobra"
 )
 
 func NewCmdSetContext(f *factory.Factory) *cobra.Command {

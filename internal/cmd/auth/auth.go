@@ -1,8 +1,9 @@
 package auth
 
 import (
-	"github.com/inhandnet/incloud-cli/internal/factory"
 	"github.com/spf13/cobra"
+
+	"github.com/inhandnet/incloud-cli/internal/factory"
 )
 
 func NewCmdAuth(f *factory.Factory) *cobra.Command {

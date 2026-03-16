@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -15,7 +16,7 @@ func TestFetchClientID(t *testing.T) {
 		if r.URL.Path != "/api/v1/frontend/settings" {
 			t.Errorf("unexpected path: %s", r.URL.Path)
 		}
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"result": map[string]any{
 				"authProvider": map[string]any{
 					"clientId":  "test-client-id",
@@ -26,7 +27,7 @@ func TestFetchClientID(t *testing.T) {
 	}))
 	defer server.Close()
 
-	clientID, err := FetchClientID(server.URL)
+	clientID, err := FetchClientID(context.Background(), server.URL)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -52,7 +53,11 @@ func TestWaitForCallback(t *testing.T) {
 	go func() {
 		time.Sleep(100 * time.Millisecond)
 		// Simulate OAuth callback
-		http.Get("http://localhost:18921/callback?code=test-auth-code&state=test-state")
+		req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "http://localhost:18921/callback?code=test-auth-code&state=test-state", http.NoBody)
+		resp, err := http.DefaultClient.Do(req)
+		if err == nil {
+			resp.Body.Close()
+		}
 	}()
 	code, err := WaitForCallback(18921, 5*time.Second)
 	if err != nil {

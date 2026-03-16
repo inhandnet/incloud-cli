@@ -3,8 +3,9 @@ package version
 import (
 	"fmt"
 
-	"github.com/inhandnet/incloud-cli/internal/factory"
 	"github.com/spf13/cobra"
+
+	"github.com/inhandnet/incloud-cli/internal/factory"
 )
 
 func NewCmdVersion(f *factory.Factory, version string) *cobra.Command {

@@ -71,7 +71,7 @@ func (f *Factory) HttpClient() (*http.Client, error) {
 				if !expiry.IsZero() {
 					ctx.ExpiresAt = expiry
 				}
-				f.SaveConfig()
+				_ = f.SaveConfig()
 			},
 			Base: http.DefaultTransport,
 		},

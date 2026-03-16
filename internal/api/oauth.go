@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"html"
 	"io"
 	"net"
 	"net/http"
@@ -18,8 +19,12 @@ const (
 
 // FetchClientID retrieves the OAuth client_id from the platform's frontend settings API.
 // This is the same endpoint the web Portal uses to get its auth config.
-func FetchClientID(host string) (string, error) {
-	resp, err := http.Get(host + "/api/v1/frontend/settings")
+func FetchClientID(ctx context.Context, host string) (string, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, host+"/api/v1/frontend/settings", http.NoBody)
+	if err != nil {
+		return "", fmt.Errorf("creating request: %w", err)
+	}
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return "", fmt.Errorf("fetching frontend settings: %w", err)
 	}
@@ -77,7 +82,7 @@ func WaitForCallback(port int, timeout time.Duration) (string, error) {
 				errMsg = r.URL.Query().Get("error")
 			}
 			w.Header().Set("Content-Type", "text/html")
-			fmt.Fprintf(w, "<html><body><h2>Login failed</h2><p>%s</p></body></html>", errMsg)
+			fmt.Fprintf(w, "<html><body><h2>Login failed</h2><p>%s</p></body></html>", html.EscapeString(errMsg)) //nolint:gosec // errMsg is HTML-escaped
 			errCh <- fmt.Errorf("OAuth error: %s", errMsg)
 			return
 		}
@@ -87,17 +92,19 @@ func WaitForCallback(port int, timeout time.Duration) (string, error) {
 	})
 
 	server := &http.Server{
-		Addr:    fmt.Sprintf(":%d", port),
-		Handler: mux,
+		Addr:              fmt.Sprintf(":%d", port),
+		Handler:           mux,
+		ReadHeaderTimeout: 10 * time.Second,
 	}
 
-	ln, err := net.Listen("tcp", server.Addr)
+	lc := net.ListenConfig{}
+	ln, err := lc.Listen(context.Background(), "tcp", server.Addr)
 	if err != nil {
 		return "", fmt.Errorf("failed to start callback server on port %d: %w", port, err)
 	}
 
-	go server.Serve(ln)
-	defer server.Shutdown(context.Background())
+	go func() { _ = server.Serve(ln) }()
+	defer func() { _ = server.Shutdown(context.Background()) }()
 
 	select {
 	case code := <-codeCh:

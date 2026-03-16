@@ -3,9 +3,10 @@ package config
 import (
 	"sort"
 
+	"github.com/spf13/cobra"
+
 	"github.com/inhandnet/incloud-cli/internal/factory"
 	"github.com/inhandnet/incloud-cli/internal/iostreams"
-	"github.com/spf13/cobra"
 )
 
 func NewCmdListContexts(f *factory.Factory) *cobra.Command {
