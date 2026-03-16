@@ -3,6 +3,10 @@ stages:
   - test
   - build
 
+variables:
+  GOPROXY: https://goproxy.cn,direct
+  GONOSUMDB: "*"
+
 default:
   image: golang:1.25
   tags:
