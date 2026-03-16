@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"time"
 
 	"gopkg.in/yaml.v3"
 )
@@ -14,25 +13,8 @@ type Config struct {
 	Contexts       map[string]*Context `yaml:"contexts"`
 }
 
-type Context struct {
-	Host         string    `yaml:"host"`
-	Token        string    `yaml:"token,omitempty"`
-	RefreshToken string    `yaml:"refresh_token,omitempty"`
-	ClientID     string    `yaml:"client_id,omitempty"`
-	Org          string    `yaml:"org,omitempty"`
-	User         string    `yaml:"user,omitempty"`
-	ExpiresAt    time.Time `yaml:"expires_at,omitempty"`
-}
-
-// EffectiveToken returns INCLOUD_TOKEN env var if set, else the stored token.
-func (c *Context) EffectiveToken() string {
-	if t := os.Getenv("INCLOUD_TOKEN"); t != "" {
-		return t
-	}
-	return c.Token
-}
-
 // ActiveContext returns the context selected by INCLOUD_CONTEXT env var or current-context field.
+// If INCLOUD_HOST is set, it overrides the context's Host field.
 func (cfg *Config) ActiveContext() (*Context, error) {
 	name := os.Getenv("INCLOUD_CONTEXT")
 	if name == "" {
@@ -45,6 +27,9 @@ func (cfg *Config) ActiveContext() (*Context, error) {
 	if !ok {
 		return nil, fmt.Errorf("context %q not found in config", name)
 	}
+	if h := os.Getenv("INCLOUD_HOST"); h != "" {
+		ctx.Host = h
+	}
 	return ctx, nil
 }
 
@@ -54,20 +39,6 @@ func (cfg *Config) ActiveContextName() string {
 		return name
 	}
 	return cfg.CurrentContext
-}
-
-func (cfg *Config) SetContext(name string, ctx *Context) {
-	if cfg.Contexts == nil {
-		cfg.Contexts = make(map[string]*Context)
-	}
-	cfg.Contexts[name] = ctx
-}
-
-func (cfg *Config) DeleteContext(name string) {
-	delete(cfg.Contexts, name)
-	if cfg.CurrentContext == name {
-		cfg.CurrentContext = ""
-	}
 }
 
 // DefaultPath returns ~/.config/incloud/config.yaml

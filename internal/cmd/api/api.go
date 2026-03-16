@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/inhandnet/incloud-cli/internal/factory"
+	"github.com/inhandnet/incloud-cli/internal/iostreams"
 	"github.com/spf13/cobra"
 )
 
@@ -21,6 +22,7 @@ type ApiOptions struct {
 	BodyFields  []string
 	Headers     []string
 	InputFile   string
+	Columns     []string
 	Host        string
 }
 
@@ -39,6 +41,11 @@ Authorization header is automatically injected.`,
 
   # List devices with query params
   incloud api /api/v1/devices -q page=0 -q limit=10
+
+  # Output formats
+  incloud api /api/v1/devices -o json
+  incloud api /api/v1/devices -o table -c name -c status -c product
+  incloud api /api/v1/devices -o yaml
 
   # Create device
   incloud api /api/v1/devices -X POST -f name=test -f product=router
@@ -87,19 +94,24 @@ Authorization header is automatically injected.`,
 				return fmt.Errorf("reading response: %w", err)
 			}
 
-			// pretty print JSON if possible
+			// Format output based on TTY and -o flag
 			output, _ := cmd.Flags().GetString("output")
-			if output == "json" {
-				// raw JSON for piping
-				fmt.Fprintln(f.IO.Out, string(body))
-			} else {
-				// pretty print
-				var prettyJSON bytes.Buffer
-				if err := json.Indent(&prettyJSON, body, "", "  "); err != nil {
-					// not JSON, print raw
-					fmt.Fprintln(f.IO.Out, string(body))
+			switch output {
+			case "table":
+				if err := iostreams.FormatTable(body, f.IO, opts.Columns); err != nil {
+					return err
+				}
+			case "yaml":
+				s, err := iostreams.FormatYAML(body)
+				if err != nil {
+					return err
+				}
+				fmt.Fprintln(f.IO.Out, s)
+			default:
+				if json.Valid(body) {
+					fmt.Fprintln(f.IO.Out, iostreams.FormatJSON(body, f.IO, output))
 				} else {
-					fmt.Fprintln(f.IO.Out, prettyJSON.String())
+					fmt.Fprintln(f.IO.Out, string(body))
 				}
 			}
 
@@ -115,6 +127,7 @@ Authorization header is automatically injected.`,
 	cmd.Flags().StringArrayVarP(&opts.BodyFields, "field", "f", nil, "Body field (key=value), sent as JSON")
 	cmd.Flags().StringArrayVarP(&opts.Headers, "header", "H", nil, "Additional header (Key: Value)")
 	cmd.Flags().StringVar(&opts.InputFile, "input", "", "Read body from file (use - for stdin)")
+	cmd.Flags().StringArrayVarP(&opts.Columns, "column", "c", nil, "Columns to show in table output")
 
 	return cmd
 }

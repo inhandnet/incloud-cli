@@ -114,3 +114,35 @@ func TestEnvOverrides(t *testing.T) {
 		t.Errorf("expected env token override, got %q", token)
 	}
 }
+
+func TestEnvHostOverride(t *testing.T) {
+	t.Setenv("INCLOUD_HOST", "https://override.example.com")
+	cfg := &Config{
+		CurrentContext: "dev",
+		Contexts: map[string]*Context{
+			"dev": {Host: "https://dev.example.com"},
+		},
+	}
+	ctx, _ := cfg.ActiveContext()
+	if ctx.Host != "https://override.example.com" {
+		t.Errorf("expected INCLOUD_HOST override, got %q", ctx.Host)
+	}
+}
+
+func TestEnvContextOverride(t *testing.T) {
+	t.Setenv("INCLOUD_CONTEXT", "prod")
+	cfg := &Config{
+		CurrentContext: "dev",
+		Contexts: map[string]*Context{
+			"dev":  {Host: "https://dev.example.com"},
+			"prod": {Host: "https://prod.example.com"},
+		},
+	}
+	ctx, _ := cfg.ActiveContext()
+	if ctx.Host != "https://prod.example.com" {
+		t.Errorf("expected INCLOUD_CONTEXT to select prod, got %q", ctx.Host)
+	}
+	if cfg.ActiveContextName() != "prod" {
+		t.Errorf("expected ActiveContextName 'prod', got %q", cfg.ActiveContextName())
+	}
+}
