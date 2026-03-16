@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
+	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -13,13 +15,22 @@ import (
 	"github.com/inhandnet/incloud-cli/internal/iostreams"
 )
 
+type GetOptions struct {
+	Fields []string
+}
+
 func NewCmdGet(f *factory.Factory) *cobra.Command {
+	opts := &GetOptions{}
+
 	cmd := &cobra.Command{
 		Use:   "get <alert-id>",
 		Short: "Get alert details",
 		Long:  "Get detailed information about a specific alert by its ID.",
 		Example: `  # Get alert details (colorized JSON in TTY)
   incloud alert get 507f1f77bcf86cd799439011
+
+  # Only specific fields
+  incloud alert get 507f1f77bcf86cd799439011 -f type -f status -f entityName
 
   # Table output (KEY/VALUE pairs)
   incloud alert get 507f1f77bcf86cd799439011 -o table
@@ -44,8 +55,17 @@ func NewCmdGet(f *factory.Factory) *cobra.Command {
 				return err
 			}
 
-			reqURL := ctx.Host + "/api/v1/alerts/" + alertID
-			req, err := http.NewRequestWithContext(context.Background(), "GET", reqURL, http.NoBody)
+			u, err := url.Parse(ctx.Host + "/api/v1/alerts/" + alertID)
+			if err != nil {
+				return fmt.Errorf("invalid URL: %w", err)
+			}
+			if len(opts.Fields) > 0 {
+				q := u.Query()
+				q.Set("fields", strings.Join(opts.Fields, ","))
+				u.RawQuery = q.Encode()
+			}
+
+			req, err := http.NewRequestWithContext(context.Background(), "GET", u.String(), http.NoBody)
 			if err != nil {
 				return fmt.Errorf("building request: %w", err)
 			}
@@ -68,7 +88,7 @@ func NewCmdGet(f *factory.Factory) *cobra.Command {
 			output, _ := cmd.Flags().GetString("output")
 			switch output {
 			case "table":
-				if err := iostreams.FormatTable(body, f.IO, nil); err != nil {
+				if err := iostreams.FormatTable(body, f.IO, opts.Fields); err != nil {
 					return err
 				}
 			case "yaml":
@@ -88,6 +108,8 @@ func NewCmdGet(f *factory.Factory) *cobra.Command {
 			return nil
 		},
 	}
+
+	cmd.Flags().StringSliceVarP(&opts.Fields, "fields", "f", nil, "Fields to return and display")
 
 	return cmd
 }

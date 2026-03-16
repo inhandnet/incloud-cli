@@ -134,7 +134,7 @@ func NewCmdPresenceEvents(f *factory.Factory) *cobra.Command {
 	cmd.Flags().IntVar(&opts.Limit, "limit", 20, "Number of items per page")
 	cmd.Flags().StringVar(&opts.After, "after", "", "Filter events after this time (ISO 8601)")
 	cmd.Flags().StringVar(&opts.Before, "before", "", "Filter events before this time (ISO 8601)")
-	cmd.Flags().StringArrayVarP(&opts.Fields, "fields", "f", nil, "Fields to return and display")
+	cmd.Flags().StringSliceVarP(&opts.Fields, "fields", "f", nil, "Fields to return and display")
 
 	return cmd
 }

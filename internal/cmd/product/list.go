@@ -148,7 +148,7 @@ func NewCmdList(f *factory.Factory) *cobra.Command {
 	cmd.Flags().StringVar(&opts.Name, "name", "", "Filter by name (LIKE search)")
 	cmd.Flags().StringVar(&opts.Type, "type", "", "Filter by product type")
 	cmd.Flags().StringVar(&opts.Status, "status", "", "Filter by status (INDEVELOPMENT|PUBLISHED)")
-	cmd.Flags().StringArrayVarP(&opts.Fields, "fields", "f", nil, "Fields to return and display")
+	cmd.Flags().StringSliceVarP(&opts.Fields, "fields", "f", nil, "Fields to return and display")
 
 	return cmd
 }

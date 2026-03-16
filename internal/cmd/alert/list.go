@@ -190,7 +190,7 @@ func NewCmdList(f *factory.Factory) *cobra.Command {
 	cmd.Flags().StringArrayVar(&opts.Type, "type", nil, "Filter by alert type (can be repeated)")
 	cmd.Flags().StringVar(&opts.Ack, "ack", "", "Filter by acknowledgement status (true/false)")
 	cmd.Flags().StringVarP(&opts.Query, "query", "q", "", "Search by entity name (fuzzy match)")
-	cmd.Flags().StringArrayVarP(&opts.Fields, "fields", "f", nil, "Fields to return and display")
+	cmd.Flags().StringSliceVarP(&opts.Fields, "fields", "f", nil, "Fields to return and display")
 	cmd.Flags().BoolVar(&opts.Count, "count", false, "Only print the total count of matching alerts")
 
 	return cmd

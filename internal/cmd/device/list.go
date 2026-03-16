@@ -156,7 +156,7 @@ func NewCmdList(f *factory.Factory) *cobra.Command {
 	cmd.Flags().StringVar(&opts.Online, "online", "", "Filter by online status (true/false)")
 	cmd.Flags().StringArrayVar(&opts.Product, "product", nil, "Filter by product (can be repeated)")
 	cmd.Flags().StringArrayVar(&opts.Group, "group", nil, "Filter by device group ID (can be repeated)")
-	cmd.Flags().StringArrayVarP(&opts.Fields, "fields", "f", nil, "Fields to return and display")
+	cmd.Flags().StringSliceVarP(&opts.Fields, "fields", "f", nil, "Fields to return and display")
 
 	return cmd
 }

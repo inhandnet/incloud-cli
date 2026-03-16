@@ -108,7 +108,7 @@ func NewCmdInterface(f *factory.Factory) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringArrayVarP(&opts.Fields, "fields", "f", nil, "Fields to return and display")
+	cmd.Flags().StringSliceVarP(&opts.Fields, "fields", "f", nil, "Fields to return and display")
 
 	return cmd
 }
