@@ -5,6 +5,7 @@ import (
 	"os"
 
 	cmd "github.com/inhandnet/incloud-cli/internal/cmd"
+	activityCmd "github.com/inhandnet/incloud-cli/internal/cmd/activity"
 	alertCmd "github.com/inhandnet/incloud-cli/internal/cmd/alert"
 	apiCmd "github.com/inhandnet/incloud-cli/internal/cmd/api"
 	authCmd "github.com/inhandnet/incloud-cli/internal/cmd/auth"
@@ -20,6 +21,7 @@ var version = "dev"
 func main() {
 	f := factory.New()
 	rootCmd := cmd.NewCmdRoot(f, version)
+	rootCmd.AddCommand(activityCmd.NewCmdActivity(f))
 	rootCmd.AddCommand(alertCmd.NewCmdAlert(f))
 	rootCmd.AddCommand(configCmd.NewCmdConfig(f))
 	rootCmd.AddCommand(apiCmd.NewCmdApi(f))
