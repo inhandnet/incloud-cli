@@ -1,0 +1,44 @@
+stages:
+  - check
+  - test
+  - build
+
+default:
+  image: golang:1.25
+  tags:
+    - docker
+  before_script:
+    - go version
+
+lint:
+  stage: check
+  image: golangci/golangci-lint:latest
+  script:
+    - golangci-lint run ./...
+  allow_failure: true
+
+test:
+  stage: test
+  script:
+    - CGO_ENABLED=0 go test ./... -v -count=1
+  coverage: '/^total:\s+\(statements\)\s+(\d+\.\d+)%/'
+
+build:
+  stage: build
+  script:
+    - CGO_ENABLED=0 go build -ldflags "-X main.version=${CI_COMMIT_TAG:-dev}" -o bin/incloud ./cmd/incloud
+    - ./bin/incloud version
+  artifacts:
+    paths:
+      - bin/incloud
+    expire_in: 7 days
+
+release:
+  stage: build
+  script:
+    - CGO_ENABLED=0 go build -ldflags "-X main.version=${CI_COMMIT_TAG}" -o bin/incloud ./cmd/incloud
+  artifacts:
+    paths:
+      - bin/incloud
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^v\d+/
