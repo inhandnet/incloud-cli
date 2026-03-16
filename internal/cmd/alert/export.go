@@ -103,7 +103,6 @@ func NewCmdExport(f *factory.Factory) *cobra.Command {
 			}
 
 			if opts.File != "" {
-				//nolint:gosec // opts.File is user-provided CLI flag, not untrusted web input
 				fmt.Fprintf(f.IO.Out, "Exported to %s (%d bytes)\n", opts.File, n)
 			}
 

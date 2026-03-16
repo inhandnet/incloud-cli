@@ -46,6 +46,7 @@ linters:
         - G117 # struct field name matches secret pattern (false positive for RefreshToken)
         - G304 # file inclusion via variable (CLI reads config by design)
         - G704 # SSRF via taint (CLI api command takes user-provided URLs by design)
+        - G705 # XSS via taint (false positive: CLI writes to terminal/files, not HTTP)
     nolintlint:
       require-explanation: true
       require-specific: true

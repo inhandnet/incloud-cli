@@ -16,7 +16,7 @@ default:
 
 lint:
   stage: check
-  image: golangci/golangci-lint:latest
+  image: golangci/golangci-lint:v2.10.1
   script:
     - golangci-lint run ./...
   allow_failure: true

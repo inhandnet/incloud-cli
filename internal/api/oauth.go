@@ -96,7 +96,7 @@ func WaitForCallback(port int, timeout time.Duration) (string, error) {
 				errMsg = r.URL.Query().Get("error")
 			}
 			w.Header().Set("Content-Type", "text/html")
-			fmt.Fprintf(w, "<html><body><h2>Login failed</h2><p>%s</p></body></html>", html.EscapeString(errMsg)) //nolint:gosec // errMsg is HTML-escaped
+			fmt.Fprintf(w, "<html><body><h2>Login failed</h2><p>%s</p></body></html>", html.EscapeString(errMsg))
 			errCh <- fmt.Errorf("OAuth error: %s", errMsg)
 			return
 		}
