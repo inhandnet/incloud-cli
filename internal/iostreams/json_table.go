@@ -25,6 +25,13 @@ func FormatTable(data []byte, io *IOStreams, columns []string) error {
 	// Unwrap common API envelope: {"result": ...}
 	items := unwrapResult(raw)
 
+	// Print pagination header for TTY table output
+	if io.IsStdoutTTY() {
+		if header := paginationHeader(raw, items, io); header != "" {
+			fmt.Fprintln(io.Out, header)
+		}
+	}
+
 	tp := NewTablePrinter(io.Out, io.IsStdoutTTY())
 
 	switch v := items.(type) {
@@ -43,6 +50,67 @@ func FormatTable(data []byte, io *IOStreams, columns []string) error {
 	}
 
 	return tp.Render()
+}
+
+// paginationHeader builds a "Showing X of Y items (Page M of N)" line
+// from the API envelope metadata. Returns "" if no pagination info is available.
+func paginationHeader(raw, items any, io *IOStreams) string {
+	obj, ok := raw.(map[string]any)
+	if !ok {
+		return ""
+	}
+
+	// Count items on current page
+	arr, ok := items.([]any)
+	if !ok {
+		return ""
+	}
+	count := len(arr)
+	if count == 0 {
+		return ""
+	}
+
+	c := NewColorizer(io.TermOutput())
+
+	total := intFromJSON(obj, "total")
+	totalPages := intFromJSON(obj, "totalPages")
+	page := intFromJSON(obj, "page")
+
+	var parts []string
+
+	if total > 0 {
+		parts = append(parts, fmt.Sprintf("Showing %s of %s results",
+			c.Bold(fmt.Sprintf("%d", count)),
+			c.Bold(fmt.Sprintf("%d", total))))
+	} else {
+		parts = append(parts, fmt.Sprintf("Showing %s results",
+			c.Bold(fmt.Sprintf("%d", count))))
+	}
+
+	if totalPages > 0 {
+		parts = append(parts, fmt.Sprintf("(Page %d of %d)", page+1, totalPages))
+	} else if page >= 0 {
+		parts = append(parts, fmt.Sprintf("(Page %d)", page+1))
+	}
+
+	return c.Gray(strings.Join(parts, " "))
+}
+
+// intFromJSON extracts an integer value from a JSON object by key.
+// Returns -1 if the key is missing or not a number.
+func intFromJSON(obj map[string]any, key string) int {
+	v, ok := obj[key]
+	if !ok {
+		return -1
+	}
+	switch n := v.(type) {
+	case float64:
+		return int(n)
+	case int:
+		return n
+	default:
+		return -1
+	}
 }
 
 // unwrapResult extracts the "result" field from a top-level object if present.

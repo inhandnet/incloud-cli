@@ -34,10 +34,14 @@ func TestFormatTable_Array_TTY(t *testing.T) {
 		t.Fatal(err)
 	}
 	out := buf.String()
-	// Should have header + 2 data rows
+	// Should have pagination header + column header + 2 data rows
 	lines := strings.Split(strings.TrimSpace(out), "\n")
-	if len(lines) != 3 {
-		t.Errorf("expected 3 lines (header + 2 rows), got %d:\n%s", len(lines), out)
+	if len(lines) != 4 {
+		t.Errorf("expected 4 lines (pagination + header + 2 rows), got %d:\n%s", len(lines), out)
+	}
+	// Should contain pagination info
+	if !strings.Contains(out, "Showing") || !strings.Contains(out, "2") {
+		t.Errorf("expected pagination header with count, got:\n%s", out)
 	}
 	// Header should contain column names
 	if !strings.Contains(strings.ToUpper(out), "NAME") {
@@ -114,5 +118,56 @@ func TestFormatTable_NestedValue(t *testing.T) {
 	// Nested array should be rendered as JSON string
 	if !strings.Contains(out, `["a","b"]`) {
 		t.Errorf("nested value should be compact JSON, got:\n%s", out)
+	}
+}
+
+func TestFormatTable_PaginationHeader_WithTotal(t *testing.T) {
+	data := []byte(`{"result":[{"name":"dev1"},{"name":"dev2"}],"total":50,"totalPages":5,"page":0}`)
+	io, buf := newTestIOWithBuf(true)
+	if err := FormatTable(data, io, nil); err != nil {
+		t.Fatal(err)
+	}
+	out := buf.String()
+	if !strings.Contains(out, "2") || !strings.Contains(out, "50") {
+		t.Errorf("expected 'Showing 2 of 50', got:\n%s", out)
+	}
+	if !strings.Contains(out, "Page 1 of 5") {
+		t.Errorf("expected 'Page 1 of 5', got:\n%s", out)
+	}
+}
+
+func TestFormatTable_PaginationHeader_WithoutTotal(t *testing.T) {
+	data := []byte(`{"result":[{"name":"dev1"}]}`)
+	io, buf := newTestIOWithBuf(true)
+	if err := FormatTable(data, io, nil); err != nil {
+		t.Fatal(err)
+	}
+	out := buf.String()
+	if !strings.Contains(out, "Showing") || !strings.Contains(out, "1") {
+		t.Errorf("expected 'Showing 1 results', got:\n%s", out)
+	}
+}
+
+func TestFormatTable_PaginationHeader_NonTTY_NoHeader(t *testing.T) {
+	data := []byte(`{"result":[{"name":"dev1"}],"total":50,"totalPages":5,"page":0}`)
+	io, buf := newTestIOWithBuf(false)
+	if err := FormatTable(data, io, nil); err != nil {
+		t.Fatal(err)
+	}
+	out := buf.String()
+	if strings.Contains(out, "Showing") {
+		t.Errorf("non-TTY should not have pagination header, got:\n%s", out)
+	}
+}
+
+func TestFormatTable_PaginationHeader_Page2(t *testing.T) {
+	data := []byte(`{"result":[{"name":"dev1"}],"total":25,"totalPages":3,"page":1}`)
+	io, buf := newTestIOWithBuf(true)
+	if err := FormatTable(data, io, nil); err != nil {
+		t.Fatal(err)
+	}
+	out := buf.String()
+	if !strings.Contains(out, "Page 2 of 3") {
+		t.Errorf("expected 'Page 2 of 3' (0-indexed page=1), got:\n%s", out)
 	}
 }
