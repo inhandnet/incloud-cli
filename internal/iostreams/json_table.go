@@ -228,11 +228,25 @@ func resolveField(obj map[string]any, path string) any {
 	return current
 }
 
-func sortedKeys(m map[string]any) []string {
+// flattenKeys recursively collects leaf-level dot-paths from a nested map.
+// Nested maps are expanded; arrays and scalars are treated as leaves.
+func flattenKeys(m map[string]any, prefix string) []string {
 	keys := make([]string, 0, len(m))
-	for k := range m {
-		keys = append(keys, k)
+	for k, v := range m {
+		path := k
+		if prefix != "" {
+			path = prefix + "." + k
+		}
+		if sub, ok := v.(map[string]any); ok {
+			keys = append(keys, flattenKeys(sub, path)...)
+		} else {
+			keys = append(keys, path)
+		}
 	}
 	sort.Strings(keys)
 	return keys
+}
+
+func sortedKeys(m map[string]any) []string {
+	return flattenKeys(m, "")
 }
