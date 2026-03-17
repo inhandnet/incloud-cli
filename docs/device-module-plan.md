@@ -138,12 +138,12 @@
 
 ### 在线状态（后端：nezha-iot）
 
-- [x] `device presence events <id>` — 上下线事件历史（`GET /api/v1/devices/{id}/online-events-list`，分页，`--after/--before`）
+- [x] `device connections <id>` — 上下线事件历史（`GET /api/v1/devices/{id}/online-events-list`，分页，`--after/--before`）
 - ~~`device presence stats <id>` — 在线事件统计图表（`GET /api/v1/devices/{id}/online-events-chart/statistics`）~~ — 前端专用接口，不实现
-- [ ] `device presence offline daily <id>` — 每日离线汇总（`GET /api/v1/devices/{id}/offline/daily`，`--after/--before`）
+- [ ] `device connections offline-daily <id>` — 每日离线汇总（`GET /api/v1/devices/{id}/offline/daily`，`--after/--before`）
 - ~~`device presence offline topn` — 离线最多的设备排名~~ → 迁移至 `overview offline`
 - ~~`device presence offline stats` — 离线统计列表~~ → 迁移至 `overview offline`
-- [ ] `device presence export <id>` — 导出事件历史（`GET /api/v1/devices/{id}/online-events-list/export`）
+- [ ] `device connections export <id>` — 导出事件历史（`GET /api/v1/devices/{id}/online-events-list/export`）
 
 ## Phase 1e: 流量统计 + 影子
 
@@ -173,14 +173,14 @@
 
 输出包含（默认最近 24 小时）：
 - **基本信息**：名称、SN、产品、固件版本、所属组
-- **在线状态**：当前是否在线、最近上下线事件（取 `presence events` 最近 5 条）
+- **在线状态**：当前是否在线、最近上下线事件（取 `connections` 最近 5 条）
 - **信号快照**：当前信号值（`signal current`）
 - **活跃告警**：未确认告警列表（`alert list --device <id> --ack false`）
 - **网络接口**：接口状态摘要（`interface`）
 
 参数：
 - `--after / --before` — 自定义时间范围
-- `--section signal,presence,alerts` — 只输出指定部分
+- `--section signal,connections,alerts` — 只输出指定部分
 - `-o json/yaml/table` — 输出格式
 
 ---

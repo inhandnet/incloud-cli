@@ -16,7 +16,7 @@ import (
 	"github.com/inhandnet/incloud-cli/internal/iostreams"
 )
 
-type PresenceEventsOptions struct {
+type ConnectionsOptions struct {
 	Page   int
 	Limit  int
 	After  string
@@ -24,26 +24,26 @@ type PresenceEventsOptions struct {
 	Fields []string
 }
 
-var defaultPresenceEventsFields = []string{"timestamp", "eventType", "ipAddress", "disconnectReason"}
+var defaultConnectionsFields = []string{"timestamp", "eventType", "ipAddress", "disconnectReason"}
 
-func NewCmdPresenceEvents(f *factory.Factory) *cobra.Command {
-	opts := &PresenceEventsOptions{}
+func NewCmdConnections(f *factory.Factory) *cobra.Command {
+	opts := &ConnectionsOptions{}
 
 	cmd := &cobra.Command{
-		Use:   "events <device-id>",
-		Short: "List device online/offline events",
-		Long:  "List online/offline presence events for a specific device.",
-		Example: `  # List presence events for a device
-  incloud device presence events 68d4f9818e517662696751ec
+		Use:   "connections <device-id>",
+		Short: "List device connection history",
+		Long:  "List online/offline connection events for a specific device.",
+		Example: `  # List connection events for a device
+  incloud device connections 68d4f9818e517662696751ec
 
   # With pagination
-  incloud device presence events 68d4f9818e517662696751ec --page 2 --limit 10
+  incloud device connections 68d4f9818e517662696751ec --page 2 --limit 10
 
   # Filter by time range
-  incloud device presence events 68d4f9818e517662696751ec --after 2025-01-01T00:00:00 --before 2025-12-31T23:59:59
+  incloud device connections 68d4f9818e517662696751ec --after 2025-01-01T00:00:00 --before 2025-12-31T23:59:59
 
   # Table output with selected fields
-  incloud device presence events 68d4f9818e517662696751ec -o table -f timestamp -f eventType`,
+  incloud device connections 68d4f9818e517662696751ec -o table -f timestamp -f eventType`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			deviceID := args[0]
@@ -80,7 +80,7 @@ func NewCmdPresenceEvents(f *factory.Factory) *cobra.Command {
 			output, _ := cmd.Flags().GetString("output")
 			fields := opts.Fields
 			if len(fields) == 0 && output == "table" && f.IO.IsStdoutTTY() {
-				fields = defaultPresenceEventsFields
+				fields = defaultConnectionsFields
 			}
 			if len(fields) > 0 {
 				q.Set("fields", strings.Join(fields, ","))
