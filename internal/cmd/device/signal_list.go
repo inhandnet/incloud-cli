@@ -97,7 +97,7 @@ func newCmdSignalList(f *factory.Factory) *cobra.Command {
 					return err
 				}
 				fields := opts.Fields
-				if len(fields) == 0 && f.IO.IsStdoutTTY() {
+				if len(fields) == 0 {
 					fields = defaultSignalFields
 				}
 				if err := iostreams.FormatTable(flat, f.IO, fields); err != nil {

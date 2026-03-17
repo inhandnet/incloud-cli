@@ -168,7 +168,7 @@ func runTraffic(cmd *cobra.Command, f *factory.Factory, opts *TrafficOptions) er
 
 	case "table":
 		fields := opts.Fields
-		if len(fields) == 0 && f.IO.IsStdoutTTY() {
+		if len(fields) == 0 {
 			fields = defaultTrafficFields
 		}
 		if err := iostreams.FormatTable(results["topk"], f.IO, fields); err != nil {

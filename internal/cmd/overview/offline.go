@@ -148,7 +148,7 @@ func runOffline(cmd *cobra.Command, f *factory.Factory, opts *OfflineOptions) er
 		fmt.Fprintln(f.IO.Out, s)
 	case "table":
 		fields := opts.Fields
-		if len(fields) == 0 && f.IO.IsStdoutTTY() {
+		if len(fields) == 0 {
 			fields = defaultStatsFields
 		}
 		if err := iostreams.FormatTable(statsBody, f.IO, fields); err != nil {

@@ -99,7 +99,7 @@ func newCmdUplinkPerf(f *factory.Factory) *cobra.Command {
 					return err
 				}
 				fields := opts.Fields
-				if len(fields) == 0 && f.IO.IsStdoutTTY() {
+				if len(fields) == 0 {
 					fields = defaultUplinkPerfFields
 				}
 				if err := iostreams.FormatTable(flat, f.IO, fields); err != nil {

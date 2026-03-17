@@ -106,7 +106,7 @@ func NewCmdInterface(f *factory.Factory) *cobra.Command {
 					return fmt.Errorf("parsing interfaces: %w", err)
 				}
 				fields := opts.Fields
-				if len(fields) == 0 && f.IO.IsStdoutTTY() {
+				if len(fields) == 0 {
 					fields = defaultInterfaceFields
 				}
 				if err := iostreams.FormatTable(flatData, f.IO, fields); err != nil {

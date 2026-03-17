@@ -78,7 +78,7 @@ func NewCmdUplink(f *factory.Factory) *cobra.Command {
 			switch output {
 			case "table":
 				fields := opts.Fields
-				if len(fields) == 0 && f.IO.IsStdoutTTY() {
+				if len(fields) == 0 {
 					fields = defaultUplinkFields
 				}
 				if err := iostreams.FormatTable(body, f.IO, fields); err != nil {

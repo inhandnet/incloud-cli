@@ -119,15 +119,11 @@ func runPerfCurrent(f *factory.Factory, cmd *cobra.Command, deviceID string, opt
 	output, _ := cmd.Flags().GetString("output")
 	switch output {
 	case "table":
-		flat, err := wrapAsArray(body)
-		if err != nil {
-			return err
-		}
 		fields := opts.Fields
-		if len(fields) == 0 && f.IO.IsStdoutTTY() {
+		if len(fields) == 0 {
 			fields = defaultPerfCurrentFields
 		}
-		if err := iostreams.FormatTable(flat, f.IO, fields); err != nil {
+		if err := iostreams.FormatTable(body, f.IO, fields); err != nil {
 			return err
 		}
 	case "yaml":
@@ -201,7 +197,7 @@ func runPerfSeries(f *factory.Factory, cmd *cobra.Command, deviceID string, opts
 			return err
 		}
 		fields := opts.Fields
-		if len(fields) == 0 && f.IO.IsStdoutTTY() {
+		if len(fields) == 0 {
 			fields = defaultPerfSeriesFields
 		}
 		if err := iostreams.FormatTable(flat, f.IO, fields); err != nil {
@@ -221,21 +217,4 @@ func runPerfSeries(f *factory.Factory, cmd *cobra.Command, deviceID string, opts
 		}
 	}
 	return nil
-}
-
-// wrapAsArray wraps the result object as a single-element array for FormatTable.
-// resolveField in FormatTable already handles dot-path navigation (e.g. "cpu.usage").
-func wrapAsArray(body []byte) ([]byte, error) {
-	var envelope struct {
-		Result map[string]interface{} `json:"result"`
-	}
-	if err := json.Unmarshal(body, &envelope); err != nil {
-		return nil, fmt.Errorf("parsing performance response: %w", err)
-	}
-
-	if len(envelope.Result) == 0 {
-		return json.Marshal(map[string]interface{}{"result": []interface{}{}})
-	}
-
-	return json.Marshal(map[string]interface{}{"result": []interface{}{envelope.Result}})
 }

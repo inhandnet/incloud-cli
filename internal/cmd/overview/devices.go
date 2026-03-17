@@ -68,7 +68,7 @@ func NewCmdDevices(f *factory.Factory) *cobra.Command {
 			switch output {
 			case "table":
 				fields := opts.Fields
-				if len(fields) == 0 && f.IO.IsStdoutTTY() {
+				if len(fields) == 0 {
 					fields = defaultDevicesFields
 				}
 				if err := iostreams.FormatTable(data, f.IO, fields); err != nil {

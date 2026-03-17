@@ -125,7 +125,7 @@ func NewCmdLogMqtt(f *factory.Factory) *cobra.Command {
 					return err
 				}
 				fields := opts.Fields
-				if len(fields) == 0 && f.IO.IsStdoutTTY() {
+				if len(fields) == 0 {
 					fields = defaultMqttLogFields
 				}
 				if err := iostreams.FormatTable(resultBody, f.IO, fields); err != nil {
