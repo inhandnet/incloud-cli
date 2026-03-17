@@ -14,8 +14,6 @@ import (
 	"github.com/inhandnet/incloud-cli/internal/factory"
 )
 
-var defaultLocationFields = []string{"longitude", "latitude", "source", "pinned", "time"}
-
 func NewCmdLocation(f *factory.Factory) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "location",
@@ -90,7 +88,7 @@ func newCmdLocationGet(f *factory.Factory) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			return formatOutput(cmd, f.IO, locBody, defaultLocationFields)
+			return formatOutput(cmd, f.IO, locBody, nil)
 		},
 	}
 
@@ -169,7 +167,7 @@ func newCmdLocationSet(f *factory.Factory) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			return formatOutput(cmd, f.IO, locBody, defaultLocationFields)
+			return formatOutput(cmd, f.IO, locBody, nil)
 		},
 	}
 
@@ -239,7 +237,7 @@ func newCmdLocationUnpin(f *factory.Factory) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			return formatOutput(cmd, f.IO, locBody, defaultLocationFields)
+			return formatOutput(cmd, f.IO, locBody, nil)
 		},
 	}
 
@@ -295,7 +293,7 @@ func newCmdLocationRefresh(f *factory.Factory) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			return formatOutput(cmd, f.IO, locBody, defaultLocationFields)
+			return formatOutput(cmd, f.IO, locBody, nil)
 		},
 	}
 

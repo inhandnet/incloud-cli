@@ -115,8 +115,8 @@
 
 ### 天线信号（后端：nezha-link）
 
-- [ ] `device antenna <id>` — 天线信号数据（`GET /api/v1/devices/{id}/antenna-signal`，多天线+GPS 关联，`--after/--before` 必填）
-- [ ] `device antenna export <id>` — 导出天线信号（`GET /api/v1/devices/{id}/antenna-signal/export`）
+- [x] `device antenna <id>` — 天线信号数据（`GET /api/v1/devices/{id}/antenna-signal`，多天线+GPS 关联，`--after/--before` 必填）
+- ~~`device antenna export <id>` — 导出天线信号（`GET /api/v1/devices/{id}/antenna-signal/export`）~~ — 不实现
 
 ### 性能监控（后端：nezha-link）
 
@@ -142,19 +142,19 @@
 - ~~`device presence stats <id>` — 在线事件统计图表（`GET /api/v1/devices/{id}/online-events-chart/statistics`）~~ — 前端专用接口，不实现
 - ~~`device presence offline topn` — 离线最多的设备排名~~ → 迁移至 `overview offline`
 - ~~`device presence offline stats` — 离线统计列表~~ → 迁移至 `overview offline`
-- [ ] `device online export <id>` — 导出事件历史（`GET /api/v1/devices/{id}/online-events-list/export`）
+- ~~`device online export <id>` — 导出事件历史（`GET /api/v1/devices/{id}/online-events-list/export`）~~ — 暂不实现
 
 ## Phase 1e: 流量统计 + 影子
 
 ### 流量统计（后端：nezha-link）
 
-- [ ] `device datausage hourly <id>` — 小时流量（`GET /api/v1/devices/{id}/datausage-hourly`，`--type cellular|wifi|all --after/--before`）
-- [ ] `device datausage daily <id>` — 日流量（`GET /api/v1/devices/{id}/datausage-daily`，`--type --month`）
-- [ ] `device datausage monthly <id>` — 月流量（`GET /api/v1/devices/{id}/datausage-monthly`，`--type --year`）
-- [ ] `device datausage overview <id>` — 流量概览（聚合 hourly/daily/monthly overview 端点）
+- [x] `device datausage hourly <id>` — 小时流量（`GET /api/v1/devices/{id}/datausage-hourly`，`--type cellular|wifi|all --after/--before`）
+- [x] `device datausage daily <id>` — 日流量（`GET /api/v1/devices/{id}/datausage-daily`，`--type --month`）
+- [x] `device datausage monthly <id>` — 月流量（`GET /api/v1/devices/{id}/datausage-monthly`，`--type --year`）
+- ~~`device datausage overview <id>` — 流量概览（聚合 hourly/daily/monthly overview 端点）~~ — 暂不实现
 - ~~`device datausage topk` — Top-K 流量排名~~ → 迁移至 `overview traffic`
-- [ ] `device datausage details` — 设备流量明细（`GET /api/v1/devices/datausage/details`）
-- [ ] `device datausage export <id>` — 导出流量（`GET /api/v1/devices/{id}/datausage/export`，`--type HOURLY|DAILY|MONTHLY`）
+- [x] `device datausage list` — 设备流量明细（`GET /api/v1/devices/datausage/details`）
+- ~~`device datausage export <id>` — 导出流量（`GET /api/v1/devices/{id}/datausage/export`，`--type HOURLY|DAILY|MONTHLY`）~~ — 暂不实现
 
 ### 影子文档
 

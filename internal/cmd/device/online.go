@@ -24,10 +24,7 @@ type onlineOptions struct {
 	Fields []string
 }
 
-var (
-	defaultOnlineEventFields = []string{"timestamp", "eventType", "ipAddress", "disconnectReason"}
-	defaultOnlineDailyFields = []string{"date", "offlineTimes", "offlineDuration", "maxOfflineDuration"}
-)
+var defaultOnlineEventFields = []string{"timestamp", "eventType", "ipAddress", "disconnectReason"}
 
 func NewCmdOnline(f *factory.Factory) *cobra.Command {
 	opts := &onlineOptions{}
@@ -146,16 +143,12 @@ func runOnlineDaily(f *factory.Factory, deviceID string, opts *onlineOptions, cm
 	u.RawQuery = q.Encode()
 
 	output, _ := cmd.Flags().GetString("output")
-	fields := opts.Fields
-	if len(fields) == 0 && output == "table" && f.IO.IsStdoutTTY() {
-		fields = defaultOnlineDailyFields
-	}
 
 	body, err := doOnlineRequest(client, u.String())
 	if err != nil {
 		return err
 	}
-	return printOutput(body, output, fields, f.IO)
+	return printOutput(body, output, opts.Fields, f.IO)
 }
 
 func doOnlineRequest(client *http.Client, rawURL string) ([]byte, error) {

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/url"
+	"sort"
 	"strconv"
 	"sync"
 
@@ -20,11 +21,6 @@ type AlertsOptions struct {
 	N      int
 	Fields []string
 }
-
-var (
-	defaultTopAlertDevicesFields = []string{"deviceName", "serialNumber", "value"}
-	defaultTopAlertTypesFields   = []string{"type", "value"}
-)
 
 func NewCmdAlerts(f *factory.Factory) *cobra.Command {
 	opts := &AlertsOptions{}
@@ -197,7 +193,7 @@ func printAlertsDashboard(io *iostreams.IOStreams, data map[string]json.RawMessa
 	if json.Unmarshal(data["topDevices"], &topDevices) == nil && len(topDevices) > 0 {
 		devFields := fields
 		if len(devFields) == 0 {
-			devFields = defaultTopAlertDevicesFields
+			devFields = sortedKeys(topDevices[0])
 		}
 		tp := iostreams.NewTablePrinter(out, io.IsStdoutTTY())
 		// Header
@@ -230,7 +226,7 @@ func printAlertsDashboard(io *iostreams.IOStreams, data map[string]json.RawMessa
 	if json.Unmarshal(data["topTypes"], &topTypes) == nil && len(topTypes) > 0 {
 		typeFields := fields
 		if len(typeFields) == 0 {
-			typeFields = defaultTopAlertTypesFields
+			typeFields = sortedKeys(topTypes[0])
 		}
 		tp := iostreams.NewTablePrinter(out, io.IsStdoutTTY())
 		// Header
@@ -255,6 +251,15 @@ func printAlertsDashboard(io *iostreams.IOStreams, data map[string]json.RawMessa
 	} else {
 		fmt.Fprintln(out, c.Gray("  No data"))
 	}
+}
+
+func sortedKeys(m map[string]interface{}) []string {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	return keys
 }
 
 func formatValue(v interface{}) string {

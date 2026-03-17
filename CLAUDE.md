@@ -34,7 +34,8 @@ make lint     # golangci-lint
 
 - 领域命令（`device list`、`alert list` 等）使用 `--fields`/`-f` 控制返回字段，同时传给 API `fields` 参数减少传输量
 - 通用 `api` 命令使用 `--column`/`-c` 做纯客户端列过滤（不传给 API）
-- table 模式下若未指定 `--fields`，使用各命令定义的 `defaultXxxFields` 默认字段集
+- table 模式下若未指定 `--fields`，默认显示全部字段
+- 仅当 API 返回字段过多、全显示不可读时，才定义 `defaultXxxFields` 控制 table 默认列（如 `device list` 返回 20+ 字段）
 
 ### Top-K 参数
 

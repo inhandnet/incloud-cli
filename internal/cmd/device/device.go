@@ -24,6 +24,7 @@ func NewCmdDevice(f *factory.Factory) *cobra.Command {
 	cmd.AddCommand(NewCmdUnassign(f))
 	cmd.AddCommand(NewCmdTransfer(f))
 	cmd.AddCommand(NewCmdSignal(f))
+	cmd.AddCommand(NewCmdAntenna(f))
 	cmd.AddCommand(NewCmdPerf(f))
 	cmd.AddCommand(NewCmdOnline(f))
 	cmd.AddCommand(NewCmdLog(f))
@@ -31,6 +32,7 @@ func NewCmdDevice(f *factory.Factory) *cobra.Command {
 	cmd.AddCommand(NewCmdLocation(f))
 	cmd.AddCommand(NewCmdExec(f))
 	cmd.AddCommand(NewCmdUplink(f))
+	cmd.AddCommand(NewCmdDatausage(f))
 
 	return cmd
 }
