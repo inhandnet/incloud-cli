@@ -39,10 +39,10 @@
 - [x] `device assign <id> --group <gid>` — 分配设备到指定组
 - [x] `device unassign <id>` — 将设备从组中移出
 - [x] `device transfer <id> --org <oid>` — 转移设备到其他组织
-- [ ] `device import <file>` — 批量导入（CSV）
+- [x] `device import <file>` — 批量导入（CSV/XLSX）
 - ~~`device properties <id>` — 查看 IoT 属性/状态~~
 - [ ] `device features <id>` — 查看设备特性标志
-- [ ] `device location <id>` — 查看/更新位置信息
+- [x] `device location <id>` — 查看/更新位置信息
 
 ### `incloud device group` — 设备组 (~14 端点)
 
