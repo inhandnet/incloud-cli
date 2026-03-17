@@ -128,39 +128,8 @@ func newCmdSignalList(f *factory.Factory) *cobra.Command {
 	return cmd
 }
 
-// flattenSignalSeries converts the signal API's series format (fields + data matrix)
-// into a flat JSON array of objects suitable for FormatTable.
+// flattenSignalSeries uses the shared flattenSeries with includeType=true
+// since signal series have a "type" field per series (e.g. "4G", "5G").
 func flattenSignalSeries(body []byte) ([]byte, error) {
-	var envelope struct {
-		Result struct {
-			Series []struct {
-				Type   string          `json:"type"`
-				Fields []string        `json:"fields"`
-				Data   [][]interface{} `json:"data"`
-			} `json:"series"`
-		} `json:"result"`
-	}
-	if err := json.Unmarshal(body, &envelope); err != nil {
-		return nil, fmt.Errorf("parsing signal response: %w", err)
-	}
-
-	var rows []map[string]interface{}
-	for _, s := range envelope.Result.Series {
-		for _, row := range s.Data {
-			obj := map[string]interface{}{
-				"type": s.Type,
-			}
-			for i, field := range s.Fields {
-				if i < len(row) {
-					obj[field] = row[i]
-				}
-			}
-			rows = append(rows, obj)
-		}
-	}
-
-	if len(rows) == 0 {
-		return json.Marshal(map[string]interface{}{"result": []interface{}{}})
-	}
-	return json.Marshal(map[string]interface{}{"result": rows})
+	return flattenSeriesWithType(body)
 }
