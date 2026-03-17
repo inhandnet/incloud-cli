@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/muesli/termenv"
+	"github.com/tidwall/gjson"
 )
 
 func newTestIOWithBuf(isTTY bool) (*IOStreams, *bytes.Buffer) {
@@ -172,202 +173,178 @@ func TestFormatTable_PaginationHeader_Page2(t *testing.T) {
 	}
 }
 
-// --- resolveField tests ---
+// --- formatResult tests (gjson-based) ---
 
-func TestResolveField_TopLevel(t *testing.T) {
-	obj := map[string]any{"name": "alice"}
-	got := resolveField(obj, "name")
-	if got != "alice" {
-		t.Errorf("expected alice, got %v", got)
+func TestFormatResult_Null(t *testing.T) {
+	r := gjson.Parse("null")
+	if got := formatResult(&r); got != "" {
+		t.Errorf("expected empty string for null, got %q", got)
 	}
 }
 
-func TestResolveField_DotPath(t *testing.T) {
-	obj := map[string]any{
-		"cpu": map[string]any{"usage": 0.5},
-	}
-	got := resolveField(obj, "cpu.usage")
-	if got != 0.5 {
-		t.Errorf("expected 0.5, got %v", got)
-	}
-}
-
-func TestResolveField_DeepPath(t *testing.T) {
-	obj := map[string]any{
-		"a": map[string]any{
-			"b": map[string]any{
-				"c": "deep",
-			},
-		},
-	}
-	got := resolveField(obj, "a.b.c")
-	if got != "deep" {
-		t.Errorf("expected deep, got %v", got)
-	}
-}
-
-func TestResolveField_MissingKey(t *testing.T) {
-	obj := map[string]any{"name": "alice"}
-	got := resolveField(obj, "age")
-	if got != nil {
-		t.Errorf("expected nil for missing key, got %v", got)
-	}
-}
-
-func TestResolveField_MissingNestedKey(t *testing.T) {
-	obj := map[string]any{
-		"cpu": map[string]any{"usage": 0.5},
-	}
-	got := resolveField(obj, "cpu.temp")
-	if got != nil {
-		t.Errorf("expected nil for missing nested key, got %v", got)
-	}
-}
-
-func TestResolveField_PathThroughScalar(t *testing.T) {
-	obj := map[string]any{"name": "alice"}
-	got := resolveField(obj, "name.sub")
-	if got != nil {
-		t.Errorf("expected nil when path goes through scalar, got %v", got)
-	}
-}
-
-func TestResolveField_PathThroughArray(t *testing.T) {
-	obj := map[string]any{
-		"tags": []any{"a", "b"},
-	}
-	got := resolveField(obj, "tags.0")
-	if got != nil {
-		t.Errorf("expected nil when path goes through array, got %v", got)
-	}
-}
-
-func TestResolveField_ReturnsNestedObject(t *testing.T) {
-	obj := map[string]any{
-		"cpu": map[string]any{"usage": 0.5, "cores": float64(4)},
-	}
-	got := resolveField(obj, "cpu")
-	m, ok := got.(map[string]any)
-	if !ok {
-		t.Fatalf("expected map, got %T", got)
-	}
-	if m["usage"] != 0.5 {
-		t.Errorf("expected usage=0.5, got %v", m["usage"])
-	}
-}
-
-func TestResolveField_ReturnsArray(t *testing.T) {
-	obj := map[string]any{
-		"tags": []any{"a", "b"},
-	}
-	got := resolveField(obj, "tags")
-	arr, ok := got.([]any)
-	if !ok {
-		t.Fatalf("expected []any, got %T", got)
-	}
-	if len(arr) != 2 {
-		t.Errorf("expected 2 elements, got %d", len(arr))
-	}
-}
-
-// --- formatValue tests ---
-
-func TestFormatValue_Nil(t *testing.T) {
-	if got := formatValue(nil); got != "" {
-		t.Errorf("expected empty string for nil, got %q", got)
-	}
-}
-
-func TestFormatValue_String(t *testing.T) {
-	if got := formatValue("hello"); got != "hello" {
+func TestFormatResult_String(t *testing.T) {
+	r := gjson.Parse(`"hello"`)
+	if got := formatResult(&r); got != "hello" {
 		t.Errorf("expected hello, got %q", got)
 	}
 }
 
-func TestFormatValue_EmptyString(t *testing.T) {
-	if got := formatValue(""); got != "" {
+func TestFormatResult_EmptyString(t *testing.T) {
+	r := gjson.Parse(`""`)
+	if got := formatResult(&r); got != "" {
 		t.Errorf("expected empty string, got %q", got)
 	}
 }
 
-func TestFormatValue_Integer(t *testing.T) {
-	// JSON numbers are float64
-	if got := formatValue(float64(42)); got != "42" {
+func TestFormatResult_Integer(t *testing.T) {
+	r := gjson.Parse("42")
+	if got := formatResult(&r); got != "42" {
 		t.Errorf("expected 42, got %q", got)
 	}
 }
 
-func TestFormatValue_NegativeInteger(t *testing.T) {
-	if got := formatValue(float64(-7)); got != "-7" {
+func TestFormatResult_NegativeInteger(t *testing.T) {
+	r := gjson.Parse("-7")
+	if got := formatResult(&r); got != "-7" {
 		t.Errorf("expected -7, got %q", got)
 	}
 }
 
-func TestFormatValue_Zero(t *testing.T) {
-	if got := formatValue(float64(0)); got != "0" {
+func TestFormatResult_Zero(t *testing.T) {
+	r := gjson.Parse("0")
+	if got := formatResult(&r); got != "0" {
 		t.Errorf("expected 0, got %q", got)
 	}
 }
 
-func TestFormatValue_Float(t *testing.T) {
-	if got := formatValue(3.14); got != "3.14" {
+func TestFormatResult_Float(t *testing.T) {
+	r := gjson.Parse("3.14")
+	if got := formatResult(&r); got != "3.14" {
 		t.Errorf("expected 3.14, got %q", got)
 	}
 }
 
-func TestFormatValue_SmallFloat(t *testing.T) {
-	if got := formatValue(0.024570024); got != "0.024570024" {
+func TestFormatResult_SmallFloat(t *testing.T) {
+	r := gjson.Parse("0.024570024")
+	if got := formatResult(&r); got != "0.024570024" {
 		t.Errorf("expected 0.024570024, got %q", got)
 	}
 }
 
-func TestFormatValue_BoolTrue(t *testing.T) {
-	if got := formatValue(true); got != "true" {
+func TestFormatResult_BoolTrue(t *testing.T) {
+	r := gjson.Parse("true")
+	if got := formatResult(&r); got != "true" {
 		t.Errorf("expected true, got %q", got)
 	}
 }
 
-func TestFormatValue_BoolFalse(t *testing.T) {
-	if got := formatValue(false); got != "false" {
+func TestFormatResult_BoolFalse(t *testing.T) {
+	r := gjson.Parse("false")
+	if got := formatResult(&r); got != "false" {
 		t.Errorf("expected false, got %q", got)
 	}
 }
 
-func TestFormatValue_NestedObject(t *testing.T) {
-	obj := map[string]any{"usage": 0.5}
-	got := formatValue(obj)
+func TestFormatResult_NestedObject(t *testing.T) {
+	r := gjson.Parse(`{"usage":0.5}`)
+	got := formatResult(&r)
 	if got != `{"usage":0.5}` {
 		t.Errorf("expected compact JSON, got %q", got)
 	}
 }
 
-func TestFormatValue_Array(t *testing.T) {
-	arr := []any{"a", "b"}
-	got := formatValue(arr)
+func TestFormatResult_Array(t *testing.T) {
+	r := gjson.Parse(`["a","b"]`)
+	got := formatResult(&r)
 	if got != `["a","b"]` {
 		t.Errorf("expected compact JSON array, got %q", got)
 	}
 }
 
-func TestFormatValue_EmptyArray(t *testing.T) {
-	arr := []any{}
-	got := formatValue(arr)
+func TestFormatResult_EmptyArray(t *testing.T) {
+	r := gjson.Parse(`[]`)
+	got := formatResult(&r)
 	if got != `[]` {
 		t.Errorf("expected [], got %q", got)
 	}
 }
 
-func TestFormatValue_LargeInteger(t *testing.T) {
-	if got := formatValue(float64(21114126336)); got != "21114126336" {
+func TestFormatResult_LargeInteger(t *testing.T) {
+	r := gjson.Parse("21114126336")
+	if got := formatResult(&r); got != "21114126336" {
 		t.Errorf("expected 21114126336, got %q", got)
 	}
 }
 
-// --- flattenKeys tests ---
+// --- gjson dot-path resolution tests ---
+
+func TestGjsonGet_TopLevel(t *testing.T) {
+	r := gjson.Parse(`{"name":"alice"}`)
+	got := r.Get("name").Str
+	if got != "alice" {
+		t.Errorf("expected alice, got %v", got)
+	}
+}
+
+func TestGjsonGet_DotPath(t *testing.T) {
+	r := gjson.Parse(`{"cpu":{"usage":0.5}}`)
+	got := r.Get("cpu.usage").Num
+	if got != 0.5 {
+		t.Errorf("expected 0.5, got %v", got)
+	}
+}
+
+func TestGjsonGet_DeepPath(t *testing.T) {
+	r := gjson.Parse(`{"a":{"b":{"c":"deep"}}}`)
+	got := r.Get("a.b.c").Str
+	if got != "deep" {
+		t.Errorf("expected deep, got %v", got)
+	}
+}
+
+func TestGjsonGet_MissingKey(t *testing.T) {
+	r := gjson.Parse(`{"name":"alice"}`)
+	got := r.Get("age")
+	if got.Exists() {
+		t.Errorf("expected non-existent for missing key, got %v", got)
+	}
+}
+
+func TestGjsonGet_MissingNestedKey(t *testing.T) {
+	r := gjson.Parse(`{"cpu":{"usage":0.5}}`)
+	got := r.Get("cpu.temp")
+	if got.Exists() {
+		t.Errorf("expected non-existent for missing nested key, got %v", got)
+	}
+}
+
+func TestGjsonGet_ReturnsNestedObject(t *testing.T) {
+	r := gjson.Parse(`{"cpu":{"usage":0.5,"cores":4}}`)
+	got := r.Get("cpu")
+	if !got.IsObject() {
+		t.Fatalf("expected object, got %v", got.Type)
+	}
+	if got.Get("usage").Num != 0.5 {
+		t.Errorf("expected usage=0.5, got %v", got.Get("usage").Num)
+	}
+}
+
+func TestGjsonGet_ReturnsArray(t *testing.T) {
+	r := gjson.Parse(`{"tags":["a","b"]}`)
+	got := r.Get("tags")
+	if !got.IsArray() {
+		t.Fatalf("expected array, got %v", got.Type)
+	}
+	if len(got.Array()) != 2 {
+		t.Errorf("expected 2 elements, got %d", len(got.Array()))
+	}
+}
+
+// --- flattenKeys tests (gjson-based) ---
 
 func TestFlattenKeys_Flat(t *testing.T) {
-	m := map[string]any{"name": "alice", "age": float64(30)}
-	got := flattenKeys(m, "")
+	r := gjson.Parse(`{"age":30,"name":"alice"}`)
+	got := flattenKeys(&r)
 	expect := []string{"age", "name"}
 	if len(got) != len(expect) {
 		t.Fatalf("expected %v, got %v", expect, got)
@@ -380,11 +357,8 @@ func TestFlattenKeys_Flat(t *testing.T) {
 }
 
 func TestFlattenKeys_Nested(t *testing.T) {
-	m := map[string]any{
-		"cpu":    map[string]any{"usage": 0.5},
-		"memory": map[string]any{"free": float64(1024), "total": float64(4096)},
-	}
-	got := flattenKeys(m, "")
+	r := gjson.Parse(`{"cpu":{"usage":0.5},"memory":{"free":1024,"total":4096}}`)
+	got := flattenKeys(&r)
 	expect := []string{"cpu.usage", "memory.free", "memory.total"}
 	if len(got) != len(expect) {
 		t.Fatalf("expected %v, got %v", expect, got)
@@ -397,25 +371,16 @@ func TestFlattenKeys_Nested(t *testing.T) {
 }
 
 func TestFlattenKeys_DeepNested(t *testing.T) {
-	m := map[string]any{
-		"a": map[string]any{
-			"b": map[string]any{
-				"c": "val",
-			},
-		},
-	}
-	got := flattenKeys(m, "")
+	r := gjson.Parse(`{"a":{"b":{"c":"val"}}}`)
+	got := flattenKeys(&r)
 	if len(got) != 1 || got[0] != "a.b.c" {
 		t.Errorf("expected [a.b.c], got %v", got)
 	}
 }
 
 func TestFlattenKeys_ArrayStopsFlattening(t *testing.T) {
-	m := map[string]any{
-		"name": "alice",
-		"tags": []any{"a", "b"},
-	}
-	got := flattenKeys(m, "")
+	r := gjson.Parse(`{"name":"alice","tags":["a","b"]}`)
+	got := flattenKeys(&r)
 	expect := []string{"name", "tags"}
 	if len(got) != len(expect) {
 		t.Fatalf("expected %v, got %v", expect, got)
@@ -428,14 +393,8 @@ func TestFlattenKeys_ArrayStopsFlattening(t *testing.T) {
 }
 
 func TestFlattenKeys_Mixed(t *testing.T) {
-	m := map[string]any{
-		"id":     "123",
-		"cpu":    map[string]any{"usage": 0.5},
-		"tags":   []any{"x"},
-		"active": true,
-		"meta":   map[string]any{"region": "us", "nested": map[string]any{"deep": float64(1)}},
-	}
-	got := flattenKeys(m, "")
+	r := gjson.Parse(`{"active":true,"cpu":{"usage":0.5},"id":"123","meta":{"nested":{"deep":1},"region":"us"},"tags":["x"]}`)
+	got := flattenKeys(&r)
 	expect := []string{"active", "cpu.usage", "id", "meta.nested.deep", "meta.region", "tags"}
 	if len(got) != len(expect) {
 		t.Fatalf("expected %v, got %v", expect, got)
@@ -444,6 +403,39 @@ func TestFlattenKeys_Mixed(t *testing.T) {
 		if got[i] != expect[i] {
 			t.Errorf("index %d: expected %s, got %s", i, expect[i], got[i])
 		}
+	}
+}
+
+func TestFlattenKeys_DotInKey(t *testing.T) {
+	// Keys containing literal dots must be escaped so gjson.Get resolves them correctly.
+	r := gjson.Parse(`{"a.b":"dotval","normal":"ok"}`)
+	got := flattenKeys(&r)
+	expect := []string{`a\.b`, "normal"}
+	if len(got) != len(expect) {
+		t.Fatalf("expected %v, got %v", expect, got)
+	}
+	for i := range expect {
+		if got[i] != expect[i] {
+			t.Errorf("index %d: expected %s, got %s", i, expect[i], got[i])
+		}
+	}
+	// Verify the escaped path round-trips through gjson.Get
+	val := r.Get(got[0])
+	if val.Str != "dotval" {
+		t.Errorf("expected gjson.Get(%q) = dotval, got %q", got[0], val.Str)
+	}
+}
+
+func TestFormatTable_DotInKey(t *testing.T) {
+	// End-to-end: a key with a literal dot should render correctly in table output.
+	data := []byte(`{"result":[{"a.b":"val1","c":"val2"},{"a.b":"val3","c":"val4"}]}`)
+	io, buf := newTestIOWithBuf(false)
+	if err := FormatTable(data, io, nil); err != nil {
+		t.Fatal(err)
+	}
+	out := buf.String()
+	if !strings.Contains(out, "val1") || !strings.Contains(out, "val3") {
+		t.Errorf("expected dot-key values in output, got:\n%s", out)
 	}
 }
 
