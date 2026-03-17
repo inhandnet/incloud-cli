@@ -36,8 +36,9 @@
 - [x] `device delete <id>` — 删除设备
 - ~~`device summary` — 设备统计概览~~ → 迁移至 `overview devices`
 - [x] `device export` — 导出设备列表为文件
-- [ ] `device move <id> --group <gid>` — 移动设备到指定组
-- [ ] `device transfer <id> --org <oid>` — 转移设备到其他组织
+- [x] `device assign <id> --group <gid>` — 分配设备到指定组
+- [x] `device unassign <id>` — 将设备从组中移出
+- [x] `device transfer <id> --org <oid>` — 转移设备到其他组织
 - [ ] `device import <file>` — 批量导入（CSV）
 - ~~`device properties <id>` — 查看 IoT 属性/状态~~
 - [ ] `device features <id>` — 查看设备特性标志
