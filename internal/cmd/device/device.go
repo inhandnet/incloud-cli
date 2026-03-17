@@ -19,6 +19,7 @@ func NewCmdDevice(f *factory.Factory) *cobra.Command {
 	cmd.AddCommand(NewCmdUpdate(f))
 	cmd.AddCommand(NewCmdDelete(f))
 	cmd.AddCommand(NewCmdExport(f))
+	cmd.AddCommand(NewCmdImport(f))
 	cmd.AddCommand(NewCmdAssign(f))
 	cmd.AddCommand(NewCmdUnassign(f))
 	cmd.AddCommand(NewCmdTransfer(f))
