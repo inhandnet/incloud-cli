@@ -14,7 +14,8 @@ import (
 )
 
 type InterfaceOptions struct {
-	Fields []string
+	Refresh bool
+	Fields  []string
 }
 
 var defaultInterfaceFields = []string{"name", "type", "state", "subnet", "publicIp"}
@@ -31,6 +32,9 @@ func NewCmdInterface(f *factory.Factory) *cobra.Command {
 		Long:  "Show network interface information for a specific device.",
 		Example: `  # Show interfaces as JSON
   incloud device interface 507f1f77bcf86cd799439011
+
+  # Real-time refresh (device must be online)
+  incloud device interface 507f1f77bcf86cd799439011 --refresh
 
   # Table output
   incloud device interface 507f1f77bcf86cd799439011 -o table
@@ -53,6 +57,24 @@ func NewCmdInterface(f *factory.Factory) *cobra.Command {
 			client, err := f.HttpClient()
 			if err != nil {
 				return err
+			}
+
+			if opts.Refresh {
+				refreshURL := ctx.Host + "/api/v1/devices/" + deviceID + "/interfaces/refresh"
+				req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, refreshURL, http.NoBody)
+				if err != nil {
+					return fmt.Errorf("building refresh request: %w", err)
+				}
+				resp, err := client.Do(req)
+				if err != nil {
+					return fmt.Errorf("refresh request failed: %w", err)
+				}
+				resp.Body.Close()
+				if resp.StatusCode == http.StatusRequestTimeout {
+					fmt.Fprintln(f.IO.ErrOut, "Warning: refresh timed out (device may be offline), showing cached data")
+				} else if resp.StatusCode >= 400 {
+					fmt.Fprintln(f.IO.ErrOut, "Warning: refresh failed, showing cached data")
+				}
 			}
 
 			reqURL := ctx.Host + "/api/v1/devices/" + deviceID + "/interfaces"
@@ -108,6 +130,7 @@ func NewCmdInterface(f *factory.Factory) *cobra.Command {
 		},
 	}
 
+	cmd.Flags().BoolVar(&opts.Refresh, "refresh", false, "Trigger real-time collection (device must be online)")
 	cmd.Flags().StringSliceVarP(&opts.Fields, "fields", "f", nil, "Fields to return and display")
 
 	return cmd
