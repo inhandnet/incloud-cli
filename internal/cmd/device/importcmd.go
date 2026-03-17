@@ -111,17 +111,26 @@ func runImport(f *factory.Factory, opts *ImportOptions, filePath string) error {
 		return err
 	}
 
-	// Step 2: Get job detail to show parsed result
-	job, err := getImportJobDetail(client, ctx.Host, jobID)
+	// Step 2: Wait for file validation to complete, then show parsed result
+	job, err := waitForValidation(client, ctx.Host, jobID)
 	if err != nil {
 		return err
 	}
 
 	fmt.Fprintf(f.IO.ErrOut, "Parsed %d device(s) from %s (job: %s)\n", job.Total, job.FileName, jobID)
 
-	// Show validation errors if any
+	// If validation failed, show errors and abort
+	if job.Status == "check_fail" {
+		fmt.Fprintf(f.IO.ErrOut, "\nValidation failed:\n")
+		for errCode, rows := range job.Result {
+			fmt.Fprintf(f.IO.ErrOut, "  %s: rows %v\n", errCode, rows)
+		}
+		return fmt.Errorf("file validation failed, import aborted")
+	}
+
+	// Show validation warnings if any
 	if len(job.Result) > 0 {
-		fmt.Fprintf(f.IO.ErrOut, "\nValidation errors found:\n")
+		fmt.Fprintf(f.IO.ErrOut, "\nValidation warnings:\n")
 		for errCode, rows := range job.Result {
 			fmt.Fprintf(f.IO.ErrOut, "  %s: rows %v\n", errCode, rows)
 		}
@@ -343,35 +352,59 @@ func confirmImport(client *http.Client, host, jobID string) error {
 	return nil
 }
 
-func pollImportJob(f *factory.Factory, client *http.Client, host, jobID string) (*importJob, error) {
-	ticker := time.NewTicker(2 * time.Second)
-	defer ticker.Stop()
+// isTerminalStatus returns true if the import job has reached a final state.
+func isTerminalStatus(status string) bool {
+	switch status {
+	case "success", "failed", "check_fail", "cancel":
+		return true
+	}
+	return false
+}
 
+// waitForValidation polls until the job exits the "checking" state.
+// The upload handler parses the file synchronously, so "init" means ready.
+// Only "checking" requires waiting (rare, for large files with async validation).
+func waitForValidation(client *http.Client, host, jobID string) (*importJob, error) {
+	timeout := time.After(2 * time.Minute)
+
+	for {
+		job, err := getImportJobDetail(client, host, jobID)
+		if err != nil {
+			return nil, err
+		}
+
+		if job.Status != "checking" {
+			return job, nil
+		}
+
+		select {
+		case <-time.After(1 * time.Second):
+		case <-timeout:
+			return nil, fmt.Errorf("timed out waiting for file validation (job: %s)", jobID)
+		}
+	}
+}
+
+func pollImportJob(f *factory.Factory, client *http.Client, host, jobID string) (*importJob, error) {
 	timeout := time.After(10 * time.Minute)
 
 	for {
+		job, err := getImportJobDetail(client, host, jobID)
+		if err != nil {
+			return nil, err
+		}
+
+		if isTerminalStatus(job.Status) {
+			return job, nil
+		}
+
+		// Show progress
+		if job.Rate > 0 && job.Rate < 1 {
+			fmt.Fprintf(f.IO.ErrOut, "\rImporting... %.0f%%", job.Rate*100)
+		}
+
 		select {
-		case <-ticker.C:
-			job, err := getImportJobDetail(client, host, jobID)
-			if err != nil {
-				return nil, err
-			}
-
-			// Show progress
-			if job.Rate > 0 && job.Rate < 1 {
-				fmt.Fprintf(f.IO.ErrOut, "\rImporting... %.0f%%", job.Rate*100)
-			}
-
-			// Terminal states
-			switch job.Status {
-			case "success":
-				fmt.Fprintf(f.IO.ErrOut, "\r")
-				return job, nil
-			case "failed", "check_fail", "cancel":
-				fmt.Fprintf(f.IO.ErrOut, "\r")
-				return job, nil
-			}
-
+		case <-time.After(2 * time.Second):
 		case <-timeout:
 			return nil, fmt.Errorf("timed out waiting for import to complete (job: %s)", jobID)
 		}

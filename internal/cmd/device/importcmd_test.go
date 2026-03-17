@@ -3,7 +3,6 @@ package device
 import (
 	"encoding/csv"
 	"encoding/json"
-	"io"
 	"mime"
 	"net/http"
 	"net/http/httptest"
@@ -385,9 +384,8 @@ func TestImport_WaitForValidation_CheckingThenReady(t *testing.T) {
 		if n <= 2 {
 			job["status"] = "checking"
 		} else {
-			job["status"] = "init" // ready to confirm
-			// Actually, after checking completes it should go to a non-init/checking state.
-			// For test purposes, let's say it's still init (which is a valid ready state).
+			// After checking completes, status becomes "init" (ready to confirm)
+			job["status"] = "init"
 		}
 		resp := map[string]interface{}{"result": job}
 		w.WriteHeader(http.StatusOK)
@@ -399,10 +397,53 @@ func TestImport_WaitForValidation_CheckingThenReady(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	// waitForValidation exits when status is NOT init/checking
-	// Since our server keeps returning init after checking, it would loop.
-	// Let me fix the test - return a non-init status on third call.
-	_ = job
+	if job.Status != "init" {
+		t.Errorf("expected status 'init', got %q", job.Status)
+	}
+	if got := detailCalls.Load(); got < 3 {
+		t.Errorf("expected at least 3 detail calls (2 checking + 1 init), got %d", got)
+	}
+}
+
+func TestImport_WaitForValidation_CheckFail(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		resp := `{"result":{"_id":"jobchkf","fileName":"test.xlsx","total":2,"status":"check_fail","result":{"SERIAL_ILLEGAL":[2,3]},"rate":1}}`
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(resp))
+	}))
+	defer server.Close()
+
+	job, err := waitForValidation(server.Client(), server.URL, "jobchkf")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if job.Status != "check_fail" {
+		t.Errorf("expected status 'check_fail', got %q", job.Status)
+	}
+}
+
+func TestImport_WaitForValidation_ImmediateInit(t *testing.T) {
+	var detailCalls atomic.Int32
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		detailCalls.Add(1)
+		resp := `{"result":{"_id":"jobinit","fileName":"test.xlsx","total":2,"status":"init","rate":0}}`
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(resp))
+	}))
+	defer server.Close()
+
+	job, err := waitForValidation(server.Client(), server.URL, "jobinit")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if job.Status != "init" {
+		t.Errorf("expected status 'init', got %q", job.Status)
+	}
+	// Should return immediately on first call (init is not "checking")
+	if got := detailCalls.Load(); got != 1 {
+		t.Errorf("expected 1 detail call, got %d", got)
+	}
 }
 
 func TestIsTerminalStatus(t *testing.T) {
@@ -511,6 +552,3 @@ func createTestCSV(t *testing.T) string {
 	}
 	return path
 }
-
-// Ensure unused imports are consumed.
-var _ = io.Discard
