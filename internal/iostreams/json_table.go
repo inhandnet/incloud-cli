@@ -3,6 +3,7 @@ package iostreams
 import (
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/tidwall/gjson"
@@ -169,7 +170,7 @@ func formatResult(r *gjson.Result) string {
 		if r.Num == float64(int64(r.Num)) {
 			return fmt.Sprintf("%d", int64(r.Num))
 		}
-		return fmt.Sprintf("%g", r.Num)
+		return formatFloat(r.Num)
 	case gjson.JSON:
 		return r.Raw
 	default:
@@ -218,4 +219,18 @@ func flattenKeysWithPrefix(r *gjson.Result, prefix string) []string {
 		return true
 	})
 	return keys
+}
+
+// formatFloat formats a float64 for table display.
+// Uses fixed-point with up to 3 decimal places, trimming trailing zeros.
+// Falls back to %g for very small values that would round to zero.
+func formatFloat(f float64) string {
+	s := strconv.FormatFloat(f, 'f', 3, 64)
+	// If fixed-point rounds to "0.000" but the value isn't zero, use %g
+	if f != 0 && strings.TrimRight(strings.TrimRight(s, "0"), ".") == "0" {
+		return strconv.FormatFloat(f, 'g', -1, 64)
+	}
+	s = strings.TrimRight(s, "0")
+	s = strings.TrimRight(s, ".")
+	return s
 }

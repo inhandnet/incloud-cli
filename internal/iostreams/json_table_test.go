@@ -226,8 +226,8 @@ func TestFormatResult_Float(t *testing.T) {
 
 func TestFormatResult_SmallFloat(t *testing.T) {
 	r := gjson.Parse("0.024570024")
-	if got := formatResult(&r); got != "0.024570024" {
-		t.Errorf("expected 0.024570024, got %q", got)
+	if got := formatResult(&r); got != "0.025" {
+		t.Errorf("expected 0.025, got %q", got)
 	}
 }
 
