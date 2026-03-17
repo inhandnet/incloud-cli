@@ -3,6 +3,9 @@ package iostreams
 import (
 	"encoding/json"
 	"fmt"
+
+	"github.com/tidwall/gjson"
+	"github.com/tidwall/sjson"
 )
 
 // TransformFunc converts raw API response bytes into a format suitable for FormatTable.
@@ -12,7 +15,8 @@ type TransformFunc func([]byte) ([]byte, error)
 type FormatOption func(*formatOptions)
 
 type formatOptions struct {
-	transform TransformFunc
+	transform  TransformFunc
+	formatters ColumnFormatters
 }
 
 // WithTransform sets a transform function applied before table rendering.
@@ -20,6 +24,14 @@ type formatOptions struct {
 func WithTransform(fn TransformFunc) FormatOption {
 	return func(o *formatOptions) {
 		o.transform = fn
+	}
+}
+
+// WithFormatters sets column formatters applied during table rendering.
+// Formatters are only used for table output; json/yaml always use the original body.
+func WithFormatters(fmts ColumnFormatters) FormatOption {
+	return func(o *formatOptions) {
+		o.formatters = fmts
 	}
 }
 
@@ -41,6 +53,9 @@ func FormatOutput(body []byte, io *IOStreams, output string, fields []string, op
 				return err
 			}
 		}
+		if len(o.formatters) > 0 {
+			data = applyFormatters(data, o.formatters)
+		}
 		return FormatTable(data, io, fields)
 	case "yaml":
 		s, err := FormatYAML(body)
@@ -56,6 +71,59 @@ func FormatOutput(body []byte, io *IOStreams, output string, fields []string, op
 		}
 	}
 	return nil
+}
+
+// applyFormatters rewrites JSON values in-place for columns that have formatters.
+// It handles both array (result is array of objects) and single object cases.
+func applyFormatters(data []byte, fmts ColumnFormatters) []byte {
+	raw := gjson.ParseBytes(data)
+
+	items := raw.Get("result")
+	if !items.Exists() {
+		items = raw
+	}
+
+	switch {
+	case items.IsArray():
+		arr := items.Array()
+		for i, item := range arr {
+			if !item.IsObject() {
+				continue
+			}
+			for col, fn := range fmts {
+				v := item.Get(col)
+				if !v.Exists() {
+					continue
+				}
+				path := fmt.Sprintf("result.%d.%s", i, col)
+				formatted := fn(formatResult(&v))
+				var err error
+				data, err = sjson.SetBytes(data, path, formatted)
+				if err != nil {
+					continue
+				}
+			}
+		}
+	case items.IsObject():
+		for col, fn := range fmts {
+			v := items.Get(col)
+			if !v.Exists() {
+				continue
+			}
+			path := "result." + col
+			if !raw.Get("result").Exists() {
+				path = col
+			}
+			formatted := fn(formatResult(&v))
+			var err error
+			data, err = sjson.SetBytes(data, path, formatted)
+			if err != nil {
+				continue
+			}
+		}
+	}
+
+	return data
 }
 
 // FlattenSeries converts a time-series API response (FluxResult) into a flat
