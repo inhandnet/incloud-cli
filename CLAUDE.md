@@ -11,6 +11,15 @@ make lint     # golangci-lint
 
 > 注意：macOS darwin/amd64 必须 `CGO_ENABLED=0`，否则会遇到 dyld LC_UUID 错误。
 
+### Lint
+
+修改 Go 代码后手动运行确保通过：
+
+```bash
+goimports -w -local github.com/inhandnet/incloud-cli <changed files>
+golangci-lint run ./...
+```
+
 ## 命令设计约定
 
 ### 时间参数
