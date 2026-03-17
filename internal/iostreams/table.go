@@ -4,7 +4,32 @@ import (
 	"fmt"
 	"io"
 	"strings"
+
+	"github.com/jedib0t/go-pretty/v6/table"
+	"github.com/jedib0t/go-pretty/v6/text"
 )
+
+// borderlessStyle is a clean style with no borders or separators,
+// matching the previous hand-written TablePrinter output:
+// two-space column padding, no lines between rows.
+var borderlessStyle = table.Style{
+	Name: "Borderless",
+	Box: table.BoxStyle{
+		PaddingLeft:  "",
+		PaddingRight: "  ",
+	},
+	Format: table.FormatOptions{
+		Header: text.FormatDefault, // callers already apply bold/uppercase
+		Row:    text.FormatDefault,
+	},
+	Options: table.Options{
+		DrawBorder:      false,
+		SeparateColumns: false,
+		SeparateHeader:  false,
+		SeparateRows:    false,
+		SeparateFooter:  false,
+	},
+}
 
 type TablePrinter struct {
 	out   io.Writer
@@ -41,29 +66,23 @@ func (t *TablePrinter) renderTSV() error {
 }
 
 func (t *TablePrinter) renderTable() error {
-	// calculate column widths
-	widths := make([]int, len(t.rows[0]))
-	for _, row := range t.rows {
-		for i, col := range row {
-			if i < len(widths) && len(col) > widths[i] {
-				widths[i] = len(col)
-			}
-		}
-	}
+	tw := table.NewWriter()
+	tw.SetStyle(borderlessStyle)
 
 	for _, row := range t.rows {
-		parts := make([]string, len(row))
+		tableRow := make(table.Row, len(row))
 		for i, col := range row {
-			if i < len(widths)-1 {
-				parts[i] = fmt.Sprintf("%-*s", widths[i], col)
-			} else {
-				parts[i] = col
-			}
+			tableRow[i] = col
 		}
-		_, err := fmt.Fprintln(t.out, strings.Join(parts, "  "))
-		if err != nil {
-			return err
-		}
+		tw.AppendRow(tableRow)
 	}
-	return nil
+
+	// Trim trailing whitespace from each line (go-pretty applies PaddingRight to all columns).
+	rendered := tw.Render()
+	lines := strings.Split(rendered, "\n")
+	for i, line := range lines {
+		lines[i] = strings.TrimRight(line, " ")
+	}
+	_, err := fmt.Fprintln(t.out, strings.Join(lines, "\n"))
+	return err
 }

@@ -2,6 +2,7 @@ package iostreams
 
 import (
 	"bytes"
+	"strings"
 	"testing"
 )
 
@@ -36,6 +37,41 @@ func TestTablePrinter_NonTTY(t *testing.T) {
 	// Non-TTY uses tab separator
 	if !contains(out, "NAME\tSTATUS") {
 		t.Errorf("expected tab-separated output, got: %s", out)
+	}
+}
+
+func TestTablePrinter_TTY_Unicode(t *testing.T) {
+	var buf bytes.Buffer
+	tp := NewTablePrinter(&buf, true)
+	tp.AddRow("NAME", "STATUS")
+	tp.AddRow("设备一号", "在线")
+	tp.AddRow("dev", "offline")
+	if err := tp.Render(); err != nil {
+		t.Fatal(err)
+	}
+	out := buf.String()
+	lines := strings.Split(strings.TrimSpace(out), "\n")
+	if len(lines) != 3 {
+		t.Fatalf("expected 3 lines, got %d:\n%s", len(lines), out)
+	}
+	// go-pretty uses runewidth for Unicode: "设备一号" is 8 display columns (4 CJK chars × 2).
+	// Verify all lines have the same display width (columns properly aligned).
+	if !strings.Contains(out, "设备一号") || !strings.Contains(out, "在线") {
+		t.Errorf("expected Chinese content in output, got:\n%s", out)
+	}
+	if !strings.Contains(out, "NAME") || !strings.Contains(out, "offline") {
+		t.Errorf("expected ASCII content in output, got:\n%s", out)
+	}
+}
+
+func TestTablePrinter_Empty(t *testing.T) {
+	var buf bytes.Buffer
+	tp := NewTablePrinter(&buf, true)
+	if err := tp.Render(); err != nil {
+		t.Fatal(err)
+	}
+	if buf.String() != "" {
+		t.Errorf("expected empty output for no rows, got: %q", buf.String())
 	}
 }
 
