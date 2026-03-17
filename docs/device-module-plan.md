@@ -41,7 +41,7 @@
 - [x] `device transfer <id> --org <oid>` — 转移设备到其他组织
 - [x] `device import <file>` — 批量导入（CSV/XLSX）
 - ~~`device properties <id>` — 查看 IoT 属性/状态~~
-- [ ] `device features <id>` — 查看设备特性标志
+- ~~`device features <id>` — 查看设备特性标志~~
 - [x] `device location <id>` — 查看/更新位置信息
 
 ### `incloud device group` — 设备组 (~14 端点)
@@ -58,25 +58,25 @@
 
 ## Phase 1b: 诊断工具 + 远程方法
 
-### `incloud device diag` — 诊断工具 (~13 端点)
+### `incloud device exec` — 诊断工具（已合并到 exec）
 
-- [ ] `device diag ping <id> --host <target>` — Ping 诊断
-- [ ] `device diag traceroute <id> --host <target>` — Traceroute
-- [ ] `device diag speedtest <id>` — 测速
-- [ ] `device diag speedtest history <id>` — 测速历史记录
-- [ ] `device diag capture <id> --interface <iface>` — 抓包 (tcpdump)
-- [ ] `device diag capture status <id>` — 查看抓包状态
-- [ ] `device diag flowscan <id>` — 流量扫描
-- [ ] `device diag flowscan status <id>` — 流量扫描状态
-- [ ] `device diag cancel <diagId>` — 取消诊断任务
-- [ ] `device diag interfaces <id>` — 列出可用网络接口
+- [x] `device exec ping <id> --host <target>` — Ping 诊断
+- [x] `device exec traceroute <id> --host <target>` — Traceroute
+- [x] `device exec speedtest <id>` — 测速
+- [x] `device exec speedtest-history <id>` — 测速历史记录
+- [x] `device exec capture <id> --interface <iface>` — 抓包 (tcpdump)
+- [x] `device exec capture-status <id>` — 查看抓包状态
+- [x] `device exec flowscan <id>` — 流量扫描
+- [x] `device exec flowscan-status <id>` — 流量扫描状态
+- [x] `device exec cancel <diagId>` — 取消诊断任务
+- [x] `device exec interfaces <id>` — 列出可用网络接口
 
 ### `incloud device exec` — 远程方法 (~3 端点)
 
-- [ ] `device exec <id> reboot` — 重启设备
-- [ ] `device exec <id> restore-defaults` — 恢复出厂设置
-- [ ] `device exec <id> <method> [--payload '{}']` — 调用自定义方法
-- [ ] `device exec --bulk <ids> <method>` — 批量执行方法
+- [x] `device exec <id> reboot` — 重启设备
+- [x] `device exec <id> restore-defaults` — 恢复出厂设置
+- [x] `device exec <id> <method> [--payload '{}']` — 调用自定义方法
+- [x] `device exec --bulk <ids> <method>` — 批量执行方法
 
 ## Phase 1c: 配置管理 + 日志
 
@@ -130,11 +130,11 @@
 
 ### Uplink 链路（后端：nezha-link）
 
-- [ ] `device uplink <id>` — 设备 Uplink 列表（`GET /api/v1/devices/{id}/uplinks`）
-- [ ] `device uplink list` — 全局 Uplink（`GET /api/v1/uplinks`，分页，`--device/--status/--type`）
-- [ ] `device uplink get <uplinkId>` — Uplink 详情（`GET /api/v1/uplinks/{id}`）
-- [ ] `device uplink perf <id> --name <name>` — Uplink 性能趋势（`GET /api/v1/devices/{id}/uplinks/perf-trend`，`--after/--before`）
-- [ ] `device uplink status` — Uplink 状态统计（`GET /api/v1/uplinks/status`）
+- [x] `device uplink <id>` — 设备 Uplink 列表（`GET /api/v1/devices/{id}/uplinks`）
+- ~~`device uplink list` — 全局 Uplink~~ — 不属于 device 模块，移至独立 uplink 模块
+- [x] `device uplink get <uplinkId>` — Uplink 详情（`GET /api/v1/uplinks/{id}`）
+- [x] `device uplink perf <id> --name <name>` — Uplink 性能趋势（`GET /api/v1/devices/{id}/uplinks/perf-trend`，`--after/--before`）
+- ~~`device uplink status` — Uplink 状态统计~~ — 全局接口，不属于 device 模块，移至独立 uplink 模块
 
 ### 在线状态（后端：nezha-iot）
 
