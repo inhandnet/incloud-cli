@@ -14,7 +14,6 @@ func NewCmdSignal(f *factory.Factory) *cobra.Command {
 	}
 
 	cmd.AddCommand(newCmdSignalList(f))
-	cmd.AddCommand(newCmdSignalCurrent(f))
 	cmd.AddCommand(newCmdSignalExport(f))
 
 	return cmd
