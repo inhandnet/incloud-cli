@@ -218,7 +218,7 @@ func TestFormatOutput_WithFormatters_Percent(t *testing.T) {
 	data := []byte(`{"result":[{"name":"dev1","cpu.usage":0.452}]}`)
 	io, buf := newTestIOWithBuf(false)
 	fmts := ColumnFormatters{
-		"cpu\\.usage": FormatPercent,
+		"cpu.usage": FormatPercent,
 	}
 	err := FormatOutput(data, io, "table", nil, WithFormatters(fmts))
 	if err != nil {

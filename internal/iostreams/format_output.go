@@ -3,9 +3,6 @@ package iostreams
 import (
 	"encoding/json"
 	"fmt"
-
-	"github.com/tidwall/gjson"
-	"github.com/tidwall/sjson"
 )
 
 // TransformFunc converts raw API response bytes into a format suitable for FormatTable.
@@ -73,57 +70,52 @@ func FormatOutput(body []byte, io *IOStreams, output string, fields []string, op
 	return nil
 }
 
-// applyFormatters rewrites JSON values in-place for columns that have formatters.
-// It handles both array (result is array of objects) and single object cases.
+// applyFormatters deserializes JSON, applies column formatters in memory,
+// and re-serializes once. Handles both array and single object results.
 func applyFormatters(data []byte, fmts ColumnFormatters) []byte {
-	raw := gjson.ParseBytes(data)
-
-	items := raw.Get("result")
-	if !items.Exists() {
-		items = raw
+	var raw map[string]interface{}
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return data
 	}
 
-	switch {
-	case items.IsArray():
-		arr := items.Array()
-		for i, item := range arr {
-			if !item.IsObject() {
-				continue
-			}
-			for col, fn := range fmts {
-				v := item.Get(col)
-				if !v.Exists() {
-					continue
-				}
-				path := fmt.Sprintf("result.%d.%s", i, col)
-				formatted := fn(formatResult(&v))
-				var err error
-				data, err = sjson.SetBytes(data, path, formatted)
-				if err != nil {
-					continue
-				}
-			}
+	result, hasEnvelope := raw["result"]
+	if !hasEnvelope {
+		// No envelope — treat entire object as the item
+		applyFormattersToObject(raw, fmts)
+		out, err := json.Marshal(raw)
+		if err != nil {
+			return data
 		}
-	case items.IsObject():
-		for col, fn := range fmts {
-			v := items.Get(col)
-			if !v.Exists() {
-				continue
-			}
-			path := "result." + col
-			if !raw.Get("result").Exists() {
-				path = col
-			}
-			formatted := fn(formatResult(&v))
-			var err error
-			data, err = sjson.SetBytes(data, path, formatted)
-			if err != nil {
-				continue
-			}
-		}
+		return out
 	}
 
-	return data
+	switch items := result.(type) {
+	case []interface{}:
+		for _, item := range items {
+			if obj, ok := item.(map[string]interface{}); ok {
+				applyFormattersToObject(obj, fmts)
+			}
+		}
+	case map[string]interface{}:
+		applyFormattersToObject(items, fmts)
+	}
+
+	out, err := json.Marshal(raw)
+	if err != nil {
+		return data
+	}
+	return out
+}
+
+// applyFormattersToObject applies formatters to matching keys in a flat object.
+func applyFormattersToObject(obj map[string]interface{}, fmts ColumnFormatters) {
+	for col, fn := range fmts {
+		v, ok := obj[col]
+		if !ok {
+			continue
+		}
+		obj[col] = fn(fmt.Sprint(v))
+	}
 }
 
 // FlattenSeries converts a time-series API response (FluxResult) into a flat
