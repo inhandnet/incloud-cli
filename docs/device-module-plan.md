@@ -35,7 +35,7 @@
 - [x] `device update <id>` — 更新设备属性（name/description/tags）
 - [x] `device delete <id>` — 删除设备
 - ~~`device summary` — 设备统计概览~~ → 迁移至 `overview devices`
-- [ ] `device export` — 导出设备列表为文件
+- [x] `device export` — 导出设备列表为文件
 - [ ] `device move <id> --group <gid>` — 移动设备到指定组
 - [ ] `device transfer <id> --org <oid>` — 转移设备到其他组织
 - [ ] `device import <file>` — 批量导入（CSV）
