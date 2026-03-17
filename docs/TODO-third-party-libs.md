@@ -79,15 +79,15 @@ jsonBoolRe   = regexp.MustCompile(`: (true|false|null)(,?)$`)
 **库**：`github.com/TylerBrock/colorjson`（star 700+，API 极简）
 
 **改动方案**：
-- [ ] 引入 `colorjson` 依赖
-- [ ] 重写 `colorizeJSON` 函数：
+- [x] 引入 `colorjson` 依赖
+- [x] 重写 `colorizeJSON` 函数：
   ```go
   f := colorjson.NewFormatter()
   f.Indent = 2
   // 配置颜色映射对应当前 termenv 色彩方案
   ```
-- [ ] 移除 4 个正则变量
-- [ ] 确认非 TTY 路径不受影响（`FormatJSON` 中非 TTY 走 `json.Compact`，不调用着色）
+- [x] 移除 4 个正则变量
+- [x] 确认非 TTY 路径不受影响（`FormatJSON` 中非 TTY 走 `json.Compact`，不调用着色）
 
 **预期收益**：修复转义字符和嵌套数组的着色问题；减少 ~40 行正则代码。
 

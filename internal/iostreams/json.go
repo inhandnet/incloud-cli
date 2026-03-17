@@ -3,11 +3,21 @@ package iostreams
 import (
 	"bytes"
 	"encoding/json"
-	"regexp"
-	"strings"
 
-	"github.com/muesli/termenv"
+	"github.com/tidwall/pretty"
 )
+
+// jsonStyle matches the original color scheme: bold keys, green strings,
+// yellow numbers, red booleans/null.
+var jsonStyle = &pretty.Style{
+	Key:    [2]string{"\x1b[1m", "\x1b[0m"},  // bold
+	String: [2]string{"\x1b[32m", "\x1b[0m"}, // green
+	Number: [2]string{"\x1b[33m", "\x1b[0m"}, // yellow
+	True:   [2]string{"\x1b[31m", "\x1b[0m"}, // red
+	False:  [2]string{"\x1b[31m", "\x1b[0m"}, // red
+	Null:   [2]string{"\x1b[31m", "\x1b[0m"}, // red
+	Escape: [2]string{"\x1b[35m", "\x1b[0m"}, // magenta
+}
 
 // FormatJSON formats JSON bytes based on TTY state and output mode.
 // - TTY default: colorized pretty-print
@@ -24,65 +34,19 @@ func FormatJSON(data []byte, io *IOStreams, outputMode string) string {
 		return buf.String()
 	}
 
-	// Pretty print for TTY
-	var buf bytes.Buffer
-	if err := json.Indent(&buf, data, "", "  "); err != nil {
-		return string(data)
-	}
-
 	if outputMode == "json" {
 		// Explicit -o json: pretty but no color
+		var buf bytes.Buffer
+		if err := json.Indent(&buf, data, "", "  "); err != nil {
+			return string(data)
+		}
 		return buf.String()
 	}
 
-	// Default TTY: colorized JSON
-	return colorizeJSON(buf.String(), io.TermOutput())
-}
-
-var (
-	jsonKeyRe    = regexp.MustCompile(`^(\s*)"([^"]+)":`)
-	jsonStringRe = regexp.MustCompile(`: "(.*)"(,?)$`)
-	jsonNumberRe = regexp.MustCompile(`: (-?\d+\.?\d*)(,?)$`)
-	jsonBoolRe   = regexp.MustCompile(`: (true|false|null)(,?)$`)
-)
-
-func colorizeJSON(s string, out *termenv.Output) string {
-	c := NewColorizer(out)
-	lines := strings.Split(s, "\n")
-	for i, line := range lines {
-		// Colorize keys
-		line = jsonKeyRe.ReplaceAllStringFunc(line, func(m string) string {
-			parts := jsonKeyRe.FindStringSubmatch(m)
-			if len(parts) >= 3 {
-				return parts[1] + c.Bold("\""+parts[2]+"\"") + ":"
-			}
-			return m
-		})
-		// Colorize string values
-		line = jsonStringRe.ReplaceAllStringFunc(line, func(m string) string {
-			parts := jsonStringRe.FindStringSubmatch(m)
-			if len(parts) >= 3 {
-				return ": " + c.Green("\""+parts[1]+"\"") + parts[2]
-			}
-			return m
-		})
-		// Colorize number values
-		line = jsonNumberRe.ReplaceAllStringFunc(line, func(m string) string {
-			parts := jsonNumberRe.FindStringSubmatch(m)
-			if len(parts) >= 3 {
-				return ": " + c.Yellow(parts[1]) + parts[2]
-			}
-			return m
-		})
-		// Colorize bool/null values
-		line = jsonBoolRe.ReplaceAllStringFunc(line, func(m string) string {
-			parts := jsonBoolRe.FindStringSubmatch(m)
-			if len(parts) >= 3 {
-				return ": " + c.Red(parts[1]) + parts[2]
-			}
-			return m
-		})
-		lines[i] = line
+	// Default TTY: pretty-print + colorize
+	if !json.Valid(data) {
+		return string(data)
 	}
-	return strings.Join(lines, "\n")
+	result := pretty.Pretty(data)
+	return string(pretty.Color(result, jsonStyle))
 }
