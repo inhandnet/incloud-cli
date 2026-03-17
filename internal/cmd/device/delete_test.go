@@ -100,7 +100,7 @@ func TestDeleteDevice_HTTPError(t *testing.T) {
 	}))
 	defer server.Close()
 
-	f, errBuf := newTestFactory(t, server.URL)
+	f, _ := newTestFactory(t, server.URL)
 
 	cmd := NewCmdDelete(f)
 	cmd.SetArgs([]string{"notfound", "--yes"})
@@ -111,8 +111,8 @@ func TestDeleteDevice_HTTPError(t *testing.T) {
 	if !strings.Contains(err.Error(), "404") {
 		t.Errorf("expected 404 in error, got: %v", err)
 	}
-	if !strings.Contains(errBuf.String(), "device not found") {
-		t.Errorf("expected error body in output, got: %s", errBuf.String())
+	if !strings.Contains(err.Error(), "device not found") {
+		t.Errorf("expected error body in error message, got: %v", err)
 	}
 }
 

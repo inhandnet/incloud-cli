@@ -1,16 +1,13 @@
 package device
 
 import (
-	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
 	"strings"
 
 	"github.com/spf13/cobra"
 
+	"github.com/inhandnet/incloud-cli/internal/api"
 	"github.com/inhandnet/incloud-cli/internal/factory"
 )
 
@@ -37,16 +34,7 @@ is used and the request is processed asynchronously.`,
 			idsArg := args[0]
 			method := args[1]
 
-			cfg, err := f.Config()
-			if err != nil {
-				return err
-			}
-			actx, err := cfg.ActiveContext()
-			if err != nil {
-				return err
-			}
-
-			client, err := f.HttpClient()
+			client, err := f.APIClient()
 			if err != nil {
 				return err
 			}
@@ -60,9 +48,9 @@ is used and the request is processed asynchronously.`,
 
 			ids := strings.Split(idsArg, ",")
 			if len(ids) > 1 {
-				return bulkInvokeMethod(cmd, f, client, actx.Host, ids, method, payloadObj)
+				return bulkInvokeMethod(cmd, f, client, ids, method, payloadObj)
 			}
-			return invokeMethod(cmd, f, client, actx.Host, ids[0], method, timeout, payloadObj)
+			return invokeMethod(cmd, f, client, ids[0], method, timeout, payloadObj)
 		},
 	}
 
@@ -72,7 +60,7 @@ is used and the request is processed asynchronously.`,
 	return cmd
 }
 
-func invokeMethod(cmd *cobra.Command, f *factory.Factory, client *http.Client, host, id, method string, timeout int, payload interface{}) error {
+func invokeMethod(cmd *cobra.Command, f *factory.Factory, client *api.APIClient, id, method string, timeout int, payload interface{}) error {
 	body := map[string]interface{}{
 		"method":  method,
 		"timeout": timeout,
@@ -81,40 +69,15 @@ func invokeMethod(cmd *cobra.Command, f *factory.Factory, client *http.Client, h
 		body["payload"] = payload
 	}
 
-	jsonBytes, err := json.Marshal(body)
-	if err != nil {
-		return fmt.Errorf("encoding request body: %w", err)
-	}
-
-	reqURL := host + "/api/v1/devices/" + id + "/methods"
-	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, reqURL, bytes.NewReader(jsonBytes))
+	respBody, err := client.Post("/api/v1/devices/"+id+"/methods", body)
 	if err != nil {
 		return err
 	}
-	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := client.Do(req)
-	if err != nil {
-		return fmt.Errorf("request failed: %w", err)
-	}
-	defer resp.Body.Close()
-
-	respBody, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return fmt.Errorf("reading response: %w", err)
-	}
-
-	if err := formatOutput(cmd, f.IO, respBody, nil); err != nil {
-		return err
-	}
-
-	if resp.StatusCode >= 400 {
-		return fmt.Errorf("HTTP %d", resp.StatusCode)
-	}
-	return nil
+	return formatOutput(cmd, f.IO, respBody, nil)
 }
 
-func bulkInvokeMethod(cmd *cobra.Command, f *factory.Factory, client *http.Client, host string, ids []string, method string, payload interface{}) error {
+func bulkInvokeMethod(cmd *cobra.Command, f *factory.Factory, client *api.APIClient, ids []string, method string, payload interface{}) error {
 	body := map[string]interface{}{
 		"deviceIds": ids,
 		"method":    method,
@@ -123,32 +86,9 @@ func bulkInvokeMethod(cmd *cobra.Command, f *factory.Factory, client *http.Clien
 		body["payload"] = payload
 	}
 
-	jsonBytes, err := json.Marshal(body)
-	if err != nil {
-		return fmt.Errorf("encoding request body: %w", err)
-	}
-
-	reqURL := host + "/api/v1/devices/bulk-invoke-methods"
-	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, reqURL, bytes.NewReader(jsonBytes))
+	_, err := client.Post("/api/v1/devices/bulk-invoke-methods", body)
 	if err != nil {
 		return err
-	}
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return fmt.Errorf("request failed: %w", err)
-	}
-	defer resp.Body.Close()
-
-	respBody, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return fmt.Errorf("reading response: %w", err)
-	}
-
-	if resp.StatusCode >= 400 {
-		fmt.Fprintln(f.IO.ErrOut, string(respBody))
-		return fmt.Errorf("HTTP %d", resp.StatusCode)
 	}
 
 	fmt.Fprintf(f.IO.ErrOut, "Method %s submitted for %d device(s).\n", method, len(ids))

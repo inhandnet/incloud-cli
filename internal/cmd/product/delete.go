@@ -2,10 +2,8 @@ package product
 
 import (
 	"bufio"
-	"context"
 	"fmt"
 	"io"
-	"net/http"
 	"os"
 	"strings"
 
@@ -45,43 +43,18 @@ func NewCmdDelete(f *factory.Factory) *cobra.Command {
 				}
 			}
 
-			cfg, err := f.Config()
-			if err != nil {
-				return err
-			}
-			ctx, err := cfg.ActiveContext()
+			client, err := f.APIClient()
 			if err != nil {
 				return err
 			}
 
-			client, err := f.HttpClient()
+			_, err = client.Delete("/api/v1/products/" + id)
 			if err != nil {
 				return err
 			}
 
-			reqURL := ctx.Host + "/api/v1/products/" + id
-			req, err := http.NewRequestWithContext(context.Background(), http.MethodDelete, reqURL, http.NoBody)
-			if err != nil {
-				return err
-			}
-
-			resp, err := client.Do(req)
-			if err != nil {
-				return fmt.Errorf("request failed: %w", err)
-			}
-			defer resp.Body.Close()
-
-			if resp.StatusCode == http.StatusNoContent {
-				fmt.Fprintf(f.IO.ErrOut, "Product %s deleted.\n", id)
-				return nil
-			}
-
-			body, err := io.ReadAll(resp.Body)
-			if err != nil {
-				return fmt.Errorf("reading response: %w", err)
-			}
-			fmt.Fprintln(f.IO.ErrOut, string(body))
-			return fmt.Errorf("HTTP %d", resp.StatusCode)
+			fmt.Fprintf(f.IO.ErrOut, "Product %s deleted.\n", id)
+			return nil
 		},
 	}
 

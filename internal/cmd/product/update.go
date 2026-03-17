@@ -1,12 +1,7 @@
 package product
 
 import (
-	"bytes"
-	"context"
-	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
 
 	"github.com/spf13/cobra"
 
@@ -45,16 +40,7 @@ func NewCmdUpdate(f *factory.Factory) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			opts.ID = args[0]
 
-			cfg, err := f.Config()
-			if err != nil {
-				return err
-			}
-			actx, err := cfg.ActiveContext()
-			if err != nil {
-				return err
-			}
-
-			client, err := f.HttpClient()
+			client, err := f.APIClient()
 			if err != nil {
 				return err
 			}
@@ -89,38 +75,17 @@ func NewCmdUpdate(f *factory.Factory) *cobra.Command {
 				return fmt.Errorf("no fields to update; specify at least one of --description, --status, --validated-field, --label, or --metadata")
 			}
 
-			jsonBytes, err := json.Marshal(body)
+			respBody, err := client.Put("/api/v1/products/"+opts.ID, body)
 			if err != nil {
-				return fmt.Errorf("encoding request body: %w", err)
-			}
-
-			reqURL := actx.Host + "/api/v1/products/" + opts.ID
-			req, err := http.NewRequestWithContext(context.Background(), http.MethodPut, reqURL, bytes.NewReader(jsonBytes))
-			if err != nil {
+				output, _ := cmd.Flags().GetString("output")
+				if respBody != nil {
+					_ = iostreams.FormatOutput(respBody, f.IO, output, nil)
+				}
 				return err
-			}
-			req.Header.Set("Content-Type", "application/json")
-
-			resp, err := client.Do(req)
-			if err != nil {
-				return fmt.Errorf("request failed: %w", err)
-			}
-			defer resp.Body.Close()
-
-			respBody, err := io.ReadAll(resp.Body)
-			if err != nil {
-				return fmt.Errorf("reading response: %w", err)
 			}
 
 			output, _ := cmd.Flags().GetString("output")
-			if err := iostreams.FormatOutput(respBody, f.IO, output, nil); err != nil {
-				return err
-			}
-
-			if resp.StatusCode >= 400 {
-				return fmt.Errorf("HTTP %d", resp.StatusCode)
-			}
-			return nil
+			return iostreams.FormatOutput(respBody, f.IO, output, nil)
 		},
 	}
 

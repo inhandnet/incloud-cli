@@ -1,11 +1,6 @@
 package device
 
 import (
-	"context"
-	"fmt"
-	"io"
-	"net/http"
-
 	"github.com/spf13/cobra"
 
 	"github.com/inhandnet/incloud-cli/internal/factory"
@@ -38,39 +33,14 @@ func NewCmdUplink(f *factory.Factory) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			deviceID := args[0]
 
-			cfg, err := f.Config()
-			if err != nil {
-				return err
-			}
-			actx, err := cfg.ActiveContext()
+			client, err := f.APIClient()
 			if err != nil {
 				return err
 			}
 
-			client, err := f.HttpClient()
+			body, err := client.Get("/api/v1/devices/"+deviceID+"/uplinks", nil)
 			if err != nil {
 				return err
-			}
-
-			reqURL := actx.Host + "/api/v1/devices/" + deviceID + "/uplinks"
-			req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, reqURL, http.NoBody)
-			if err != nil {
-				return fmt.Errorf("building request: %w", err)
-			}
-
-			resp, err := client.Do(req)
-			if err != nil {
-				return fmt.Errorf("request failed: %w", err)
-			}
-			defer resp.Body.Close()
-
-			body, err := io.ReadAll(resp.Body)
-			if err != nil {
-				return fmt.Errorf("reading response: %w", err)
-			}
-
-			if resp.StatusCode >= 400 {
-				return fmt.Errorf("HTTP %d: %s", resp.StatusCode, string(body))
 			}
 
 			output, _ := cmd.Flags().GetString("output")

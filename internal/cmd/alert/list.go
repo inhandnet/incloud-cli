@@ -1,11 +1,8 @@
 package alert
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
@@ -82,26 +79,12 @@ func NewCmdList(f *factory.Factory) *cobra.Command {
   # Count active alerts for a device
   incloud alert list --status ACTIVE --device 507f1f77bcf86cd799439011 --count`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg, err := f.Config()
-			if err != nil {
-				return err
-			}
-			ctx, err := cfg.ActiveContext()
+			client, err := f.APIClient()
 			if err != nil {
 				return err
 			}
 
-			client, err := f.HttpClient()
-			if err != nil {
-				return err
-			}
-
-			u, err := url.Parse(ctx.Host + "/api/v1/alerts")
-			if err != nil {
-				return fmt.Errorf("invalid URL: %w", err)
-			}
-
-			q := u.Query()
+			q := make(url.Values)
 			if opts.Count {
 				q.Set("page", "0")
 				q.Set("limit", "1")
@@ -126,26 +109,10 @@ func NewCmdList(f *factory.Factory) *cobra.Command {
 			if len(fields) > 0 {
 				q.Set("fields", strings.Join(fields, ","))
 			}
-			u.RawQuery = q.Encode()
 
-			req, err := http.NewRequestWithContext(context.Background(), "GET", u.String(), http.NoBody)
+			body, err := client.Get("/api/v1/alerts", q)
 			if err != nil {
-				return fmt.Errorf("building request: %w", err)
-			}
-
-			resp, err := client.Do(req)
-			if err != nil {
-				return fmt.Errorf("request failed: %w", err)
-			}
-			defer resp.Body.Close()
-
-			body, err := io.ReadAll(resp.Body)
-			if err != nil {
-				return fmt.Errorf("reading response: %w", err)
-			}
-
-			if resp.StatusCode >= 400 {
-				return fmt.Errorf("HTTP %d: %s", resp.StatusCode, string(body))
+				return err
 			}
 
 			if opts.Count {

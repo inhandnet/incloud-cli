@@ -1,18 +1,15 @@
 package api
 
 import (
-	"bytes"
-	"context"
-	"encoding/json"
 	"fmt"
 	"io"
-	"net/http"
 	"net/url"
 	"os"
 	"strings"
 
 	"github.com/spf13/cobra"
 
+	inapi "github.com/inhandnet/incloud-cli/internal/api"
 	"github.com/inhandnet/incloud-cli/internal/factory"
 	"github.com/inhandnet/incloud-cli/internal/iostreams"
 )
@@ -25,7 +22,6 @@ type ApiOptions struct {
 	Headers     []string
 	InputFile   string
 	Columns     []string
-	Host        string
 }
 
 func NewCmdApi(f *factory.Factory) *cobra.Command {
@@ -65,45 +61,28 @@ Authorization header is automatically injected.`,
 			}
 			opts.Method = strings.ToUpper(opts.Method)
 
-			cfg, err := f.Config()
-			if err != nil {
-				return err
-			}
-			ctx, err := cfg.ActiveContext()
-			if err != nil {
-				return err
-			}
-			opts.Host = ctx.Host
-
-			client, err := f.HttpClient()
+			client, err := f.APIClient()
 			if err != nil {
 				return err
 			}
 
-			req, err := buildRequest(opts)
+			reqOpts, err := buildRequestOptions(opts)
 			if err != nil {
 				return err
 			}
 
-			resp, err := client.Do(req)
-			if err != nil {
-				return fmt.Errorf("request failed: %w", err)
-			}
-			defer resp.Body.Close()
-
-			body, err := io.ReadAll(resp.Body)
-			if err != nil {
-				return fmt.Errorf("reading response: %w", err)
-			}
+			body, err := client.Do(opts.Method, opts.Path, reqOpts)
 
 			// Format output based on TTY and -o flag
 			output, _ := cmd.Flags().GetString("output")
-			if err := iostreams.FormatOutput(body, f.IO, output, opts.Columns); err != nil {
-				return err
+			if body != nil {
+				if fmtErr := iostreams.FormatOutput(body, f.IO, output, opts.Columns); fmtErr != nil {
+					return fmtErr
+				}
 			}
 
-			if resp.StatusCode >= 400 {
-				return fmt.Errorf("HTTP %d", resp.StatusCode)
+			if err != nil {
+				return err
 			}
 			return nil
 		},
@@ -119,20 +98,12 @@ Authorization header is automatically injected.`,
 	return cmd
 }
 
-func buildRequest(opts *ApiOptions) (*http.Request, error) {
-	method := opts.Method
-	if method == "" {
-		method = "GET"
-	}
-
-	u, err := url.Parse(opts.Host + opts.Path)
-	if err != nil {
-		return nil, fmt.Errorf("invalid URL: %w", err)
-	}
+func buildRequestOptions(opts *ApiOptions) (*inapi.RequestOptions, error) {
+	reqOpts := &inapi.RequestOptions{}
 
 	// query params
 	if len(opts.QueryParams) > 0 {
-		q := u.Query()
+		q := make(url.Values)
 		for _, param := range opts.QueryParams {
 			parts := strings.SplitN(param, "=", 2)
 			if len(parts) != 2 {
@@ -140,11 +111,10 @@ func buildRequest(opts *ApiOptions) (*http.Request, error) {
 			}
 			q.Set(parts[0], parts[1])
 		}
-		u.RawQuery = q.Encode()
+		reqOpts.Query = q
 	}
 
 	// body
-	var body io.Reader
 	if len(opts.BodyFields) > 0 {
 		data := make(map[string]interface{})
 		for _, field := range opts.BodyFields {
@@ -154,40 +124,34 @@ func buildRequest(opts *ApiOptions) (*http.Request, error) {
 			}
 			data[parts[0]] = parts[1]
 		}
-		jsonBytes, err := json.Marshal(data)
-		if err != nil {
-			return nil, err
-		}
-		body = bytes.NewReader(jsonBytes)
+		reqOpts.Body = data
 	} else if opts.InputFile != "" {
+		var reader io.Reader
 		if opts.InputFile == "-" {
-			body = os.Stdin
+			reader = os.Stdin
 		} else {
 			f, err := os.Open(opts.InputFile)
 			if err != nil {
 				return nil, err
 			}
-			body = f
+			reader = f
 		}
-	}
-
-	req, err := http.NewRequestWithContext(context.Background(), method, u.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	if body != nil {
-		req.Header.Set("Content-Type", "application/json")
+		reqOpts.RawBody = reader
+		reqOpts.ContentType = "application/json"
 	}
 
 	// custom headers
-	for _, h := range opts.Headers {
-		parts := strings.SplitN(h, ":", 2)
-		if len(parts) != 2 {
-			return nil, fmt.Errorf("invalid header: %s (expected Key: Value)", h)
+	if len(opts.Headers) > 0 {
+		headers := make(map[string]string)
+		for _, h := range opts.Headers {
+			parts := strings.SplitN(h, ":", 2)
+			if len(parts) != 2 {
+				return nil, fmt.Errorf("invalid header: %s (expected Key: Value)", h)
+			}
+			headers[strings.TrimSpace(parts[0])] = strings.TrimSpace(parts[1])
 		}
-		req.Header.Set(strings.TrimSpace(parts[0]), strings.TrimSpace(parts[1]))
+		reqOpts.Headers = headers
 	}
 
-	return req, nil
+	return reqOpts, nil
 }

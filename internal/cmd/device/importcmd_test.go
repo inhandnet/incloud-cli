@@ -13,6 +13,8 @@ import (
 	"testing"
 
 	"github.com/xuri/excelize/v2"
+
+	"github.com/inhandnet/incloud-cli/internal/api"
 )
 
 func TestCsvToXLSX(t *testing.T) {
@@ -393,7 +395,7 @@ func TestImport_WaitForValidation_CheckingThenReady(t *testing.T) {
 	}))
 	defer server.Close()
 
-	job, err := waitForValidation(server.Client(), server.URL, "jobchk")
+	job, err := waitForValidation(api.NewAPIClient(server.URL, server.Client().Transport), "jobchk")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -413,7 +415,7 @@ func TestImport_WaitForValidation_CheckFail(t *testing.T) {
 	}))
 	defer server.Close()
 
-	job, err := waitForValidation(server.Client(), server.URL, "jobchkf")
+	job, err := waitForValidation(api.NewAPIClient(server.URL, server.Client().Transport), "jobchkf")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -433,7 +435,7 @@ func TestImport_WaitForValidation_ImmediateInit(t *testing.T) {
 	}))
 	defer server.Close()
 
-	job, err := waitForValidation(server.Client(), server.URL, "jobinit")
+	job, err := waitForValidation(api.NewAPIClient(server.URL, server.Client().Transport), "jobinit")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

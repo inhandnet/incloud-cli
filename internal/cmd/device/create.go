@@ -1,12 +1,7 @@
 package device
 
 import (
-	"bytes"
-	"context"
-	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -44,16 +39,7 @@ func NewCmdCreate(f *factory.Factory) *cobra.Command {
   incloud device create --name "My Router" --sn "SN12345" --label env=prod --label region=us
   incloud device create --name "My Router" --sn "SN12345" --metadata key1=val1`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg, err := f.Config()
-			if err != nil {
-				return err
-			}
-			ctx, err := cfg.ActiveContext()
-			if err != nil {
-				return err
-			}
-
-			client, err := f.HttpClient()
+			client, err := f.APIClient()
 			if err != nil {
 				return err
 			}
@@ -92,37 +78,12 @@ func NewCmdCreate(f *factory.Factory) *cobra.Command {
 				body["metadata"] = meta
 			}
 
-			jsonBytes, err := json.Marshal(body)
-			if err != nil {
-				return fmt.Errorf("encoding request body: %w", err)
-			}
-
-			reqURL := ctx.Host + "/api/v1/devices"
-			req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, reqURL, bytes.NewReader(jsonBytes))
+			respBody, err := client.Post("/api/v1/devices", body)
 			if err != nil {
 				return err
 			}
-			req.Header.Set("Content-Type", "application/json")
 
-			resp, err := client.Do(req)
-			if err != nil {
-				return fmt.Errorf("request failed: %w", err)
-			}
-			defer resp.Body.Close()
-
-			respBody, err := io.ReadAll(resp.Body)
-			if err != nil {
-				return fmt.Errorf("reading response: %w", err)
-			}
-
-			if err := formatOutput(cmd, f.IO, respBody, nil); err != nil {
-				return err
-			}
-
-			if resp.StatusCode >= 400 {
-				return fmt.Errorf("HTTP %d", resp.StatusCode)
-			}
-			return nil
+			return formatOutput(cmd, f.IO, respBody, nil)
 		},
 	}
 

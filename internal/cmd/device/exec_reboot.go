@@ -38,25 +38,16 @@ func NewCmdExecReboot(f *factory.Factory) *cobra.Command {
 				}
 			}
 
-			cfg, err := f.Config()
-			if err != nil {
-				return err
-			}
-			actx, err := cfg.ActiveContext()
-			if err != nil {
-				return err
-			}
-
-			client, err := f.HttpClient()
+			client, err := f.APIClient()
 			if err != nil {
 				return err
 			}
 
 			ids := strings.Split(idsArg, ",")
 			if len(ids) > 1 {
-				return bulkInvokeMethod(cmd, f, client, actx.Host, ids, "nezha_reboot", nil)
+				return bulkInvokeMethod(cmd, f, client, ids, "nezha_reboot", nil)
 			}
-			return invokeMethod(cmd, f, client, actx.Host, ids[0], "nezha_reboot", 30, nil)
+			return invokeMethod(cmd, f, client, ids[0], "nezha_reboot", 30, nil)
 		},
 	}
 

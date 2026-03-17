@@ -1,12 +1,7 @@
 package alert
 
 import (
-	"bytes"
-	"context"
-	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
 
 	"github.com/spf13/cobra"
 
@@ -26,73 +21,22 @@ func NewCmdRuleDelete(f *factory.Factory) *cobra.Command {
 		Aliases: []string{"rm"},
 		Args:    cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg, err := f.Config()
-			if err != nil {
-				return err
-			}
-			ctx, err := cfg.ActiveContext()
-			if err != nil {
-				return err
-			}
-
-			client, err := f.HttpClient()
+			client, err := f.APIClient()
 			if err != nil {
 				return err
 			}
 
 			if len(args) == 1 {
-				reqURL := ctx.Host + "/api/v1/alerts/rules/" + args[0]
-				req, err := http.NewRequestWithContext(context.Background(), http.MethodDelete, reqURL, http.NoBody)
-				if err != nil {
-					return fmt.Errorf("building request: %w", err)
+				if _, err := client.Delete("/api/v1/alerts/rules/" + args[0]); err != nil {
+					return err
 				}
-
-				resp, err := client.Do(req)
-				if err != nil {
-					return fmt.Errorf("request failed: %w", err)
-				}
-				defer resp.Body.Close()
-
-				body, err := io.ReadAll(resp.Body)
-				if err != nil {
-					return fmt.Errorf("reading response: %w", err)
-				}
-
-				if resp.StatusCode >= 400 {
-					return fmt.Errorf("HTTP %d: %s", resp.StatusCode, string(body))
-				}
-
 				fmt.Fprintf(f.IO.ErrOut, "Deleted alert rule %s.\n", args[0])
 			} else {
-				bodyBytes, err := json.Marshal(map[string]any{
+				if _, err := client.Post("/api/v1/alerts/rules/bulk-delete", map[string]any{
 					"ids": args,
-				})
-				if err != nil {
-					return fmt.Errorf("marshaling request body: %w", err)
+				}); err != nil {
+					return err
 				}
-
-				reqURL := ctx.Host + "/api/v1/alerts/rules/bulk-delete"
-				req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, reqURL, bytes.NewReader(bodyBytes))
-				if err != nil {
-					return fmt.Errorf("building request: %w", err)
-				}
-				req.Header.Set("Content-Type", "application/json")
-
-				resp, err := client.Do(req)
-				if err != nil {
-					return fmt.Errorf("request failed: %w", err)
-				}
-				defer resp.Body.Close()
-
-				body, err := io.ReadAll(resp.Body)
-				if err != nil {
-					return fmt.Errorf("reading response: %w", err)
-				}
-
-				if resp.StatusCode >= 400 {
-					return fmt.Errorf("HTTP %d: %s", resp.StatusCode, string(body))
-				}
-
 				fmt.Fprintf(f.IO.ErrOut, "Deleted %d alert rule(s).\n", len(args))
 			}
 

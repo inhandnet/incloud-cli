@@ -2,13 +2,10 @@ package device
 
 import (
 	"bufio"
-	"context"
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
 	"io"
-	"mime/multipart"
-	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -18,6 +15,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/xuri/excelize/v2"
 
+	"github.com/inhandnet/incloud-cli/internal/api"
 	"github.com/inhandnet/incloud-cli/internal/factory"
 )
 
@@ -70,15 +68,7 @@ waits for the import to complete and displays the result.`,
 }
 
 func runImport(f *factory.Factory, opts *ImportOptions, filePath string) error {
-	cfg, err := f.Config()
-	if err != nil {
-		return err
-	}
-	ctx, err := cfg.ActiveContext()
-	if err != nil {
-		return err
-	}
-	client, err := f.HttpClient()
+	client, err := f.APIClient()
 	if err != nil {
 		return err
 	}
@@ -106,13 +96,13 @@ func runImport(f *factory.Factory, opts *ImportOptions, filePath string) error {
 
 	// Step 1: Upload file
 	fmt.Fprintf(f.IO.ErrOut, "Uploading %s...\n", filepath.Base(filePath))
-	jobID, err := uploadImportFile(client, ctx.Host, uploadPath)
+	jobID, err := uploadImportFile(client, uploadPath)
 	if err != nil {
 		return err
 	}
 
 	// Step 2: Wait for file validation to complete, then show parsed result
-	job, err := waitForValidation(client, ctx.Host, jobID)
+	job, err := waitForValidation(client, jobID)
 	if err != nil {
 		return err
 	}
@@ -156,7 +146,7 @@ func runImport(f *factory.Factory, opts *ImportOptions, filePath string) error {
 
 	// Step 4: Confirm import
 	fmt.Fprintf(f.IO.ErrOut, "Starting import...\n")
-	if err := confirmImport(client, ctx.Host, jobID); err != nil {
+	if err := confirmImport(client, jobID); err != nil {
 		return err
 	}
 
@@ -166,7 +156,7 @@ func runImport(f *factory.Factory, opts *ImportOptions, filePath string) error {
 	}
 
 	// Step 5: Poll for completion
-	job, err = pollImportJob(f, client, ctx.Host, jobID)
+	job, err = pollImportJob(f, client, jobID)
 	if err != nil {
 		return err
 	}
@@ -225,49 +215,16 @@ func csvToXLSX(csvPath string) (string, error) {
 }
 
 // uploadImportFile uploads the file via multipart POST and returns the job ID.
-func uploadImportFile(client *http.Client, host, filePath string) (string, error) {
+func uploadImportFile(client *api.APIClient, filePath string) (string, error) {
 	file, err := os.Open(filePath)
 	if err != nil {
 		return "", fmt.Errorf("opening file: %w", err)
 	}
 	defer func() { _ = file.Close() }()
 
-	pr, pw := io.Pipe()
-	writer := multipart.NewWriter(pw)
-
-	go func() {
-		part, err := writer.CreateFormFile("file", filepath.Base(filePath))
-		if err != nil {
-			pw.CloseWithError(err)
-			return
-		}
-		if _, err := io.Copy(part, file); err != nil {
-			pw.CloseWithError(err)
-			return
-		}
-		pw.CloseWithError(writer.Close())
-	}()
-
-	reqURL := host + "/api/v1/devices/imports"
-	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, reqURL, pr)
-	if err != nil {
-		return "", fmt.Errorf("building request: %w", err)
-	}
-	req.Header.Set("Content-Type", writer.FormDataContentType())
-
-	resp, err := client.Do(req)
+	body, err := client.Upload("/api/v1/devices/imports", "file", filepath.Base(filePath), file)
 	if err != nil {
 		return "", fmt.Errorf("upload failed: %w", err)
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return "", fmt.Errorf("reading response: %w", err)
-	}
-
-	if resp.StatusCode >= 400 {
-		return "", fmt.Errorf("upload failed (HTTP %d): %s", resp.StatusCode, string(body))
 	}
 
 	var result struct {
@@ -295,26 +252,10 @@ type importJob struct {
 	UserName  string           `json:"userName,omitempty"`
 }
 
-func getImportJobDetail(client *http.Client, host, jobID string) (*importJob, error) {
-	reqURL := host + "/api/v1/devices/imports/" + jobID + "/detail"
-	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, reqURL, http.NoBody)
+func getImportJobDetail(client *api.APIClient, jobID string) (*importJob, error) {
+	body, err := client.Get("/api/v1/devices/imports/"+jobID+"/detail", nil)
 	if err != nil {
-		return nil, fmt.Errorf("building request: %w", err)
-	}
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("request failed: %w", err)
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("reading response: %w", err)
-	}
-
-	if resp.StatusCode >= 400 {
-		return nil, fmt.Errorf("HTTP %d: %s", resp.StatusCode, string(body))
+		return nil, err
 	}
 
 	var result struct {
@@ -327,29 +268,9 @@ func getImportJobDetail(client *http.Client, host, jobID string) (*importJob, er
 	return &result.Result, nil
 }
 
-func confirmImport(client *http.Client, host, jobID string) error {
-	reqURL := host + "/api/v1/devices/imports/" + jobID
-	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, reqURL, http.NoBody)
-	if err != nil {
-		return fmt.Errorf("building request: %w", err)
-	}
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return fmt.Errorf("confirm failed: %w", err)
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return fmt.Errorf("reading response: %w", err)
-	}
-
-	if resp.StatusCode >= 400 {
-		return fmt.Errorf("confirm failed (HTTP %d): %s", resp.StatusCode, string(body))
-	}
-
-	return nil
+func confirmImport(client *api.APIClient, jobID string) error {
+	_, err := client.Post("/api/v1/devices/imports/"+jobID, nil)
+	return err
 }
 
 // isTerminalStatus returns true if the import job has reached a final state.
@@ -364,11 +285,11 @@ func isTerminalStatus(status string) bool {
 // waitForValidation polls until the job exits the "checking" state.
 // The upload handler parses the file synchronously, so "init" means ready.
 // Only "checking" requires waiting (rare, for large files with async validation).
-func waitForValidation(client *http.Client, host, jobID string) (*importJob, error) {
+func waitForValidation(client *api.APIClient, jobID string) (*importJob, error) {
 	timeout := time.After(2 * time.Minute)
 
 	for {
-		job, err := getImportJobDetail(client, host, jobID)
+		job, err := getImportJobDetail(client, jobID)
 		if err != nil {
 			return nil, err
 		}
@@ -385,11 +306,11 @@ func waitForValidation(client *http.Client, host, jobID string) (*importJob, err
 	}
 }
 
-func pollImportJob(f *factory.Factory, client *http.Client, host, jobID string) (*importJob, error) {
+func pollImportJob(f *factory.Factory, client *api.APIClient, jobID string) (*importJob, error) {
 	timeout := time.After(10 * time.Minute)
 
 	for {
-		job, err := getImportJobDetail(client, host, jobID)
+		job, err := getImportJobDetail(client, jobID)
 		if err != nil {
 			return nil, err
 		}

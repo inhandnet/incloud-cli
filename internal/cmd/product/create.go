@@ -1,12 +1,7 @@
 package product
 
 import (
-	"bytes"
-	"context"
-	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -40,16 +35,7 @@ func NewCmdCreate(f *factory.Factory) *cobra.Command {
   # With description and labels
   incloud product create --name IR615 --type router --description "Edge router" --label env=prod`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg, err := f.Config()
-			if err != nil {
-				return err
-			}
-			ctx, err := cfg.ActiveContext()
-			if err != nil {
-				return err
-			}
-
-			client, err := f.HttpClient()
+			client, err := f.APIClient()
 			if err != nil {
 				return err
 			}
@@ -77,38 +63,17 @@ func NewCmdCreate(f *factory.Factory) *cobra.Command {
 				body["metadata"] = meta
 			}
 
-			jsonBytes, err := json.Marshal(body)
+			respBody, err := client.Post("/api/v1/products", body)
 			if err != nil {
-				return fmt.Errorf("encoding request body: %w", err)
-			}
-
-			reqURL := ctx.Host + "/api/v1/products"
-			req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, reqURL, bytes.NewReader(jsonBytes))
-			if err != nil {
+				output, _ := cmd.Flags().GetString("output")
+				if respBody != nil {
+					_ = iostreams.FormatOutput(respBody, f.IO, output, nil)
+				}
 				return err
-			}
-			req.Header.Set("Content-Type", "application/json")
-
-			resp, err := client.Do(req)
-			if err != nil {
-				return fmt.Errorf("request failed: %w", err)
-			}
-			defer resp.Body.Close()
-
-			respBody, err := io.ReadAll(resp.Body)
-			if err != nil {
-				return fmt.Errorf("reading response: %w", err)
 			}
 
 			output, _ := cmd.Flags().GetString("output")
-			if err := iostreams.FormatOutput(respBody, f.IO, output, nil); err != nil {
-				return err
-			}
-
-			if resp.StatusCode >= 400 {
-				return fmt.Errorf("HTTP %d", resp.StatusCode)
-			}
-			return nil
+			return iostreams.FormatOutput(respBody, f.IO, output, nil)
 		},
 	}
 

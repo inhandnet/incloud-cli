@@ -55,52 +55,27 @@ func NewCmdAlerts(f *factory.Factory) *cobra.Command {
 }
 
 func runAlerts(cmd *cobra.Command, f *factory.Factory, opts *AlertsOptions) error {
-	cfg, err := f.Config()
-	if err != nil {
-		return err
-	}
-	actx, err := cfg.ActiveContext()
-	if err != nil {
-		return err
-	}
-	client, err := f.HttpClient()
+	client, err := f.APIClient()
 	if err != nil {
 		return err
 	}
 
-	host := actx.Host
 	nStr := strconv.Itoa(opts.N)
 
-	// Build URLs for top-alert-devices and top-alert-types with group support
-	buildTopURL := func(path string) string {
-		u, err := url.Parse(host + path)
-		if err != nil {
-			return host + path
-		}
-		q := u.Query()
-		q.Set("n", nStr)
-		if opts.After != "" {
-			q.Set("after", opts.After)
-		}
-		if opts.Before != "" {
-			q.Set("before", opts.Before)
-		}
-		for _, g := range opts.Group {
-			q.Add("devicegroupId", g)
-		}
-		u.RawQuery = q.Encode()
-		return u.String()
-	}
+	topQuery := makeQueryWithGroups(map[string]string{
+		"n": nStr, "after": opts.After, "before": opts.Before,
+	}, opts.Group)
 
 	type apiReq struct {
-		name string
-		url  string
+		name  string
+		path  string
+		query url.Values
 	}
 
 	reqs := []apiReq{
-		{"stats", host + "/api/v1/alerts/stats"},
-		{"topDevices", buildTopURL("/api/v1/alert/top-alert-devices")},
-		{"topTypes", buildTopURL("/api/v1/alert/top-alert-types")},
+		{"stats", "/api/v1/alerts/stats", nil},
+		{"topDevices", "/api/v1/alert/top-alert-devices", topQuery},
+		{"topTypes", "/api/v1/alert/top-alert-types", topQuery},
 	}
 
 	results := make(map[string]json.RawMessage)
@@ -112,7 +87,7 @@ func runAlerts(cmd *cobra.Command, f *factory.Factory, opts *AlertsOptions) erro
 		wg.Add(1)
 		go func(r apiReq) {
 			defer wg.Done()
-			body, err := doGet(client, r.url)
+			body, err := client.Get(r.path, r.query)
 			mu.Lock()
 			defer mu.Unlock()
 			if err != nil {
@@ -121,14 +96,7 @@ func runAlerts(cmd *cobra.Command, f *factory.Factory, opts *AlertsOptions) erro
 				}
 				return
 			}
-			var envelope struct {
-				Result json.RawMessage `json:"result"`
-			}
-			if json.Unmarshal(body, &envelope) == nil && envelope.Result != nil {
-				results[r.name] = envelope.Result
-			} else {
-				results[r.name] = body
-			}
+			results[r.name] = unwrapResult(body)
 		}(r)
 	}
 	wg.Wait()

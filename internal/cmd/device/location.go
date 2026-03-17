@@ -1,12 +1,8 @@
 package device
 
 import (
-	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
 	"net/url"
 
 	"github.com/spf13/cobra"
@@ -43,45 +39,17 @@ func newCmdLocationGet(f *factory.Factory) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			deviceID := args[0]
 
-			cfg, err := f.Config()
-			if err != nil {
-				return err
-			}
-			actx, err := cfg.ActiveContext()
+			client, err := f.APIClient()
 			if err != nil {
 				return err
 			}
 
-			client, err := f.HttpClient()
+			query := url.Values{}
+			query.Set("fields", "location")
+
+			body, err := client.Get("/api/v1/devices/"+deviceID, query)
 			if err != nil {
 				return err
-			}
-
-			u, err := url.Parse(actx.Host + "/api/v1/devices/" + deviceID)
-			if err != nil {
-				return fmt.Errorf("invalid URL: %w", err)
-			}
-			q := u.Query()
-			q.Set("fields", "location")
-			u.RawQuery = q.Encode()
-
-			req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, u.String(), http.NoBody)
-			if err != nil {
-				return fmt.Errorf("building request: %w", err)
-			}
-
-			resp, err := client.Do(req)
-			if err != nil {
-				return fmt.Errorf("request failed: %w", err)
-			}
-			defer resp.Body.Close()
-
-			body, err := io.ReadAll(resp.Body)
-			if err != nil {
-				return fmt.Errorf("reading response: %w", err)
-			}
-			if resp.StatusCode >= 400 {
-				return fmt.Errorf("HTTP %d: %s", resp.StatusCode, string(body))
 			}
 
 			locBody, err := extractLocation(body)
@@ -115,16 +83,7 @@ func newCmdLocationSet(f *factory.Factory) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			deviceID := args[0]
 
-			cfg, err := f.Config()
-			if err != nil {
-				return err
-			}
-			actx, err := cfg.ActiveContext()
-			if err != nil {
-				return err
-			}
-
-			client, err := f.HttpClient()
+			client, err := f.APIClient()
 			if err != nil {
 				return err
 			}
@@ -137,30 +96,10 @@ func newCmdLocationSet(f *factory.Factory) *cobra.Command {
 				"address": opts.Address,
 				"pinned":  true,
 			}
-			jsonBytes, err := json.Marshal(payload)
-			if err != nil {
-				return fmt.Errorf("encoding request body: %w", err)
-			}
 
-			reqURL := actx.Host + "/api/v1/devices/" + deviceID + "/location"
-			req, err := http.NewRequestWithContext(context.Background(), http.MethodPut, reqURL, bytes.NewReader(jsonBytes))
+			body, err := client.Put("/api/v1/devices/"+deviceID+"/location", payload)
 			if err != nil {
 				return err
-			}
-			req.Header.Set("Content-Type", "application/json")
-
-			resp, err := client.Do(req)
-			if err != nil {
-				return fmt.Errorf("request failed: %w", err)
-			}
-			defer resp.Body.Close()
-
-			body, err := io.ReadAll(resp.Body)
-			if err != nil {
-				return fmt.Errorf("reading response: %w", err)
-			}
-			if resp.StatusCode >= 400 {
-				return fmt.Errorf("HTTP %d: %s", resp.StatusCode, string(body))
 			}
 
 			locBody, err := extractLocation(body)
@@ -192,45 +131,16 @@ func newCmdLocationUnpin(f *factory.Factory) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			deviceID := args[0]
 
-			cfg, err := f.Config()
-			if err != nil {
-				return err
-			}
-			actx, err := cfg.ActiveContext()
-			if err != nil {
-				return err
-			}
-
-			client, err := f.HttpClient()
+			client, err := f.APIClient()
 			if err != nil {
 				return err
 			}
 
 			payload := map[string]interface{}{"pinned": false}
-			jsonBytes, err := json.Marshal(payload)
-			if err != nil {
-				return fmt.Errorf("encoding request body: %w", err)
-			}
 
-			reqURL := actx.Host + "/api/v1/devices/" + deviceID + "/location"
-			req, err := http.NewRequestWithContext(context.Background(), http.MethodPut, reqURL, bytes.NewReader(jsonBytes))
+			body, err := client.Put("/api/v1/devices/"+deviceID+"/location", payload)
 			if err != nil {
 				return err
-			}
-			req.Header.Set("Content-Type", "application/json")
-
-			resp, err := client.Do(req)
-			if err != nil {
-				return fmt.Errorf("request failed: %w", err)
-			}
-			defer resp.Body.Close()
-
-			body, err := io.ReadAll(resp.Body)
-			if err != nil {
-				return fmt.Errorf("reading response: %w", err)
-			}
-			if resp.StatusCode >= 400 {
-				return fmt.Errorf("HTTP %d: %s", resp.StatusCode, string(body))
 			}
 
 			locBody, err := extractLocation(body)
@@ -255,38 +165,14 @@ func newCmdLocationRefresh(f *factory.Factory) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			deviceID := args[0]
 
-			cfg, err := f.Config()
-			if err != nil {
-				return err
-			}
-			actx, err := cfg.ActiveContext()
+			client, err := f.APIClient()
 			if err != nil {
 				return err
 			}
 
-			client, err := f.HttpClient()
+			body, err := client.Put("/api/v1/devices/"+deviceID+"/locations/refresh", nil)
 			if err != nil {
 				return err
-			}
-
-			reqURL := actx.Host + "/api/v1/devices/" + deviceID + "/locations/refresh"
-			req, err := http.NewRequestWithContext(context.Background(), http.MethodPut, reqURL, http.NoBody)
-			if err != nil {
-				return err
-			}
-
-			resp, err := client.Do(req)
-			if err != nil {
-				return fmt.Errorf("request failed: %w", err)
-			}
-			defer resp.Body.Close()
-
-			body, err := io.ReadAll(resp.Body)
-			if err != nil {
-				return fmt.Errorf("reading response: %w", err)
-			}
-			if resp.StatusCode >= 400 {
-				return fmt.Errorf("HTTP %d: %s", resp.StatusCode, string(body))
 			}
 
 			locBody, err := extractLocation(body)

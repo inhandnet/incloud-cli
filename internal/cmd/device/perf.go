@@ -1,10 +1,7 @@
 package device
 
 import (
-	"context"
 	"fmt"
-	"io"
-	"net/http"
 	"net/url"
 
 	"github.com/spf13/cobra"
@@ -62,54 +59,22 @@ With --refresh, triggers a real-time collection from the device (online only).`,
 }
 
 func runPerfCurrent(f *factory.Factory, cmd *cobra.Command, deviceID string, opts *perfOptions) error {
-	cfg, err := f.Config()
-	if err != nil {
-		return err
-	}
-	actx, err := cfg.ActiveContext()
-	if err != nil {
-		return err
-	}
-	client, err := f.HttpClient()
+	client, err := f.APIClient()
 	if err != nil {
 		return err
 	}
 
 	// Trigger real-time collection first, then always GET cached data
 	if opts.Refresh {
-		refreshURL := actx.Host + "/api/v1/devices/" + deviceID + "/performances/refresh"
-		req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, refreshURL, http.NoBody)
+		_, err := client.Post("/api/v1/devices/"+deviceID+"/performances/refresh", nil)
 		if err != nil {
-			return fmt.Errorf("building refresh request: %w", err)
-		}
-		resp, err := client.Do(req)
-		if err != nil {
-			return fmt.Errorf("refresh request failed: %w", err)
-		}
-		resp.Body.Close()
-		if resp.StatusCode >= 400 {
 			fmt.Fprintln(f.IO.ErrOut, "Warning: refresh failed (device may be offline), showing cached data")
 		}
 	}
 
-	endpoint := actx.Host + "/api/v1/devices/" + deviceID + "/performances"
-	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, endpoint, http.NoBody)
+	body, err := client.Get("/api/v1/devices/"+deviceID+"/performances", nil)
 	if err != nil {
-		return fmt.Errorf("building request: %w", err)
-	}
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return fmt.Errorf("request failed: %w", err)
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return fmt.Errorf("reading response: %w", err)
-	}
-	if resp.StatusCode >= 400 {
-		return fmt.Errorf("HTTP %d: %s", resp.StatusCode, string(body))
+		return err
 	}
 
 	output, _ := cmd.Flags().GetString("output")
@@ -121,46 +86,18 @@ func runPerfSeries(f *factory.Factory, cmd *cobra.Command, deviceID string, opts
 		return fmt.Errorf("both --after and --before are required for historical data")
 	}
 
-	cfg, err := f.Config()
-	if err != nil {
-		return err
-	}
-	actx, err := cfg.ActiveContext()
-	if err != nil {
-		return err
-	}
-	client, err := f.HttpClient()
+	client, err := f.APIClient()
 	if err != nil {
 		return err
 	}
 
-	u, err := url.Parse(actx.Host + "/api/v1/devices/" + deviceID + "/performance")
-	if err != nil {
-		return fmt.Errorf("invalid URL: %w", err)
-	}
-
-	q := u.Query()
+	q := url.Values{}
 	q.Set("after", opts.After)
 	q.Set("before", opts.Before)
-	u.RawQuery = q.Encode()
 
-	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, u.String(), http.NoBody)
+	body, err := client.Get("/api/v1/devices/"+deviceID+"/performance", q)
 	if err != nil {
-		return fmt.Errorf("building request: %w", err)
-	}
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return fmt.Errorf("request failed: %w", err)
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return fmt.Errorf("reading response: %w", err)
-	}
-	if resp.StatusCode >= 400 {
-		return fmt.Errorf("HTTP %d: %s", resp.StatusCode, string(body))
+		return err
 	}
 
 	output, _ := cmd.Flags().GetString("output")

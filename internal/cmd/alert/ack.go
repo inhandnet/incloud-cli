@@ -1,12 +1,7 @@
 package alert
 
 import (
-	"bytes"
-	"context"
-	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
 
 	"github.com/spf13/cobra"
 
@@ -39,28 +34,19 @@ func NewCmdAck(f *factory.Factory) *cobra.Command {
 				return fmt.Errorf("must specify alert IDs or --all")
 			}
 
-			cfg, err := f.Config()
-			if err != nil {
-				return err
-			}
-			ctx, err := cfg.ActiveContext()
+			client, err := f.APIClient()
 			if err != nil {
 				return err
 			}
 
-			client, err := f.HttpClient()
-			if err != nil {
-				return err
-			}
-
-			var reqURL string
+			var path string
 			var bodyMap map[string]any
 
 			if all {
-				reqURL = ctx.Host + "/api/v1/alerts/acknowledge/all"
+				path = "/api/v1/alerts/acknowledge/all"
 				bodyMap = make(map[string]any)
 			} else {
-				reqURL = ctx.Host + "/api/v1/alerts/acknowledge"
+				path = "/api/v1/alerts/acknowledge"
 				bodyMap = map[string]any{
 					"ids": args,
 				}
@@ -70,30 +56,8 @@ func NewCmdAck(f *factory.Factory) *cobra.Command {
 				bodyMap["type"] = typeFlag
 			}
 
-			bodyBytes, err := json.Marshal(bodyMap)
-			if err != nil {
-				return fmt.Errorf("marshaling request body: %w", err)
-			}
-
-			req, err := http.NewRequestWithContext(context.Background(), http.MethodPut, reqURL, bytes.NewReader(bodyBytes))
-			if err != nil {
-				return fmt.Errorf("building request: %w", err)
-			}
-			req.Header.Set("Content-Type", "application/json")
-
-			resp, err := client.Do(req)
-			if err != nil {
-				return fmt.Errorf("request failed: %w", err)
-			}
-			defer resp.Body.Close()
-
-			body, err := io.ReadAll(resp.Body)
-			if err != nil {
-				return fmt.Errorf("reading response: %w", err)
-			}
-
-			if resp.StatusCode >= 400 {
-				return fmt.Errorf("HTTP %d: %s", resp.StatusCode, string(body))
+			if _, err := client.Put(path, bodyMap); err != nil {
+				return err
 			}
 
 			if all {

@@ -1,10 +1,6 @@
 package device
 
 import (
-	"context"
-	"fmt"
-	"io"
-	"net/http"
 	"net/url"
 	"strconv"
 
@@ -36,25 +32,12 @@ func NewCmdExecSpeedtestHistory(f *factory.Factory) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			deviceID := args[0]
 
-			cfg, err := f.Config()
-			if err != nil {
-				return err
-			}
-			actx, err := cfg.ActiveContext()
+			client, err := f.APIClient()
 			if err != nil {
 				return err
 			}
 
-			client, err := f.HttpClient()
-			if err != nil {
-				return err
-			}
-
-			u, err := url.Parse(actx.Host + "/api/v1/devices/" + deviceID + "/diagnosis/speed-test-histories")
-			if err != nil {
-				return err
-			}
-			q := u.Query()
+			q := url.Values{}
 			q.Set("page", strconv.Itoa(page-1))
 			q.Set("size", strconv.Itoa(limit))
 			if after != "" {
@@ -63,36 +46,17 @@ func NewCmdExecSpeedtestHistory(f *factory.Factory) *cobra.Command {
 			if before != "" {
 				q.Set("to", before)
 			}
-			u.RawQuery = q.Encode()
 
-			req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, u.String(), http.NoBody)
+			body, err := client.Get("/api/v1/devices/"+deviceID+"/diagnosis/speed-test-histories", q)
 			if err != nil {
 				return err
-			}
-
-			resp, err := client.Do(req)
-			if err != nil {
-				return fmt.Errorf("request failed: %w", err)
-			}
-			defer resp.Body.Close()
-
-			respBody, err := io.ReadAll(resp.Body)
-			if err != nil {
-				return fmt.Errorf("reading response: %w", err)
 			}
 
 			cols := defaultSpeedtestHistoryFields
 			if len(fields) > 0 {
 				cols = fields
 			}
-			if err := formatOutput(cmd, f.IO, respBody, cols); err != nil {
-				return err
-			}
-
-			if resp.StatusCode >= 400 {
-				return fmt.Errorf("HTTP %d", resp.StatusCode)
-			}
-			return nil
+			return formatOutput(cmd, f.IO, body, cols)
 		},
 	}
 

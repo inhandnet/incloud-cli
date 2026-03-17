@@ -1,11 +1,8 @@
 package device
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
 
 	"github.com/spf13/cobra"
 
@@ -45,57 +42,21 @@ func NewCmdInterface(f *factory.Factory) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			deviceID := args[0]
 
-			cfg, err := f.Config()
-			if err != nil {
-				return err
-			}
-			ctx, err := cfg.ActiveContext()
-			if err != nil {
-				return err
-			}
-
-			client, err := f.HttpClient()
+			client, err := f.APIClient()
 			if err != nil {
 				return err
 			}
 
 			if opts.Refresh {
-				refreshURL := ctx.Host + "/api/v1/devices/" + deviceID + "/interfaces/refresh"
-				req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, refreshURL, http.NoBody)
+				_, err := client.Post("/api/v1/devices/"+deviceID+"/interfaces/refresh", nil)
 				if err != nil {
-					return fmt.Errorf("building refresh request: %w", err)
-				}
-				resp, err := client.Do(req)
-				if err != nil {
-					return fmt.Errorf("refresh request failed: %w", err)
-				}
-				resp.Body.Close()
-				if resp.StatusCode == http.StatusRequestTimeout {
-					fmt.Fprintln(f.IO.ErrOut, "Warning: refresh timed out (device may be offline), showing cached data")
-				} else if resp.StatusCode >= 400 {
 					fmt.Fprintln(f.IO.ErrOut, "Warning: refresh failed, showing cached data")
 				}
 			}
 
-			reqURL := ctx.Host + "/api/v1/devices/" + deviceID + "/interfaces"
-			req, err := http.NewRequestWithContext(context.Background(), "GET", reqURL, http.NoBody)
+			body, err := client.Get("/api/v1/devices/"+deviceID+"/interfaces", nil)
 			if err != nil {
-				return fmt.Errorf("building request: %w", err)
-			}
-
-			resp, err := client.Do(req)
-			if err != nil {
-				return fmt.Errorf("request failed: %w", err)
-			}
-			defer resp.Body.Close()
-
-			body, err := io.ReadAll(resp.Body)
-			if err != nil {
-				return fmt.Errorf("reading response: %w", err)
-			}
-
-			if resp.StatusCode >= 400 {
-				return fmt.Errorf("HTTP %d: %s", resp.StatusCode, string(body))
+				return err
 			}
 
 			output, _ := cmd.Flags().GetString("output")
@@ -139,7 +100,7 @@ func flattenInterfaces(data []byte) ([]byte, error) {
 		}
 	}
 
-	// Wrap as {"result": [...]} so FormatTable's unwrapResult works.
+	// Wrap as {"result": [...]} so FormatTable extracts the array.
 	wrapped := map[string]any{"result": rows}
 	return json.Marshal(wrapped)
 }

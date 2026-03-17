@@ -1,11 +1,8 @@
 package activity
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
 	"net/url"
 	"strconv"
 
@@ -65,26 +62,12 @@ func NewCmdList(f *factory.Factory) *cobra.Command {
   # Count activity logs in a time range
   incloud activity list --after 2024-01-01T00:00:00 --count`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg, err := f.Config()
-			if err != nil {
-				return err
-			}
-			ctx, err := cfg.ActiveContext()
+			client, err := f.APIClient()
 			if err != nil {
 				return err
 			}
 
-			client, err := f.HttpClient()
-			if err != nil {
-				return err
-			}
-
-			u, err := url.Parse(ctx.Host + "/api/v1/audit/logs")
-			if err != nil {
-				return fmt.Errorf("invalid URL: %w", err)
-			}
-
-			q := u.Query()
+			q := make(url.Values)
 			if opts.Count {
 				q.Set("page", "0")
 				q.Set("limit", "1")
@@ -111,32 +94,15 @@ func NewCmdList(f *factory.Factory) *cobra.Command {
 				q.Set("actor", opts.Actor)
 			}
 
-			u.RawQuery = q.Encode()
-
 			output, _ := cmd.Flags().GetString("output")
 			fields := opts.Fields
 			if len(fields) == 0 && output == "table" && f.IO.IsStdoutTTY() {
 				fields = defaultListFields
 			}
 
-			req, err := http.NewRequestWithContext(context.Background(), "GET", u.String(), http.NoBody)
+			body, err := client.Get("/api/v1/audit/logs", q)
 			if err != nil {
-				return fmt.Errorf("building request: %w", err)
-			}
-
-			resp, err := client.Do(req)
-			if err != nil {
-				return fmt.Errorf("request failed: %w", err)
-			}
-			defer resp.Body.Close()
-
-			body, err := io.ReadAll(resp.Body)
-			if err != nil {
-				return fmt.Errorf("reading response: %w", err)
-			}
-
-			if resp.StatusCode >= 400 {
-				return fmt.Errorf("HTTP %d: %s", resp.StatusCode, string(body))
+				return err
 			}
 
 			if opts.Count {

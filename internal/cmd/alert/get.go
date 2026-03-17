@@ -1,10 +1,6 @@
 package alert
 
 import (
-	"context"
-	"fmt"
-	"io"
-	"net/http"
 	"net/url"
 	"strings"
 
@@ -40,48 +36,20 @@ func NewCmdGet(f *factory.Factory) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			alertID := args[0]
 
-			cfg, err := f.Config()
-			if err != nil {
-				return err
-			}
-			ctx, err := cfg.ActiveContext()
+			client, err := f.APIClient()
 			if err != nil {
 				return err
 			}
 
-			client, err := f.HttpClient()
-			if err != nil {
-				return err
-			}
-
-			u, err := url.Parse(ctx.Host + "/api/v1/alerts/" + alertID)
-			if err != nil {
-				return fmt.Errorf("invalid URL: %w", err)
-			}
+			var q url.Values
 			if len(opts.Fields) > 0 {
-				q := u.Query()
+				q = make(url.Values)
 				q.Set("fields", strings.Join(opts.Fields, ","))
-				u.RawQuery = q.Encode()
 			}
 
-			req, err := http.NewRequestWithContext(context.Background(), "GET", u.String(), http.NoBody)
+			body, err := client.Get("/api/v1/alerts/"+alertID, q)
 			if err != nil {
-				return fmt.Errorf("building request: %w", err)
-			}
-
-			resp, err := client.Do(req)
-			if err != nil {
-				return fmt.Errorf("request failed: %w", err)
-			}
-			defer resp.Body.Close()
-
-			body, err := io.ReadAll(resp.Body)
-			if err != nil {
-				return fmt.Errorf("reading response: %w", err)
-			}
-
-			if resp.StatusCode >= 400 {
-				return fmt.Errorf("HTTP %d: %s", resp.StatusCode, string(body))
+				return err
 			}
 
 			output, _ := cmd.Flags().GetString("output")

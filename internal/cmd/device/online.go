@@ -1,10 +1,6 @@
 package device
 
 import (
-	"context"
-	"fmt"
-	"io"
-	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
@@ -67,26 +63,12 @@ Use --daily to show daily offline statistics instead (last 30 days).`,
 }
 
 func runOnlineEvents(f *factory.Factory, deviceID string, opts *onlineOptions, cmd *cobra.Command) error {
-	cfg, err := f.Config()
-	if err != nil {
-		return err
-	}
-	ctx, err := cfg.ActiveContext()
+	client, err := f.APIClient()
 	if err != nil {
 		return err
 	}
 
-	client, err := f.HttpClient()
-	if err != nil {
-		return err
-	}
-
-	u, err := url.Parse(ctx.Host + "/api/v1/devices/" + deviceID + "/online-events-list")
-	if err != nil {
-		return fmt.Errorf("invalid URL: %w", err)
-	}
-
-	q := u.Query()
+	q := url.Values{}
 	q.Set("page", strconv.Itoa(opts.Page-1))
 	q.Set("limit", strconv.Itoa(opts.Limit))
 	if opts.After != "" {
@@ -104,76 +86,33 @@ func runOnlineEvents(f *factory.Factory, deviceID string, opts *onlineOptions, c
 	if len(fields) > 0 {
 		q.Set("fields", strings.Join(fields, ","))
 	}
-	u.RawQuery = q.Encode()
 
-	body, err := doOnlineRequest(client, u.String())
+	body, err := client.Get("/api/v1/devices/"+deviceID+"/online-events-list", q)
 	if err != nil {
 		return err
 	}
-	return printOutput(body, output, fields, f.IO)
+	return iostreams.FormatOutput(body, f.IO, output, fields)
 }
 
 func runOnlineDaily(f *factory.Factory, deviceID string, opts *onlineOptions, cmd *cobra.Command) error {
-	cfg, err := f.Config()
-	if err != nil {
-		return err
-	}
-	ctx, err := cfg.ActiveContext()
+	client, err := f.APIClient()
 	if err != nil {
 		return err
 	}
 
-	client, err := f.HttpClient()
-	if err != nil {
-		return err
-	}
-
-	u, err := url.Parse(ctx.Host + "/api/v1/devices/" + deviceID + "/offline/daily-stats")
-	if err != nil {
-		return fmt.Errorf("invalid URL: %w", err)
-	}
-
-	q := u.Query()
+	q := url.Values{}
 	if opts.After != "" {
 		q.Set("after", opts.After)
 	}
 	if opts.Before != "" {
 		q.Set("before", opts.Before)
 	}
-	u.RawQuery = q.Encode()
 
 	output, _ := cmd.Flags().GetString("output")
 
-	body, err := doOnlineRequest(client, u.String())
+	body, err := client.Get("/api/v1/devices/"+deviceID+"/offline/daily-stats", q)
 	if err != nil {
 		return err
 	}
-	return printOutput(body, output, opts.Fields, f.IO)
-}
-
-func doOnlineRequest(client *http.Client, rawURL string) ([]byte, error) {
-	req, err := http.NewRequestWithContext(context.Background(), "GET", rawURL, http.NoBody)
-	if err != nil {
-		return nil, fmt.Errorf("building request: %w", err)
-	}
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("request failed: %w", err)
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("reading response: %w", err)
-	}
-
-	if resp.StatusCode >= 400 {
-		return nil, fmt.Errorf("HTTP %d: %s", resp.StatusCode, string(body))
-	}
-	return body, nil
-}
-
-func printOutput(body []byte, output string, fields []string, streams *iostreams.IOStreams) error {
-	return iostreams.FormatOutput(body, streams, output, fields)
+	return iostreams.FormatOutput(body, f.IO, output, opts.Fields)
 }

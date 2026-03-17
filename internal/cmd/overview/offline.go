@@ -3,7 +3,6 @@ package overview
 import (
 	"encoding/json"
 	"fmt"
-	"net/url"
 	"strconv"
 	"sync"
 
@@ -69,35 +68,25 @@ func NewCmdOffline(f *factory.Factory) *cobra.Command {
 }
 
 func runOffline(cmd *cobra.Command, f *factory.Factory, opts *OfflineOptions) error {
-	cfg, err := f.Config()
-	if err != nil {
-		return err
-	}
-	actx, err := cfg.ActiveContext()
-	if err != nil {
-		return err
-	}
-	client, err := f.HttpClient()
+	client, err := f.APIClient()
 	if err != nil {
 		return err
 	}
 
-	host := actx.Host
-
-	// Build topn URL
-	topnURL := buildOfflineURL(host+"/api/v1/devices/offline/topn", opts.Group, map[string]string{
+	// Build topn query
+	topnQuery := makeQueryWithGroups(map[string]string{
 		"topN":   strconv.Itoa(opts.N),
 		"after":  opts.After,
 		"before": opts.Before,
-	})
+	}, opts.Group)
 
-	// Build statistics URL (page is 1-based in CLI, 0-based in API)
-	statsURL := buildOfflineURL(host+"/api/v1/devices/offline/statistics", opts.Group, map[string]string{
+	// Build statistics query (page is 1-based in CLI, 0-based in API)
+	statsQuery := makeQueryWithGroups(map[string]string{
 		"page":   strconv.Itoa(opts.Page - 1),
 		"limit":  strconv.Itoa(opts.Limit),
 		"after":  opts.After,
 		"before": opts.Before,
-	})
+	}, opts.Group)
 
 	// Concurrent fetch
 	var topnBody, statsBody []byte
@@ -107,11 +96,11 @@ func runOffline(cmd *cobra.Command, f *factory.Factory, opts *OfflineOptions) er
 	wg.Add(2)
 	go func() {
 		defer wg.Done()
-		topnBody, topnErr = doGet(client, topnURL)
+		topnBody, topnErr = client.Get("/api/v1/devices/offline/topn", topnQuery)
 	}()
 	go func() {
 		defer wg.Done()
-		statsBody, statsErr = doGet(client, statsURL)
+		statsBody, statsErr = client.Get("/api/v1/devices/offline/statistics", statsQuery)
 	}()
 	wg.Wait()
 
@@ -123,13 +112,7 @@ func runOffline(cmd *cobra.Command, f *factory.Factory, opts *OfflineOptions) er
 	}
 
 	// Unwrap topn result
-	var topnEnvelope struct {
-		Result json.RawMessage `json:"result"`
-	}
-	topnData := topnBody
-	if json.Unmarshal(topnBody, &topnEnvelope) == nil && topnEnvelope.Result != nil {
-		topnData = topnEnvelope.Result
-	}
+	topnData := unwrapResult(topnBody)
 
 	output, _ := cmd.Flags().GetString("output")
 
@@ -159,24 +142,6 @@ func runOffline(cmd *cobra.Command, f *factory.Factory, opts *OfflineOptions) er
 	}
 
 	return nil
-}
-
-func buildOfflineURL(base string, groups []string, params map[string]string) string {
-	u, err := url.Parse(base)
-	if err != nil {
-		return base
-	}
-	q := u.Query()
-	for k, v := range params {
-		if v != "" {
-			q.Set(k, v)
-		}
-	}
-	for _, g := range groups {
-		q.Add("devicegroupId", g)
-	}
-	u.RawQuery = q.Encode()
-	return u.String()
 }
 
 func buildMergedOutput(topnData json.RawMessage, statsBody []byte) map[string]json.RawMessage {

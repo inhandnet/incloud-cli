@@ -3,6 +3,7 @@ package overview
 import (
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"strconv"
 	"strings"
 	"sync"
@@ -71,33 +72,22 @@ func truncateToDate(s string) string {
 }
 
 func runTraffic(cmd *cobra.Command, f *factory.Factory, opts *TrafficOptions) error {
-	cfg, err := f.Config()
-	if err != nil {
-		return err
-	}
-	actx, err := cfg.ActiveContext()
-	if err != nil {
-		return err
-	}
-	client, err := f.HttpClient()
+	client, err := f.APIClient()
 	if err != nil {
 		return err
 	}
 
-	host := actx.Host
-
-	overviewURL := buildURL(host+"/api/v1/datausage/overview", map[string]string{
+	overviewQuery := makeQuery(map[string]string{
 		"after":  opts.After,
 		"before": opts.Before,
 	})
 
-	topkParams := map[string]string{
+	topkQuery := makeQuery(map[string]string{
 		"n":      strconv.Itoa(opts.N),
 		"after":  truncateToDate(opts.After),
 		"before": truncateToDate(opts.Before),
 		"type":   opts.Type,
-	}
-	topkURL := buildURL(host+"/api/v1/datausage/topk", topkParams)
+	})
 
 	var (
 		mu      sync.Mutex
@@ -107,18 +97,19 @@ func runTraffic(cmd *cobra.Command, f *factory.Factory, opts *TrafficOptions) er
 	)
 
 	apis := []struct {
-		name string
-		url  string
+		name  string
+		path  string
+		query url.Values
 	}{
-		{"overview", overviewURL},
-		{"topk", topkURL},
+		{"overview", "/api/v1/datausage/overview", overviewQuery},
+		{"topk", "/api/v1/datausage/topk", topkQuery},
 	}
 
 	for _, a := range apis {
 		wg.Add(1)
-		go func(name, url string) {
+		go func(name, path string, query url.Values) {
 			defer wg.Done()
-			body, err := doGet(client, url)
+			body, err := client.Get(path, query)
 			mu.Lock()
 			defer mu.Unlock()
 			if err != nil {
@@ -127,15 +118,8 @@ func runTraffic(cmd *cobra.Command, f *factory.Factory, opts *TrafficOptions) er
 				}
 				return
 			}
-			var envelope struct {
-				Result json.RawMessage `json:"result"`
-			}
-			if json.Unmarshal(body, &envelope) == nil && envelope.Result != nil {
-				results[name] = envelope.Result
-			} else {
-				results[name] = body
-			}
-		}(a.name, a.url)
+			results[name] = unwrapResult(body)
+		}(a.name, a.path, a.query)
 	}
 	wg.Wait()
 

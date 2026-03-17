@@ -1,12 +1,7 @@
 package alert
 
 import (
-	"bytes"
-	"context"
-	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
 
 	"github.com/spf13/cobra"
 
@@ -117,45 +112,14 @@ Supported notification channels:
 				return fmt.Errorf("--channel is required")
 			}
 
-			cfg, err := f.Config()
-			if err != nil {
-				return err
-			}
-			ctx, err := cfg.ActiveContext()
+			client, err := f.APIClient()
 			if err != nil {
 				return err
 			}
 
-			client, err := f.HttpClient()
+			body, err := client.Post("/api/v1/alerts/rules", opts.toRequestBody())
 			if err != nil {
 				return err
-			}
-
-			bodyBytes, err := json.Marshal(opts.toRequestBody())
-			if err != nil {
-				return fmt.Errorf("marshaling request body: %w", err)
-			}
-
-			reqURL := ctx.Host + "/api/v1/alerts/rules"
-			req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, reqURL, bytes.NewReader(bodyBytes))
-			if err != nil {
-				return fmt.Errorf("building request: %w", err)
-			}
-			req.Header.Set("Content-Type", "application/json")
-
-			resp, err := client.Do(req)
-			if err != nil {
-				return fmt.Errorf("request failed: %w", err)
-			}
-			defer resp.Body.Close()
-
-			body, err := io.ReadAll(resp.Body)
-			if err != nil {
-				return fmt.Errorf("reading response: %w", err)
-			}
-
-			if resp.StatusCode >= 400 {
-				return fmt.Errorf("HTTP %d: %s", resp.StatusCode, string(body))
 			}
 
 			output, _ := cmd.Flags().GetString("output")

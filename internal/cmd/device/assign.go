@@ -1,12 +1,7 @@
 package device
 
 import (
-	"bytes"
-	"context"
-	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
 
 	"github.com/spf13/cobra"
 
@@ -25,16 +20,7 @@ func NewCmdAssign(f *factory.Factory) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			deviceID := args[0]
 
-			cfg, err := f.Config()
-			if err != nil {
-				return err
-			}
-			actx, err := cfg.ActiveContext()
-			if err != nil {
-				return err
-			}
-
-			client, err := f.HttpClient()
+			client, err := f.APIClient()
 			if err != nil {
 				return err
 			}
@@ -48,32 +34,9 @@ func NewCmdAssign(f *factory.Factory) *cobra.Command {
 				},
 			}
 
-			jsonBytes, err := json.Marshal(body)
-			if err != nil {
-				return fmt.Errorf("encoding request body: %w", err)
-			}
-
-			reqURL := actx.Host + "/api/v1/devices/move"
-			req, err := http.NewRequestWithContext(context.Background(), http.MethodPut, reqURL, bytes.NewReader(jsonBytes))
+			_, err = client.Put("/api/v1/devices/move", body)
 			if err != nil {
 				return err
-			}
-			req.Header.Set("Content-Type", "application/json")
-
-			resp, err := client.Do(req)
-			if err != nil {
-				return fmt.Errorf("request failed: %w", err)
-			}
-			defer resp.Body.Close()
-
-			respBody, err := io.ReadAll(resp.Body)
-			if err != nil {
-				return fmt.Errorf("reading response: %w", err)
-			}
-
-			if resp.StatusCode >= 400 {
-				fmt.Fprintln(f.IO.ErrOut, string(respBody))
-				return fmt.Errorf("HTTP %d", resp.StatusCode)
 			}
 
 			fmt.Fprintf(f.IO.ErrOut, "Device %s assigned to group %s.\n", deviceID, group)

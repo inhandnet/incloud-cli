@@ -1,10 +1,7 @@
 package device
 
 import (
-	"context"
 	"fmt"
-	"io"
-	"net/http"
 
 	"github.com/spf13/cobra"
 
@@ -20,40 +17,14 @@ func NewCmdExecCancel(f *factory.Factory) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			diagID := args[0]
 
-			cfg, err := f.Config()
-			if err != nil {
-				return err
-			}
-			actx, err := cfg.ActiveContext()
+			client, err := f.APIClient()
 			if err != nil {
 				return err
 			}
 
-			client, err := f.HttpClient()
+			_, err = client.Put("/api/v1/diagnosis/"+diagID+"/cancel", nil)
 			if err != nil {
 				return err
-			}
-
-			reqURL := actx.Host + "/api/v1/diagnosis/" + diagID + "/cancel"
-			req, err := http.NewRequestWithContext(context.Background(), http.MethodPut, reqURL, http.NoBody)
-			if err != nil {
-				return err
-			}
-
-			resp, err := client.Do(req)
-			if err != nil {
-				return fmt.Errorf("request failed: %w", err)
-			}
-			defer resp.Body.Close()
-
-			respBody, err := io.ReadAll(resp.Body)
-			if err != nil {
-				return fmt.Errorf("reading response: %w", err)
-			}
-
-			if resp.StatusCode >= 400 {
-				fmt.Fprintln(f.IO.ErrOut, string(respBody))
-				return fmt.Errorf("HTTP %d", resp.StatusCode)
 			}
 
 			fmt.Fprintf(f.IO.ErrOut, "Diagnosis %s canceled.\n", diagID)

@@ -34,22 +34,12 @@ func NewCmdDevices(f *factory.Factory) *cobra.Command {
   # YAML output
   incloud overview devices -o yaml`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg, err := f.Config()
-			if err != nil {
-				return err
-			}
-			actx, err := cfg.ActiveContext()
-			if err != nil {
-				return err
-			}
-			client, err := f.HttpClient()
+			client, err := f.APIClient()
 			if err != nil {
 				return err
 			}
 
-			apiURL := actx.Host + "/api/v1/devices/summary"
-
-			body, err := doGet(client, apiURL)
+			body, err := client.Get("/api/v1/devices/summary", nil)
 			if err != nil {
 				return err
 			}

@@ -1,11 +1,8 @@
 package overview
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
 	"net/url"
 	"strconv"
 	"sync"
@@ -55,39 +52,34 @@ func NewCmdOverview(f *factory.Factory) *cobra.Command {
 }
 
 func runOverview(cmd *cobra.Command, f *factory.Factory, opts *OverviewOptions) error {
-	cfg, err := f.Config()
-	if err != nil {
-		return err
-	}
-	actx, err := cfg.ActiveContext()
-	if err != nil {
-		return err
-	}
-	client, err := f.HttpClient()
+	client, err := f.APIClient()
 	if err != nil {
 		return err
 	}
 
-	host := actx.Host
 	nStr := strconv.Itoa(opts.N)
+	timeQuery := makeQuery(map[string]string{
+		"after": opts.After, "before": opts.Before,
+	})
+	topQuery := makeQuery(map[string]string{
+		"n": nStr, "after": opts.After, "before": opts.Before,
+	})
+	offlineQuery := makeQuery(map[string]string{
+		"topN": nStr, "after": opts.After, "before": opts.Before,
+	})
 
 	type apiReq struct {
-		name string
-		url  string
+		name  string
+		path  string
+		query url.Values
 	}
 
 	reqs := []apiReq{
-		{"summary", host + "/api/v1/devices/summary"},
-		{"alertStats", host + "/api/v1/alerts/stats"},
-		{"topTypes", buildURL(host+"/api/v1/alert/top-alert-types", map[string]string{
-			"n": nStr, "after": opts.After, "before": opts.Before,
-		})},
-		{"traffic", buildURL(host+"/api/v1/datausage/overview", map[string]string{
-			"after": opts.After, "before": opts.Before,
-		})},
-		{"offline", buildURL(host+"/api/v1/devices/offline/topn", map[string]string{
-			"topN": nStr, "after": opts.After, "before": opts.Before,
-		})},
+		{"summary", "/api/v1/devices/summary", nil},
+		{"alertStats", "/api/v1/alerts/stats", nil},
+		{"topTypes", "/api/v1/alert/top-alert-types", topQuery},
+		{"traffic", "/api/v1/datausage/overview", timeQuery},
+		{"offline", "/api/v1/devices/offline/topn", offlineQuery},
 	}
 
 	results := make(map[string]json.RawMessage)
@@ -99,7 +91,7 @@ func runOverview(cmd *cobra.Command, f *factory.Factory, opts *OverviewOptions) 
 		wg.Add(1)
 		go func(r apiReq) {
 			defer wg.Done()
-			body, err := doGet(client, r.url)
+			body, err := client.Get(r.path, r.query)
 			mu.Lock()
 			defer mu.Unlock()
 			if err != nil {
@@ -108,14 +100,7 @@ func runOverview(cmd *cobra.Command, f *factory.Factory, opts *OverviewOptions) 
 				}
 				return
 			}
-			var envelope struct {
-				Result json.RawMessage `json:"result"`
-			}
-			if json.Unmarshal(body, &envelope) == nil && envelope.Result != nil {
-				results[r.name] = envelope.Result
-			} else {
-				results[r.name] = body
-			}
+			results[r.name] = unwrapResult(body)
 		}(r)
 	}
 	wg.Wait()
@@ -127,7 +112,7 @@ func runOverview(cmd *cobra.Command, f *factory.Factory, opts *OverviewOptions) 
 	output, _ := cmd.Flags().GetString("output")
 
 	switch output {
-	case "json", "jsonc":
+	case "json", "jsonc", "yaml":
 		merged := map[string]json.RawMessage{
 			"devices":    results["summary"],
 			"alerts":     results["alertStats"],
@@ -136,21 +121,15 @@ func runOverview(cmd *cobra.Command, f *factory.Factory, opts *OverviewOptions) 
 			"offline":    results["offline"],
 		}
 		b, _ := json.Marshal(merged)
-		fmt.Fprintln(f.IO.Out, iostreams.FormatJSON(b, f.IO, output))
-	case "yaml":
-		merged := map[string]json.RawMessage{
-			"devices":    results["summary"],
-			"alerts":     results["alertStats"],
-			"alertTypes": results["topTypes"],
-			"traffic":    results["traffic"],
-			"offline":    results["offline"],
+		if output == "yaml" {
+			s, err := iostreams.FormatYAML(b)
+			if err != nil {
+				return err
+			}
+			fmt.Fprintln(f.IO.Out, s)
+		} else {
+			fmt.Fprintln(f.IO.Out, iostreams.FormatJSON(b, f.IO, output))
 		}
-		b, _ := json.Marshal(merged)
-		s, err := iostreams.FormatYAML(b)
-		if err != nil {
-			return err
-		}
-		fmt.Fprintln(f.IO.Out, s)
 	default:
 		printDashboard(f.IO, results)
 	}
@@ -316,37 +295,33 @@ func formatBytes(b float64) string {
 	}
 }
 
-func buildURL(base string, params map[string]string) string {
-	u, err := url.Parse(base)
-	if err != nil {
-		return base
-	}
-	q := u.Query()
+// makeQuery builds url.Values from a map, skipping empty values.
+func makeQuery(params map[string]string) url.Values {
+	q := make(url.Values)
 	for k, v := range params {
 		if v != "" {
 			q.Set(k, v)
 		}
 	}
-	u.RawQuery = q.Encode()
-	return u.String()
+	return q
 }
 
-func doGet(client *http.Client, rawURL string) ([]byte, error) {
-	req, err := http.NewRequestWithContext(context.Background(), "GET", rawURL, http.NoBody)
-	if err != nil {
-		return nil, err
+// makeQueryWithGroups builds url.Values from a map plus repeated group IDs.
+func makeQueryWithGroups(params map[string]string, groups []string) url.Values {
+	q := makeQuery(params)
+	for _, g := range groups {
+		q.Add("devicegroupId", g)
 	}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
+	return q
+}
+
+// unwrapResult extracts the "result" field from API response envelope, or returns body as-is.
+func unwrapResult(body []byte) json.RawMessage {
+	var envelope struct {
+		Result json.RawMessage `json:"result"`
 	}
-	defer resp.Body.Close()
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
+	if json.Unmarshal(body, &envelope) == nil && envelope.Result != nil {
+		return envelope.Result
 	}
-	if resp.StatusCode >= 400 {
-		return body, fmt.Errorf("HTTP %d: %s", resp.StatusCode, string(body))
-	}
-	return body, nil
+	return body
 }

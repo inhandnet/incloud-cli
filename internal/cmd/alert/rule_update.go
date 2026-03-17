@@ -1,12 +1,8 @@
 package alert
 
 import (
-	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
 
 	"github.com/spf13/cobra"
 
@@ -56,40 +52,15 @@ Target bindings (type and targetIds) are preserved from the existing rule.`,
 				return fmt.Errorf("--channel is required")
 			}
 
-			cfg, err := f.Config()
-			if err != nil {
-				return err
-			}
-			ctx, err := cfg.ActiveContext()
-			if err != nil {
-				return err
-			}
-
-			client, err := f.HttpClient()
+			client, err := f.APIClient()
 			if err != nil {
 				return err
 			}
 
 			// GET existing rule to preserve type and targetIds
-			getURL := ctx.Host + "/api/v1/alerts/rules/" + ruleID
-			getReq, err := http.NewRequestWithContext(context.Background(), "GET", getURL, http.NoBody)
+			getBody, err := client.Get("/api/v1/alerts/rules/"+ruleID, nil)
 			if err != nil {
-				return fmt.Errorf("building request: %w", err)
-			}
-
-			getResp, err := client.Do(getReq)
-			if err != nil {
-				return fmt.Errorf("fetching existing rule: %w", err)
-			}
-			defer getResp.Body.Close()
-
-			getBody, err := io.ReadAll(getResp.Body)
-			if err != nil {
-				return fmt.Errorf("reading response: %w", err)
-			}
-
-			if getResp.StatusCode >= 400 {
-				return fmt.Errorf("HTTP %d: %s", getResp.StatusCode, string(getBody))
+				return err
 			}
 
 			var existing struct {
@@ -137,31 +108,9 @@ Target bindings (type and targetIds) are preserved from the existing rule.`,
 				"notify":    notify,
 			}
 
-			bodyBytes, err := json.Marshal(reqBody)
+			body, err := client.Put("/api/v1/alerts/rules/"+ruleID, reqBody)
 			if err != nil {
-				return fmt.Errorf("marshaling request body: %w", err)
-			}
-
-			putURL := ctx.Host + "/api/v1/alerts/rules/" + ruleID
-			req, err := http.NewRequestWithContext(context.Background(), http.MethodPut, putURL, bytes.NewReader(bodyBytes))
-			if err != nil {
-				return fmt.Errorf("building request: %w", err)
-			}
-			req.Header.Set("Content-Type", "application/json")
-
-			resp, err := client.Do(req)
-			if err != nil {
-				return fmt.Errorf("request failed: %w", err)
-			}
-			defer resp.Body.Close()
-
-			body, err := io.ReadAll(resp.Body)
-			if err != nil {
-				return fmt.Errorf("reading response: %w", err)
-			}
-
-			if resp.StatusCode >= 400 {
-				return fmt.Errorf("HTTP %d: %s", resp.StatusCode, string(body))
+				return err
 			}
 
 			output, _ := cmd.Flags().GetString("output")

@@ -77,8 +77,8 @@ func newCmdDatausageList(f *factory.Factory) *cobra.Command {
 
 // flattenDatausageDetails strips the redundant "time" field from each nested
 // interface type and sorts results by deviceId for stable output.
-// The nested structure is preserved so that FormatTable's resolveField can
-// walk dot-paths like "sim.tx" or "esim.total".
+// The nested structure is preserved so that FormatTable can resolve
+// dot-paths like "sim.tx" or "esim.total" via gjson.
 func flattenDatausageDetails(body []byte) ([]byte, error) {
 	var envelope struct {
 		Result []map[string]interface{} `json:"result"`

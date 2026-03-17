@@ -1,11 +1,8 @@
 package device
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
 	"net/url"
 	"strconv"
 
@@ -46,26 +43,12 @@ func NewCmdLogSyslog(f *factory.Factory) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			deviceID := args[0]
 
-			cfg, err := f.Config()
-			if err != nil {
-				return err
-			}
-			ctx, err := cfg.ActiveContext()
+			client, err := f.APIClient()
 			if err != nil {
 				return err
 			}
 
-			client, err := f.HttpClient()
-			if err != nil {
-				return err
-			}
-
-			u, err := url.Parse(ctx.Host + "/api/v1/devices/" + deviceID + "/logs/download/syslog/history")
-			if err != nil {
-				return fmt.Errorf("invalid URL: %w", err)
-			}
-
-			q := u.Query()
+			q := url.Values{}
 			q.Set("startTimestamp", opts.After+"Z")
 			q.Set("endTimestamp", opts.Before+"Z")
 			q.Set("limit", strconv.Itoa(opts.Limit))
@@ -73,26 +56,10 @@ func NewCmdLogSyslog(f *factory.Factory) *cobra.Command {
 			for _, kw := range opts.Keywords {
 				q.Add("keywords", kw)
 			}
-			u.RawQuery = q.Encode()
 
-			req, err := http.NewRequestWithContext(context.Background(), "GET", u.String(), http.NoBody)
+			body, err := client.Get("/api/v1/devices/"+deviceID+"/logs/download/syslog/history", q)
 			if err != nil {
-				return fmt.Errorf("building request: %w", err)
-			}
-
-			resp, err := client.Do(req)
-			if err != nil {
-				return fmt.Errorf("request failed: %w", err)
-			}
-			defer resp.Body.Close()
-
-			body, err := io.ReadAll(resp.Body)
-			if err != nil {
-				return fmt.Errorf("reading response: %w", err)
-			}
-
-			if resp.StatusCode >= 400 {
-				return fmt.Errorf("HTTP %d: %s", resp.StatusCode, string(body))
+				return err
 			}
 
 			output, _ := cmd.Flags().GetString("output")

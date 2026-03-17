@@ -1,15 +1,13 @@
 package device
 
 import (
-	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
+	"net/url"
 
 	"github.com/spf13/cobra"
 
+	"github.com/inhandnet/incloud-cli/internal/api"
 	"github.com/inhandnet/incloud-cli/internal/factory"
 )
 
@@ -28,22 +26,13 @@ func NewCmdUnassign(f *factory.Factory) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			deviceID := args[0]
 
-			cfg, err := f.Config()
-			if err != nil {
-				return err
-			}
-			actx, err := cfg.ActiveContext()
-			if err != nil {
-				return err
-			}
-
-			client, err := f.HttpClient()
+			client, err := f.APIClient()
 			if err != nil {
 				return err
 			}
 
 			// GET device to find its oid and verify it belongs to a group
-			dev, err := getDeviceInfo(client, actx.Host, deviceID)
+			dev, err := getDeviceInfo(client, deviceID)
 			if err != nil {
 				return err
 			}
@@ -63,32 +52,9 @@ func NewCmdUnassign(f *factory.Factory) *cobra.Command {
 				body["retainGroupConfig"] = true
 			}
 
-			jsonBytes, err := json.Marshal(body)
-			if err != nil {
-				return fmt.Errorf("encoding request body: %w", err)
-			}
-
-			reqURL := actx.Host + "/api/v1/devices/move"
-			req, err := http.NewRequestWithContext(context.Background(), http.MethodPut, reqURL, bytes.NewReader(jsonBytes))
+			_, err = client.Put("/api/v1/devices/move", body)
 			if err != nil {
 				return err
-			}
-			req.Header.Set("Content-Type", "application/json")
-
-			resp, err := client.Do(req)
-			if err != nil {
-				return fmt.Errorf("request failed: %w", err)
-			}
-			defer resp.Body.Close()
-
-			respBody, err := io.ReadAll(resp.Body)
-			if err != nil {
-				return fmt.Errorf("reading response: %w", err)
-			}
-
-			if resp.StatusCode >= 400 {
-				fmt.Fprintln(f.IO.ErrOut, string(respBody))
-				return fmt.Errorf("HTTP %d", resp.StatusCode)
 			}
 
 			fmt.Fprintf(f.IO.ErrOut, "Device %s removed from its group.\n", deviceID)
@@ -106,26 +72,13 @@ type deviceInfo struct {
 	groupName string
 }
 
-func getDeviceInfo(client *http.Client, host, deviceID string) (*deviceInfo, error) {
-	reqURL := host + "/api/v1/devices/" + deviceID + "?fields=oid,devicegroup"
-	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, reqURL, http.NoBody)
-	if err != nil {
-		return nil, err
-	}
+func getDeviceInfo(client *api.APIClient, deviceID string) (*deviceInfo, error) {
+	query := url.Values{}
+	query.Set("fields", "oid,devicegroup")
 
-	resp, err := client.Do(req)
+	body, err := client.Get("/api/v1/devices/"+deviceID, query)
 	if err != nil {
 		return nil, fmt.Errorf("fetching device: %w", err)
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("reading device response: %w", err)
-	}
-
-	if resp.StatusCode >= 400 {
-		return nil, fmt.Errorf("fetching device: HTTP %d: %s", resp.StatusCode, string(body))
 	}
 
 	var data struct {

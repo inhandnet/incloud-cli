@@ -47,17 +47,7 @@ func (f *Factory) SaveConfig() error {
 	return config.Save(f.config, f.ConfigPath)
 }
 
-// HttpClient returns an http.Client with Authorization header injected.
-func (f *Factory) HttpClient() (*http.Client, error) {
-	actx, err := f.activeContext()
-	if err != nil {
-		return nil, err
-	}
-	return &http.Client{Transport: f.newTransport(actx)}, nil
-}
-
 // APIClient returns a high-level REST client with base URL and auth configured.
-// Use this for the common GET+parse pattern; use HttpClient() for advanced cases.
 func (f *Factory) APIClient() (*api.APIClient, error) {
 	actx, err := f.activeContext()
 	if err != nil {
