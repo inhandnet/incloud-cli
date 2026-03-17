@@ -29,17 +29,17 @@
 
 ### `incloud device` — 核心 CRUD (~25 端点)
 
-- [ ] `device list` — 设备列表（分页、过滤、排序）
-- [ ] `device get <id>` — 查看设备详情
-- [ ] `device create` — 创建设备（交互式输入 SN/凭证）
-- [ ] `device update <id>` — 更新设备属性（name/description/tags）
-- [ ] `device delete <id>` — 删除设备
-- [ ] `device summary` — 设备统计概览（在线/离线/产品分布）
+- [x] `device list` — 设备列表（分页、过滤、排序）
+- [x] `device get <id>` — 查看设备详情
+- [x] `device create` — 创建设备（交互式输入 SN/凭证）
+- [x] `device update <id>` — 更新设备属性（name/description/tags）
+- [x] `device delete <id>` — 删除设备
+- ~~`device summary` — 设备统计概览~~ → 迁移至 `overview devices`
 - [ ] `device export` — 导出设备列表为文件
 - [ ] `device move <id> --group <gid>` — 移动设备到指定组
 - [ ] `device transfer <id> --org <oid>` — 转移设备到其他组织
 - [ ] `device import <file>` — 批量导入（CSV）
-- [ ] `device properties <id>` — 查看 IoT 属性/状态
+- ~~`device properties <id>` — 查看 IoT 属性/状态~~
 - [ ] `device features <id>` — 查看设备特性标志
 - [ ] `device location <id>` — 查看/更新位置信息
 
@@ -142,8 +142,8 @@
 - [x] `device presence events <id>` — 上下线事件历史（`GET /api/v1/devices/{id}/online-events-list`，分页，`--after/--before`）
 - [ ] `device presence stats <id>` — 在线事件统计图表（`GET /api/v1/devices/{id}/online-events-chart/statistics`）
 - [ ] `device presence offline daily <id>` — 每日离线汇总（`GET /api/v1/devices/{id}/offline/daily`，`--after/--before`）
-- [ ] `device presence offline topn` — 离线最多的设备排名（`GET /api/v1/devices/offline/topn`，`--n/--group/--after/--before`）
-- [ ] `device presence offline stats` — 离线统计列表（`GET /api/v1/devices/offline/statistics`，分页，`-q/--after/--before`）
+- ~~`device presence offline topn` — 离线最多的设备排名~~ → 迁移至 `overview offline`
+- ~~`device presence offline stats` — 离线统计列表~~ → 迁移至 `overview offline`
 - [ ] `device presence export <id>` — 导出事件历史（`GET /api/v1/devices/{id}/online-events-list/export`）
 
 ## Phase 1e: 流量统计 + 影子
@@ -154,7 +154,7 @@
 - [ ] `device datausage daily <id>` — 日流量（`GET /api/v1/devices/{id}/datausage-daily`，`--type --month`）
 - [ ] `device datausage monthly <id>` — 月流量（`GET /api/v1/devices/{id}/datausage-monthly`，`--type --year`）
 - [ ] `device datausage overview <id>` — 流量概览（聚合 hourly/daily/monthly overview 端点）
-- [ ] `device datausage topk` — Top-K 流量排名（`GET /api/v1/datausage/topk`）
+- ~~`device datausage topk` — Top-K 流量排名~~ → 迁移至 `overview traffic`
 - [ ] `device datausage details` — 设备流量明细（`GET /api/v1/devices/datausage/details`）
 - [ ] `device datausage export <id>` — 导出流量（`GET /api/v1/devices/{id}/datausage/export`，`--type HOURLY|DAILY|MONTHLY`）
 
@@ -188,14 +188,14 @@
 
 ## 基础设施（在实现子命令前完成）
 
-- [ ] 设计 device 子命令的代码结构（`internal/cmd/device/` 目录布局）
-- [ ] 实现通用分页参数（`--page`, `--limit`, `--sort`）
+- [x] 设计 device 子命令的代码结构（`internal/cmd/device/` 目录布局）
+- [x] 实现通用分页参数（`--page`, `--limit`, `--sort`）
 - [ ] 实现通用过滤参数（`--filter`, `-q`）
 - [ ] 实现 `--device <id>` 全局参数，支持 ID / name / SN 查找
-- [ ] 表格输出：device 列表的默认列选择
+- [x] 表格输出：device 列表的默认列选择
 - [ ] 考虑异步诊断任务的轮询/等待机制（diag/exec 类命令）
 - [ ] cobra command groups 分组展示（Core / Diagnostics / Monitoring / Data）
-- [ ] 统一时间参数 `--after/--before`，提取到公共 flag helper
+- [x] 统一时间参数 `--after/--before`，提取到公共 flag helper
 
 ## 不纳入 device 模块
 

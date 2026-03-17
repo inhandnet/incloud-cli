@@ -15,7 +15,7 @@
 |---|--------|---------|-------------|------|
 | 1 | 告警查询 | `incloud alert` | ~8 | 告警列表、确认、导出、统计 |
 | 2 | 告警规则 | `incloud alert rule` | ~6 | 规则 CRUD |
-| 3 | 告警统计 | `incloud alert top` | ~2 | Top-K 设备/类型 |
+| 3 | ~~告警统计~~ | ~~`incloud alert top`~~ | ~~2~~ | ~~迁移至 `overview alerts`~~ |
 
 ---
 
@@ -39,10 +39,10 @@
 - [x] `alert rule update <id>` — 更新告警规则（全量替换 rules + notify，不可修改 groupIds）
 - [x] `alert rule delete <id...>` — 删除告警规则（多 ID 自动批量删除）
 
-### 告警统计 (`incloud alert top`)
+### ~~告警统计 (`incloud alert top`)~~ → 迁移至 `overview alerts`
 
-- [x] `alert top devices` — Top-K 告警最多的设备（支持 --after/--before/--group/--n）
-- [x] `alert top types` — Top-K 告警类型排名
+- ~~`alert top devices` — Top-K 告警最多的设备~~ → `overview alerts`
+- ~~`alert top types` — Top-K 告警类型排名~~ → `overview alerts`
 
 ---
 
