@@ -6,18 +6,18 @@ import (
 )
 
 // applyProbeParams adds AlertProbe filter parameters to the query string.
-func applyProbeParams(q url.Values, from, to, status string, priority int, device, group string, types []string, ack, query string) {
-	if from != "" {
-		q.Set("from", from)
+func applyProbeParams(q url.Values, after, before, status string, priority *int, device, group string, types []string, ack, query string) {
+	if after != "" {
+		q.Set("from", after)
 	}
-	if to != "" {
-		q.Set("to", to)
+	if before != "" {
+		q.Set("to", before)
 	}
 	if status != "" {
 		q.Set("status", status)
 	}
-	if priority != 0 {
-		q.Set("priority", strconv.Itoa(priority))
+	if priority != nil {
+		q.Set("priority", strconv.Itoa(*priority))
 	}
 	if device != "" {
 		q.Set("deviceId", device)

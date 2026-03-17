@@ -14,8 +14,8 @@ import (
 )
 
 type ExportOptions struct {
-	From     string
-	To       string
+	After    string
+	Before   string
 	Status   string
 	Priority int
 	Device   string
@@ -43,7 +43,7 @@ func NewCmdExport(f *factory.Factory) *cobra.Command {
   incloud alert export --ack false -f unacked.csv
 
   # Export alerts within a time range
-  incloud alert export --from 2024-01-01T00:00:00 --to 2024-01-31T23:59:59
+  incloud alert export --after 2024-01-01T00:00:00 --before 2024-01-31T23:59:59
 
   # Pipe to other commands
   incloud alert export | head -20`,
@@ -68,7 +68,11 @@ func NewCmdExport(f *factory.Factory) *cobra.Command {
 			}
 
 			q := u.Query()
-			applyProbeParams(q, opts.From, opts.To, opts.Status, opts.Priority, opts.Device, opts.Group, opts.Type, opts.Ack, opts.Query)
+			var priority *int
+			if cmd.Flags().Changed("priority") {
+				priority = &opts.Priority
+			}
+			applyProbeParams(q, opts.After, opts.Before, opts.Status, priority, opts.Device, opts.Group, opts.Type, opts.Ack, opts.Query)
 			u.RawQuery = q.Encode()
 
 			req, err := http.NewRequestWithContext(context.Background(), "GET", u.String(), http.NoBody)
@@ -110,8 +114,8 @@ func NewCmdExport(f *factory.Factory) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&opts.From, "from", "", "Filter alerts from this time (e.g. 2024-01-01T00:00:00)")
-	cmd.Flags().StringVar(&opts.To, "to", "", "Filter alerts until this time (e.g. 2024-01-31T23:59:59)")
+	cmd.Flags().StringVar(&opts.After, "after", "", "Filter alerts after this time (e.g. 2024-01-01T00:00:00)")
+	cmd.Flags().StringVar(&opts.Before, "before", "", "Filter alerts before this time (e.g. 2024-01-31T23:59:59)")
 	cmd.Flags().StringVar(&opts.Status, "status", "", "Filter by status (ACTIVE/CLOSED)")
 	cmd.Flags().IntVar(&opts.Priority, "priority", 0, "Filter by priority level")
 	cmd.Flags().StringVar(&opts.Device, "device", "", "Filter by device ID")

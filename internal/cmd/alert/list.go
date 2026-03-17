@@ -20,8 +20,8 @@ type ListOptions struct {
 	Page     int
 	Limit    int
 	Sort     string
-	From     string
-	To       string
+	After    string
+	Before   string
 	Status   string
 	Priority int
 	Device   string
@@ -59,7 +59,7 @@ func NewCmdList(f *factory.Factory) *cobra.Command {
   incloud alert list --device 507f1f77bcf86cd799439011
 
   # Filter by time range
-  incloud alert list --from 2024-01-01T00:00:00 --to 2024-01-31T23:59:59
+  incloud alert list --after 2024-01-01T00:00:00 --before 2024-01-31T23:59:59
 
   # Filter by alert type
   incloud alert list --type offline --type reboot
@@ -112,7 +112,11 @@ func NewCmdList(f *factory.Factory) *cobra.Command {
 			if opts.Sort != "" {
 				q.Set("sort", opts.Sort)
 			}
-			applyProbeParams(q, opts.From, opts.To, opts.Status, opts.Priority, opts.Device, opts.Group, opts.Type, opts.Ack, opts.Query)
+			var priority *int
+			if cmd.Flags().Changed("priority") {
+				priority = &opts.Priority
+			}
+			applyProbeParams(q, opts.After, opts.Before, opts.Status, priority, opts.Device, opts.Group, opts.Type, opts.Ack, opts.Query)
 
 			output, _ := cmd.Flags().GetString("output")
 			fields := opts.Fields
@@ -181,8 +185,8 @@ func NewCmdList(f *factory.Factory) *cobra.Command {
 	cmd.Flags().IntVar(&opts.Page, "page", 1, "Page number (starting from 1)")
 	cmd.Flags().IntVar(&opts.Limit, "limit", 20, "Number of items per page")
 	cmd.Flags().StringVar(&opts.Sort, "sort", "", `Sort order (e.g. "createdAt,desc")`)
-	cmd.Flags().StringVar(&opts.From, "from", "", "Filter alerts from this time (e.g. 2024-01-01T00:00:00)")
-	cmd.Flags().StringVar(&opts.To, "to", "", "Filter alerts until this time (e.g. 2024-01-31T23:59:59)")
+	cmd.Flags().StringVar(&opts.After, "after", "", "Filter alerts after this time (e.g. 2024-01-01T00:00:00)")
+	cmd.Flags().StringVar(&opts.Before, "before", "", "Filter alerts before this time (e.g. 2024-01-31T23:59:59)")
 	cmd.Flags().StringVar(&opts.Status, "status", "", "Filter by status (ACTIVE/CLOSED)")
 	cmd.Flags().IntVar(&opts.Priority, "priority", 0, "Filter by priority level")
 	cmd.Flags().StringVar(&opts.Device, "device", "", "Filter by device ID")
