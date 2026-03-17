@@ -73,6 +73,8 @@ func runOffline(cmd *cobra.Command, f *factory.Factory, opts *OfflineOptions) er
 		return err
 	}
 
+	applyDefaultTimeRange2(&opts.After, &opts.Before)
+
 	// Build topn query
 	topnQuery := makeQueryWithGroups(map[string]string{
 		"topN":   strconv.Itoa(opts.N),
@@ -138,7 +140,7 @@ func runOffline(cmd *cobra.Command, f *factory.Factory, opts *OfflineOptions) er
 			return err
 		}
 	default:
-		printOfflineDashboard(f.IO, topnData, statsBody, opts.Fields)
+		printOfflineDashboard(f.IO, opts, topnData, statsBody)
 	}
 
 	return nil
@@ -171,30 +173,33 @@ func buildMergedOutput(topnData json.RawMessage, statsBody []byte) map[string]js
 	return merged
 }
 
-func printOfflineDashboard(io *iostreams.IOStreams, topnData json.RawMessage, statsBody []byte, fields []string) {
-	c := iostreams.NewColorizer(io.TermOutput())
-	out := io.Out
+func printOfflineDashboard(streams *iostreams.IOStreams, opts *OfflineOptions, topnData json.RawMessage, statsBody []byte) {
+	c := iostreams.NewColorizer(streams.TermOutput())
+	out := streams.Out
+
+	// --- Time Range ---
+	fmt.Fprintf(out, "%s %s ~ %s\n\n", c.Bold("Period:"), opts.After, opts.Before)
 
 	// --- Top Offline Devices ---
 	fmt.Fprintln(out, c.Bold("Top Offline Devices"))
-	topFields := fields
+	topFields := opts.Fields
 	if len(topFields) == 0 {
 		topFields = defaultTopFields
 	}
 	// Wrap topnData as a body for FormatTable
 	topWrapper, _ := json.Marshal(map[string]json.RawMessage{"result": topnData})
-	if err := iostreams.FormatTable(topWrapper, io, topFields); err != nil {
+	if err := iostreams.FormatTable(topWrapper, streams, topFields); err != nil {
 		fmt.Fprintln(out, c.Gray("  No data"))
 	}
 	fmt.Fprintln(out)
 
 	// --- Offline Statistics ---
 	fmt.Fprintln(out, c.Bold("Offline Statistics"))
-	statsFields := fields
+	statsFields := opts.Fields
 	if len(statsFields) == 0 {
 		statsFields = defaultStatsFields
 	}
-	if err := iostreams.FormatTable(statsBody, io, statsFields); err != nil {
+	if err := iostreams.FormatTable(statsBody, streams, statsFields); err != nil {
 		fmt.Fprintln(out, c.Gray("  No data"))
 	}
 }

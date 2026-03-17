@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"strconv"
 	"sync"
+	"time"
 
 	"github.com/spf13/cobra"
 
@@ -56,6 +57,8 @@ func runOverview(cmd *cobra.Command, f *factory.Factory, opts *OverviewOptions) 
 	if err != nil {
 		return err
 	}
+
+	applyDefaultTimeRange(opts)
 
 	nStr := strconv.Itoa(opts.N)
 	timeQuery := makeQuery(map[string]string{
@@ -131,15 +134,34 @@ func runOverview(cmd *cobra.Command, f *factory.Factory, opts *OverviewOptions) 
 			fmt.Fprintln(f.IO.Out, iostreams.FormatJSON(b, f.IO, output))
 		}
 	default:
-		printDashboard(f.IO, results)
+		printDashboard(f.IO, opts, results)
 	}
 
 	return nil
 }
 
-func printDashboard(streams *iostreams.IOStreams, data map[string]json.RawMessage) {
+// applyDefaultTimeRange sets After/Before to the last 7 days when not specified.
+func applyDefaultTimeRange(opts *OverviewOptions) {
+	applyDefaultTimeRange2(&opts.After, &opts.Before)
+}
+
+// applyDefaultTimeRange2 sets after/before to the last 7 days when not specified.
+func applyDefaultTimeRange2(after, before *string) {
+	now := time.Now()
+	if *before == "" {
+		*before = now.Format("2006-01-02")
+	}
+	if *after == "" {
+		*after = now.AddDate(0, 0, -7).Format("2006-01-02")
+	}
+}
+
+func printDashboard(streams *iostreams.IOStreams, opts *OverviewOptions, data map[string]json.RawMessage) {
 	c := iostreams.NewColorizer(streams.TermOutput())
 	out := streams.Out
+
+	// --- Time Range ---
+	fmt.Fprintf(out, "%s %s ~ %s\n\n", c.Bold("Period:"), opts.After, opts.Before)
 
 	// --- Devices ---
 	fmt.Fprintln(out, c.Bold("Devices"))
