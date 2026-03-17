@@ -98,8 +98,8 @@
 > 基础 API：`/api/v1/devices/{id}/logs/download`
 
 - [x] `device log syslog <id>` — 查询历史 syslog（`GET /api/v1/devices/{id}/logs/download/syslog/history`，`--after/--before/--keywords/--limit`，后续可加 `--realtime` 支持实时采集）
-- [ ] `device log download <id>` — 流式下载设备日志（`GET /api/v1/devices/{id}/logs/download`，`--type DIAGNOSTIC|SYSLOG`）
-- [ ] `device log mqtt <id>` — 查看 MQTT 通信日志
+- [x] `device log download <id>` — 流式下载设备日志（`GET /api/v1/devices/{id}/logs/download`，`--type DIAGNOSTIC|SYSLOG`）
+- [x] `device log mqtt <id>` — 查看 MQTT 通信日志
 
 ## Phase 1d: 监控 + 在线状态（扁平结构）
 
@@ -126,7 +126,7 @@
 ### 网络接口（后端：nezha-link）
 
 - [x] `device interface <id>` — 网络接口状态（`GET /api/v1/devices/{id}/interfaces`，含蜂窝接口信号）
-- [ ] `device interface refresh <id>` — 实时刷新（`POST /api/v1/devices/{id}/interfaces/refresh`）
+- [x] `device interface <id> --refresh` — 实时刷新（`POST /api/v1/devices/{id}/interfaces/refresh`），与 `device perf --refresh` 风格一致
 
 ### Uplink 链路（后端：nezha-link）
 
@@ -138,12 +138,11 @@
 
 ### 在线状态（后端：nezha-iot）
 
-- [x] `device connections <id>` — 上下线事件历史（`GET /api/v1/devices/{id}/online-events-list`，分页，`--after/--before`）
+- [x] `device online <id>` — 上下线事件历史（`GET /api/v1/devices/{id}/online-events-list`，分页，`--after/--before`），`--daily` 每日离线统计（`GET /api/v1/devices/{id}/offline/daily-stats`）
 - ~~`device presence stats <id>` — 在线事件统计图表（`GET /api/v1/devices/{id}/online-events-chart/statistics`）~~ — 前端专用接口，不实现
-- [ ] `device connections offline-daily <id>` — 每日离线汇总（`GET /api/v1/devices/{id}/offline/daily`，`--after/--before`）
 - ~~`device presence offline topn` — 离线最多的设备排名~~ → 迁移至 `overview offline`
 - ~~`device presence offline stats` — 离线统计列表~~ → 迁移至 `overview offline`
-- [ ] `device connections export <id>` — 导出事件历史（`GET /api/v1/devices/{id}/online-events-list/export`）
+- [ ] `device online export <id>` — 导出事件历史（`GET /api/v1/devices/{id}/online-events-list/export`）
 
 ## Phase 1e: 流量统计 + 影子
 

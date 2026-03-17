@@ -14,6 +14,8 @@ func NewCmdLog(f *factory.Factory) *cobra.Command {
 	}
 
 	cmd.AddCommand(NewCmdLogSyslog(f))
+	cmd.AddCommand(NewCmdLogDiagnostic(f))
+	cmd.AddCommand(NewCmdLogMqtt(f))
 
 	return cmd
 }
