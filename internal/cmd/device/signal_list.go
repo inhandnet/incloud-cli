@@ -2,7 +2,6 @@ package device
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -90,34 +89,11 @@ func newCmdSignalList(f *factory.Factory) *cobra.Command {
 			}
 
 			output, _ := cmd.Flags().GetString("output")
-			switch output {
-			case "table":
-				flat, err := flattenSignalSeries(body)
-				if err != nil {
-					return err
-				}
-				fields := opts.Fields
-				if len(fields) == 0 {
-					fields = defaultSignalFields
-				}
-				if err := iostreams.FormatTable(flat, f.IO, fields); err != nil {
-					return err
-				}
-			case "yaml":
-				s, err := iostreams.FormatYAML(body)
-				if err != nil {
-					return err
-				}
-				fmt.Fprintln(f.IO.Out, s)
-			default:
-				if json.Valid(body) {
-					fmt.Fprintln(f.IO.Out, iostreams.FormatJSON(body, f.IO, output))
-				} else {
-					fmt.Fprintln(f.IO.Out, string(body))
-				}
+			fields := opts.Fields
+			if len(fields) == 0 {
+				fields = defaultSignalFields
 			}
-
-			return nil
+			return iostreams.FormatOutput(body, f.IO, output, fields, iostreams.WithTransform(iostreams.FlattenSeries))
 		},
 	}
 
@@ -126,10 +102,4 @@ func newCmdSignalList(f *factory.Factory) *cobra.Command {
 	cmd.Flags().StringSliceVarP(&opts.Fields, "fields", "f", nil, "Fields to display in table mode")
 
 	return cmd
-}
-
-// flattenSignalSeries uses the shared flattenSeries with includeType=true
-// since signal series have a "type" field per series (e.g. "4G", "5G").
-func flattenSignalSeries(body []byte) ([]byte, error) {
-	return flattenSeriesWithType(body)
 }

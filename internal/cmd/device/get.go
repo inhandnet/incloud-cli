@@ -2,7 +2,6 @@ package device
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -86,26 +85,7 @@ func NewCmdGet(f *factory.Factory) *cobra.Command {
 			}
 
 			output, _ := cmd.Flags().GetString("output")
-			switch output {
-			case "table":
-				if err := iostreams.FormatTable(body, f.IO, opts.Fields); err != nil {
-					return err
-				}
-			case "yaml":
-				s, err := iostreams.FormatYAML(body)
-				if err != nil {
-					return err
-				}
-				fmt.Fprintln(f.IO.Out, s)
-			default:
-				if json.Valid(body) {
-					fmt.Fprintln(f.IO.Out, iostreams.FormatJSON(body, f.IO, output))
-				} else {
-					fmt.Fprintln(f.IO.Out, string(body))
-				}
-			}
-
-			return nil
+			return iostreams.FormatOutput(body, f.IO, output, opts.Fields)
 		},
 	}
 

@@ -174,21 +174,5 @@ func parseKeyValues(pairs []string) (map[string]string, error) {
 // formatOutput handles -o flag output formatting, shared by create/update.
 func formatOutput(cmd *cobra.Command, streams *iostreams.IOStreams, body []byte, columns []string) error {
 	output, _ := cmd.Flags().GetString("output")
-	switch output {
-	case "table":
-		return iostreams.FormatTable(body, streams, columns)
-	case "yaml":
-		s, err := iostreams.FormatYAML(body)
-		if err != nil {
-			return err
-		}
-		fmt.Fprintln(streams.Out, s)
-	default:
-		if json.Valid(body) {
-			fmt.Fprintln(streams.Out, iostreams.FormatJSON(body, streams, output))
-		} else {
-			fmt.Fprintln(streams.Out, string(body))
-		}
-	}
-	return nil
+	return iostreams.FormatOutput(body, streams, output, columns)
 }

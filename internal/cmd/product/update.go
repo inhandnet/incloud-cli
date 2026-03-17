@@ -11,6 +11,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/inhandnet/incloud-cli/internal/factory"
+	"github.com/inhandnet/incloud-cli/internal/iostreams"
 )
 
 type UpdateOptions struct {
@@ -111,7 +112,8 @@ func NewCmdUpdate(f *factory.Factory) *cobra.Command {
 				return fmt.Errorf("reading response: %w", err)
 			}
 
-			if err := formatOutput(cmd, f.IO, respBody, nil); err != nil {
+			output, _ := cmd.Flags().GetString("output")
+			if err := iostreams.FormatOutput(respBody, f.IO, output, nil); err != nil {
 				return err
 			}
 

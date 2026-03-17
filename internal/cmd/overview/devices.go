@@ -2,7 +2,6 @@ package overview
 
 import (
 	"encoding/json"
-	"fmt"
 
 	"github.com/spf13/cobra"
 
@@ -65,30 +64,11 @@ func NewCmdDevices(f *factory.Factory) *cobra.Command {
 			}
 
 			output, _ := cmd.Flags().GetString("output")
-			switch output {
-			case "table":
-				fields := opts.Fields
-				if len(fields) == 0 {
-					fields = defaultDevicesFields
-				}
-				if err := iostreams.FormatTable(data, f.IO, fields); err != nil {
-					return err
-				}
-			case "yaml":
-				s, err := iostreams.FormatYAML(data)
-				if err != nil {
-					return err
-				}
-				fmt.Fprintln(f.IO.Out, s)
-			default:
-				if json.Valid(data) {
-					fmt.Fprintln(f.IO.Out, iostreams.FormatJSON(data, f.IO, output))
-				} else {
-					fmt.Fprintln(f.IO.Out, string(data))
-				}
+			fields := opts.Fields
+			if len(fields) == 0 {
+				fields = defaultDevicesFields
 			}
-
-			return nil
+			return iostreams.FormatOutput(data, f.IO, output, fields)
 		},
 	}
 

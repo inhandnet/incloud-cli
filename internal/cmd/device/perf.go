@@ -2,7 +2,6 @@ package device
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -117,29 +116,11 @@ func runPerfCurrent(f *factory.Factory, cmd *cobra.Command, deviceID string, opt
 	}
 
 	output, _ := cmd.Flags().GetString("output")
-	switch output {
-	case "table":
-		fields := opts.Fields
-		if len(fields) == 0 {
-			fields = defaultPerfCurrentFields
-		}
-		if err := iostreams.FormatTable(body, f.IO, fields); err != nil {
-			return err
-		}
-	case "yaml":
-		s, err := iostreams.FormatYAML(body)
-		if err != nil {
-			return err
-		}
-		fmt.Fprintln(f.IO.Out, s)
-	default:
-		if json.Valid(body) {
-			fmt.Fprintln(f.IO.Out, iostreams.FormatJSON(body, f.IO, output))
-		} else {
-			fmt.Fprintln(f.IO.Out, string(body))
-		}
+	fields := opts.Fields
+	if len(fields) == 0 {
+		fields = defaultPerfCurrentFields
 	}
-	return nil
+	return iostreams.FormatOutput(body, f.IO, output, fields)
 }
 
 func runPerfSeries(f *factory.Factory, cmd *cobra.Command, deviceID string, opts *perfOptions) error {
@@ -190,31 +171,9 @@ func runPerfSeries(f *factory.Factory, cmd *cobra.Command, deviceID string, opts
 	}
 
 	output, _ := cmd.Flags().GetString("output")
-	switch output {
-	case "table":
-		flat, err := flattenSeries(body)
-		if err != nil {
-			return err
-		}
-		fields := opts.Fields
-		if len(fields) == 0 {
-			fields = defaultPerfSeriesFields
-		}
-		if err := iostreams.FormatTable(flat, f.IO, fields); err != nil {
-			return err
-		}
-	case "yaml":
-		s, err := iostreams.FormatYAML(body)
-		if err != nil {
-			return err
-		}
-		fmt.Fprintln(f.IO.Out, s)
-	default:
-		if json.Valid(body) {
-			fmt.Fprintln(f.IO.Out, iostreams.FormatJSON(body, f.IO, output))
-		} else {
-			fmt.Fprintln(f.IO.Out, string(body))
-		}
+	fields := opts.Fields
+	if len(fields) == 0 {
+		fields = defaultPerfSeriesFields
 	}
-	return nil
+	return iostreams.FormatOutput(body, f.IO, output, fields, iostreams.WithTransform(iostreams.FlattenSeries))
 }

@@ -2,7 +2,6 @@ package device
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -183,21 +182,5 @@ func doOnlineRequest(client *http.Client, rawURL string) ([]byte, error) {
 }
 
 func printOutput(body []byte, output string, fields []string, streams *iostreams.IOStreams) error {
-	switch output {
-	case "table":
-		return iostreams.FormatTable(body, streams, fields)
-	case "yaml":
-		s, err := iostreams.FormatYAML(body)
-		if err != nil {
-			return err
-		}
-		fmt.Fprintln(streams.Out, s)
-	default:
-		if json.Valid(body) {
-			fmt.Fprintln(streams.Out, iostreams.FormatJSON(body, streams, output))
-		} else {
-			fmt.Fprintln(streams.Out, string(body))
-		}
-	}
-	return nil
+	return iostreams.FormatOutput(body, streams, output, fields)
 }

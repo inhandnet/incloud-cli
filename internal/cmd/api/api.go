@@ -98,23 +98,8 @@ Authorization header is automatically injected.`,
 
 			// Format output based on TTY and -o flag
 			output, _ := cmd.Flags().GetString("output")
-			switch output {
-			case "table":
-				if err := iostreams.FormatTable(body, f.IO, opts.Columns); err != nil {
-					return err
-				}
-			case "yaml":
-				s, err := iostreams.FormatYAML(body)
-				if err != nil {
-					return err
-				}
-				fmt.Fprintln(f.IO.Out, s)
-			default:
-				if json.Valid(body) {
-					fmt.Fprintln(f.IO.Out, iostreams.FormatJSON(body, f.IO, output))
-				} else {
-					fmt.Fprintln(f.IO.Out, string(body))
-				}
+			if err := iostreams.FormatOutput(body, f.IO, output, opts.Columns); err != nil {
+				return err
 			}
 
 			if resp.StatusCode >= 400 {

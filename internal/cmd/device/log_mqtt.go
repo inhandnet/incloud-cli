@@ -118,34 +118,16 @@ func NewCmdLogMqtt(f *factory.Factory) *cobra.Command {
 			}
 
 			output, _ := cmd.Flags().GetString("output")
-			switch output {
-			case "table":
-				resultBody, err := extractResultArray(body)
-				if err != nil {
-					return err
-				}
-				fields := opts.Fields
-				if len(fields) == 0 {
-					fields = defaultMqttLogFields
-				}
-				if err := iostreams.FormatTable(resultBody, f.IO, fields); err != nil {
-					return err
-				}
-				printCursorHint(f, body)
-			case "yaml":
-				s, err := iostreams.FormatYAML(body)
-				if err != nil {
-					return err
-				}
-				fmt.Fprintln(f.IO.Out, s)
-			default:
-				if json.Valid(body) {
-					fmt.Fprintln(f.IO.Out, iostreams.FormatJSON(body, f.IO, output))
-				} else {
-					fmt.Fprintln(f.IO.Out, string(body))
-				}
+			fields := opts.Fields
+			if len(fields) == 0 {
+				fields = defaultMqttLogFields
 			}
-
+			if err := iostreams.FormatOutput(body, f.IO, output, fields, iostreams.WithTransform(extractResultArray)); err != nil {
+				return err
+			}
+			if output == "table" {
+				printCursorHint(f, body)
+			}
 			return nil
 		},
 	}

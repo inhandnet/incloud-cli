@@ -2,7 +2,6 @@ package product
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -119,26 +118,7 @@ func NewCmdList(f *factory.Factory) *cobra.Command {
 				return fmt.Errorf("HTTP %d: %s", resp.StatusCode, string(body))
 			}
 
-			switch output {
-			case "table":
-				if err := iostreams.FormatTable(body, f.IO, fields); err != nil {
-					return err
-				}
-			case "yaml":
-				s, err := iostreams.FormatYAML(body)
-				if err != nil {
-					return err
-				}
-				fmt.Fprintln(f.IO.Out, s)
-			default:
-				if json.Valid(body) {
-					fmt.Fprintln(f.IO.Out, iostreams.FormatJSON(body, f.IO, output))
-				} else {
-					fmt.Fprintln(f.IO.Out, string(body))
-				}
-			}
-
-			return nil
+			return iostreams.FormatOutput(body, f.IO, output, fields)
 		},
 	}
 
