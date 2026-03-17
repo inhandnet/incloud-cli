@@ -2,6 +2,7 @@ package api
 
 import (
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 
@@ -9,8 +10,11 @@ import (
 )
 
 // APIClient is a high-level HTTP client with base URL and auth pre-configured.
-// It wraps resty to provide a concise API for the common GET+parse pattern
-// used across CLI commands.
+// It wraps resty to provide a concise, consistent API for CLI commands.
+//
+// All methods return (responseBody, error). On HTTP >= 400, the error contains
+// the status code and response body; the body is also returned so callers can
+// inspect it if needed.
 type APIClient struct {
 	inner *resty.Client
 }
@@ -31,7 +35,75 @@ func (c *APIClient) Get(path string, query url.Values) ([]byte, error) {
 	if clean := cleanValues(query); len(clean) > 0 {
 		r.SetQueryParamsFromValues(clean)
 	}
-	resp, err := r.Get(path)
+	return c.execute(r, resty.MethodGet, path)
+}
+
+// Post performs a POST request. body is JSON-marshaled by resty; pass nil for
+// an empty body.
+func (c *APIClient) Post(path string, body interface{}) ([]byte, error) {
+	r := c.inner.R()
+	if body != nil {
+		r.SetBody(body)
+	}
+	return c.execute(r, resty.MethodPost, path)
+}
+
+// Put performs a PUT request. body is JSON-marshaled by resty; pass nil for
+// an empty body.
+func (c *APIClient) Put(path string, body interface{}) ([]byte, error) {
+	r := c.inner.R()
+	if body != nil {
+		r.SetBody(body)
+	}
+	return c.execute(r, resty.MethodPut, path)
+}
+
+// Delete performs a DELETE request.
+func (c *APIClient) Delete(path string) ([]byte, error) {
+	return c.execute(c.inner.R(), resty.MethodDelete, path)
+}
+
+// Upload performs a multipart file upload via POST.
+func (c *APIClient) Upload(path, fieldName, fileName string, reader io.Reader) ([]byte, error) {
+	r := c.inner.R().SetFileReader(fieldName, fileName, reader)
+	return c.execute(r, resty.MethodPost, path)
+}
+
+// RequestOptions configures a generic request via Do.
+type RequestOptions struct {
+	Query       url.Values
+	Body        interface{}
+	RawBody     io.Reader
+	Headers     map[string]string
+	ContentType string
+}
+
+// Do performs an arbitrary HTTP request. Use this for the generic `api` command
+// or any case that doesn't fit the CRUD helpers.
+func (c *APIClient) Do(method, path string, opts *RequestOptions) ([]byte, error) {
+	r := c.inner.R()
+	if opts != nil {
+		if clean := cleanValues(opts.Query); len(clean) > 0 {
+			r.SetQueryParamsFromValues(clean)
+		}
+		if len(opts.Headers) > 0 {
+			r.SetHeaders(opts.Headers)
+		}
+		if opts.RawBody != nil {
+			r.SetBody(opts.RawBody)
+			if opts.ContentType != "" {
+				r.SetHeader("Content-Type", opts.ContentType)
+			}
+		} else if opts.Body != nil {
+			r.SetBody(opts.Body)
+		}
+	}
+	return c.execute(r, method, path)
+}
+
+// execute is the shared request execution + error handling.
+func (c *APIClient) execute(r *resty.Request, method, path string) ([]byte, error) {
+	resp, err := r.Execute(method, path)
 	if err != nil {
 		return nil, fmt.Errorf("request failed: %w", err)
 	}
