@@ -1,10 +1,7 @@
 package device
 
 import (
-	"context"
 	"fmt"
-	"io"
-	"net/http"
 	"net/url"
 	"os"
 
@@ -33,68 +30,32 @@ the log, which may take up to a few minutes depending on network conditions.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			deviceID := args[0]
 
-			cfg, err := f.Config()
-			if err != nil {
-				return err
-			}
-			ctx, err := cfg.ActiveContext()
+			client, err := f.APIClient()
 			if err != nil {
 				return err
 			}
 
-			client, err := f.HttpClient()
-			if err != nil {
-				return err
-			}
-
-			u, err := url.Parse(ctx.Host + "/api/v1/devices/" + deviceID + "/logs/download")
-			if err != nil {
-				return fmt.Errorf("invalid URL: %w", err)
-			}
-
-			q := u.Query()
+			q := url.Values{}
 			q.Set("type", "diagnostic")
 			q.Set("fetchRealtime", "true")
-			u.RawQuery = q.Encode()
 
 			fmt.Fprintln(f.IO.ErrOut, "Requesting diagnostic log from device (this may take a few minutes)...")
 
-			req, err := http.NewRequestWithContext(context.Background(), "GET", u.String(), http.NoBody)
+			body, err := client.Get("/api/v1/devices/"+deviceID+"/logs/download", q)
 			if err != nil {
-				return fmt.Errorf("building request: %w", err)
+				return err
 			}
 
-			resp, err := client.Do(req)
-			if err != nil {
-				return fmt.Errorf("request failed: %w", err)
-			}
-			defer resp.Body.Close()
-
-			if resp.StatusCode >= 400 {
-				body, _ := io.ReadAll(resp.Body)
-				return fmt.Errorf("HTTP %d: %s", resp.StatusCode, string(body))
-			}
-
-			if file == "" {
-				if _, err := io.Copy(f.IO.Out, resp.Body); err != nil {
-					return fmt.Errorf("writing output: %w", err)
+			if file != "" {
+				if err := os.WriteFile(file, body, 0o600); err != nil {
+					return fmt.Errorf("writing file: %w", err)
 				}
+				fmt.Fprintf(f.IO.ErrOut, "Downloaded to %s (%d bytes)\n", file, len(body))
 				return nil
 			}
 
-			outFile, err := os.Create(file)
-			if err != nil {
-				return fmt.Errorf("creating file: %w", err)
-			}
-			defer func() { _ = outFile.Close() }()
-
-			n, err := io.Copy(outFile, resp.Body)
-			if err != nil {
-				return fmt.Errorf("writing file: %w", err)
-			}
-
-			fmt.Fprintf(f.IO.ErrOut, "Downloaded to %s (%d bytes)\n", file, n)
-			return nil
+			_, err = f.IO.Out.Write(body)
+			return err
 		},
 	}
 

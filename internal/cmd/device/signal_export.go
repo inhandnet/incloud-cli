@@ -1,10 +1,7 @@
 package device
 
 import (
-	"context"
 	"fmt"
-	"io"
-	"net/http"
 	"net/url"
 	"os"
 
@@ -38,70 +35,34 @@ func newCmdSignalExport(f *factory.Factory) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			deviceID := args[0]
 
-			cfg, err := f.Config()
-			if err != nil {
-				return err
-			}
-			actx, err := cfg.ActiveContext()
+			client, err := f.APIClient()
 			if err != nil {
 				return err
 			}
 
-			client, err := f.HttpClient()
-			if err != nil {
-				return err
-			}
-
-			u, err := url.Parse(actx.Host + "/api/v1/devices/" + deviceID + "/signal/export")
-			if err != nil {
-				return fmt.Errorf("invalid URL: %w", err)
-			}
-
-			q := u.Query()
+			q := url.Values{}
 			if opts.After != "" {
 				q.Set("after", opts.After)
 			}
 			if opts.Before != "" {
 				q.Set("before", opts.Before)
 			}
-			u.RawQuery = q.Encode()
 
-			req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, u.String(), http.NoBody)
+			body, err := client.Get("/api/v1/devices/"+deviceID+"/signal/export", q)
 			if err != nil {
-				return fmt.Errorf("building request: %w", err)
+				return err
 			}
 
-			resp, err := client.Do(req)
-			if err != nil {
-				return fmt.Errorf("request failed: %w", err)
-			}
-			defer resp.Body.Close()
-
-			if resp.StatusCode >= 400 {
-				body, _ := io.ReadAll(resp.Body)
-				return fmt.Errorf("HTTP %d: %s", resp.StatusCode, string(body))
-			}
-
-			w := f.IO.Out
 			if opts.File != "" {
-				file, err := os.Create(opts.File)
-				if err != nil {
-					return fmt.Errorf("creating file: %w", err)
+				if err := os.WriteFile(opts.File, body, 0o600); err != nil {
+					return fmt.Errorf("writing file: %w", err)
 				}
-				defer func() { _ = file.Close() }()
-				w = file
+				fmt.Fprintf(f.IO.Out, "Exported to %s (%d bytes)\n", opts.File, len(body))
+				return nil
 			}
 
-			n, err := io.Copy(w, resp.Body)
-			if err != nil {
-				return fmt.Errorf("writing output: %w", err)
-			}
-
-			if opts.File != "" {
-				fmt.Fprintf(f.IO.Out, "Exported to %s (%d bytes)\n", opts.File, n)
-			}
-
-			return nil
+			_, err = f.IO.Out.Write(body)
+			return err
 		},
 	}
 
