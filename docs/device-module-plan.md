@@ -120,10 +120,8 @@
 
 ### 性能监控（后端：nezha-link）
 
-- [ ] `device perf <id>` — 性能时序（`GET /api/v1/devices/{id}/performance`，CPU/内存，`--after/--before` 必填）
-- [ ] `device perf current <id>` — 当前性能（`GET /api/v1/devices/{id}/performances`）
-- [ ] `device perf refresh <id>` — 实时采集（`POST /api/v1/devices/{id}/performances/refresh`）
-- [ ] `device perf export <id>` — 导出性能数据（`GET /api/v1/devices/{id}/performance/export`）
+- [x] `device perf <id>` — 当前性能快照（`GET /performances`），`--refresh` 实时采集（`POST .../refresh`），`--after/--before` 历史时序（`GET /performance`）
+- ~~`device perf export <id>`~~ — 不实现
 
 ### 网络接口（后端：nezha-link）
 
@@ -141,7 +139,7 @@
 ### 在线状态（后端：nezha-iot）
 
 - [x] `device presence events <id>` — 上下线事件历史（`GET /api/v1/devices/{id}/online-events-list`，分页，`--after/--before`）
-- [ ] `device presence stats <id>` — 在线事件统计图表（`GET /api/v1/devices/{id}/online-events-chart/statistics`）
+- ~~`device presence stats <id>` — 在线事件统计图表（`GET /api/v1/devices/{id}/online-events-chart/statistics`）~~ — 前端专用接口，不实现
 - [ ] `device presence offline daily <id>` — 每日离线汇总（`GET /api/v1/devices/{id}/offline/daily`，`--after/--before`）
 - ~~`device presence offline topn` — 离线最多的设备排名~~ → 迁移至 `overview offline`
 - ~~`device presence offline stats` — 离线统计列表~~ → 迁移至 `overview offline`
