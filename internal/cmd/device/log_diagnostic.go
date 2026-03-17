@@ -4,11 +4,9 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"mime"
 	"net/http"
 	"net/url"
 	"os"
-	"path/filepath"
 
 	"github.com/spf13/cobra"
 
@@ -27,7 +25,7 @@ the log, which may take up to a few minutes depending on network conditions.`,
   incloud device log diagnostic 507f1f77bcf86cd799439011
 
   # Save to a file
-  incloud device log diagnostic 507f1f77bcf86cd799439011 --file device_diag.log
+  incloud device log diagnostic 507f1f77bcf86cd799439011 --file diag.log
 
   # Pipe to grep
   incloud device log diagnostic 507f1f77bcf86cd799439011 | grep -i error`,
@@ -77,25 +75,14 @@ the log, which may take up to a few minutes depending on network conditions.`,
 				return fmt.Errorf("HTTP %d: %s", resp.StatusCode, string(body))
 			}
 
-			filename := file
-			if filename == "" {
-				// No file specified — write to stdout
+			if file == "" {
 				if _, err := io.Copy(f.IO.Out, resp.Body); err != nil {
 					return fmt.Errorf("writing output: %w", err)
 				}
 				return nil
 			}
 
-			// Resolve "auto" from Content-Disposition
-			if filename == "auto" {
-				filename = filenameFromHeader(resp.Header.Get("Content-Disposition"))
-				if filename == "" {
-					filename = deviceID + "_diagnostic.log"
-				}
-				filename = filepath.Base(filename)
-			}
-
-			outFile, err := os.Create(filepath.Clean(filename)) //nolint:gosec // filename is user-provided flag or sanitized via filepath.Base
+			outFile, err := os.Create(file)
 			if err != nil {
 				return fmt.Errorf("creating file: %w", err)
 			}
@@ -106,23 +93,12 @@ the log, which may take up to a few minutes depending on network conditions.`,
 				return fmt.Errorf("writing file: %w", err)
 			}
 
-			fmt.Fprintf(f.IO.ErrOut, "Downloaded to %s (%d bytes)\n", filename, n)
+			fmt.Fprintf(f.IO.ErrOut, "Downloaded to %s (%d bytes)\n", file, n)
 			return nil
 		},
 	}
 
-	cmd.Flags().StringVar(&file, "file", "", `Output file path, or "auto" to use server-suggested filename`)
+	cmd.Flags().StringVar(&file, "file", "", "Output file path (default: stdout)")
 
 	return cmd
-}
-
-func filenameFromHeader(header string) string {
-	if header == "" {
-		return ""
-	}
-	_, params, err := mime.ParseMediaType(header)
-	if err != nil {
-		return ""
-	}
-	return params["filename"]
 }

@@ -98,7 +98,7 @@
 > 基础 API：`/api/v1/devices/{id}/logs/download`
 
 - [x] `device log syslog <id>` — 查询历史 syslog（`GET /api/v1/devices/{id}/logs/download/syslog/history`，`--after/--before/--keywords/--limit`，后续可加 `--realtime` 支持实时采集）
-- [x] `device log download <id>` — 流式下载设备日志（`GET /api/v1/devices/{id}/logs/download`，`--type DIAGNOSTIC|SYSLOG`）
+- [x] `device log diagnostic <id>` — 下载设备诊断日志（`GET /api/v1/devices/{id}/logs/download?type=diagnostic`，`--file`）
 - [x] `device log mqtt <id>` — 查看 MQTT 通信日志
 
 ## Phase 1d: 监控 + 在线状态（扁平结构）
