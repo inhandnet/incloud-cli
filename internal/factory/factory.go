@@ -49,32 +49,48 @@ func (f *Factory) SaveConfig() error {
 
 // HttpClient returns an http.Client with Authorization header injected.
 func (f *Factory) HttpClient() (*http.Client, error) {
+	actx, err := f.activeContext()
+	if err != nil {
+		return nil, err
+	}
+	return &http.Client{Transport: f.newTransport(actx)}, nil
+}
+
+// APIClient returns a high-level REST client with base URL and auth configured.
+// Use this for the common GET+parse pattern; use HttpClient() for advanced cases.
+func (f *Factory) APIClient() (*api.APIClient, error) {
+	actx, err := f.activeContext()
+	if err != nil {
+		return nil, err
+	}
+	return api.NewAPIClient(actx.Host, f.newTransport(actx)), nil
+}
+
+func (f *Factory) activeContext() (*config.Context, error) {
 	cfg, err := f.Config()
 	if err != nil {
 		return nil, err
 	}
-	ctx, err := cfg.ActiveContext()
-	if err != nil {
-		return nil, err
-	}
-	return &http.Client{
-		Transport: &api.TokenTransport{
-			Token:        ctx.EffectiveToken(),
-			RefreshToken: ctx.RefreshToken,
-			Host:         ctx.Host,
-			ClientID:     ctx.ClientID,
-			ClientSecret: ctx.ClientSecret,
-			OnRefresh: func(accessToken, refreshToken string, expiry time.Time) {
-				ctx.Token = accessToken
-				if refreshToken != "" {
-					ctx.RefreshToken = refreshToken
-				}
-				if !expiry.IsZero() {
-					ctx.ExpiresAt = expiry
-				}
-				_ = f.SaveConfig()
-			},
-			Base: http.DefaultTransport,
+	return cfg.ActiveContext()
+}
+
+func (f *Factory) newTransport(ctx *config.Context) *api.TokenTransport {
+	return &api.TokenTransport{
+		Token:        ctx.EffectiveToken(),
+		RefreshToken: ctx.RefreshToken,
+		Host:         ctx.Host,
+		ClientID:     ctx.ClientID,
+		ClientSecret: ctx.ClientSecret,
+		OnRefresh: func(accessToken, refreshToken string, expiry time.Time) {
+			ctx.Token = accessToken
+			if refreshToken != "" {
+				ctx.RefreshToken = refreshToken
+			}
+			if !expiry.IsZero() {
+				ctx.ExpiresAt = expiry
+			}
+			_ = f.SaveConfig()
 		},
-	}, nil
+		Base: http.DefaultTransport,
+	}
 }
