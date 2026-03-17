@@ -109,9 +109,9 @@
 ### 信号监控（后端：nezha-link）
 
 - [x] `device signal <id>` — 信号强度时序（`GET /api/v1/devices/{id}/signal`，RSRP/RSRQ/SINR，`--after/--before`）
-- [ ] `device signal current <id>` — 当前实时信号（`GET /api/v1/devices/{id}/current-signal`）
-- [ ] `device signal export <id>` — 导出信号数据（`GET /api/v1/devices/{id}/signal/export`）
-- [ ] `device signal summary --device <ids>` — 批量信号汇总（`POST /api/v1/signal-summary/batch`，`--after/--before`）
+- [x] `device signal current <id>` — 当前实时信号（`GET /api/v1/devices/{id}/current-signal`）
+- [x] `device signal export <id>` — 导出信号数据（`GET /api/v1/devices/{id}/signal/export`）
+- [ ] ~~`device signal summary --device <ids>` — 批量信号汇总（`POST /api/v1/signal-summary/batch`，`--after/--before`）~~ — 前端未使用，暂不实现
 
 ### 天线信号（后端：nezha-link）
 
