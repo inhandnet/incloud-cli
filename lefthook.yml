@@ -6,4 +6,4 @@ pre-commit:
       stage_fixed: true
     lint:
       glob: "*.go"
-      run: golangci-lint run ./...
+      run: golangci-lint run {staged_files}
