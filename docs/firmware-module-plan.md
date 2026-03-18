@@ -5,12 +5,12 @@
 
 ## 子模块划分
 
-| # | 子模块 | CLI 路径 | 用户可用端点 | 说明 |
-|---|--------|---------|-------------|------|
-| 1 | 固件查询 | `incloud firmware` | ~8 | 列表、详情、按产品查询 |
-| 2 | OTA 任务 | `incloud firmware job` | ~9 | 创建/查看/重试升级任务 |
-| 3 | OTA 模块 | `incloud firmware module` | ~2 | 查看 OTA 模块定义 |
-| 4 | 设备固件状态 | `incloud firmware device` | ~6 | 查看设备当前固件/OTA 状态 |
+| #   | 子模块       | CLI 路径                  | 用户可用端点 | 说明                      |
+| --- | ------------ | ------------------------- | ------------ | ------------------------- |
+| 1   | 固件查询     | `incloud firmware`        | ~8           | 列表、详情、按产品查询    |
+| 2   | OTA 任务     | `incloud firmware job`    | ~9           | 创建/查看/重试升级任务    |
+| 3   | OTA 模块     | `incloud firmware module` | ~2           | 查看 OTA 模块定义         |
+| 4   | 设备固件状态 | `incloud firmware device` | ~6           | 查看设备当前固件/OTA 状态 |
 
 ---
 
@@ -28,15 +28,17 @@
 
 ### OTA 任务 (`incloud firmware job`)
 
-- [ ] `firmware job list` — 列出所有 OTA 任务
-- [ ] `firmware job list --firmware <id>` — 按固件列出 OTA 任务
-- [ ] `firmware job create <firmwareId>` — 创建 OTA 升级任务（指定目标设备/组、调度时间、超时、重试）
-- [ ] `firmware job create --bulk` — 批量创建 OTA 任务（跨多个固件/设备）
-- [ ] `firmware job executions` — 列出所有 OTA 任务执行记录
-- [ ] `firmware job executions --firmware <id>` — 按固件列出执行记录
-- [ ] `firmware job executions --device <id>` — 查看设备已完成的 OTA 记录
-- [ ] `firmware job next --device <id>` — 查看设备下一个待执行的 OTA 任务
-- [ ] `firmware job retry <executionId>` — 重试失败的 OTA 执行
+- [x] `firmware job list` — 列出所有 OTA 任务
+- [x] `firmware job list --firmware <id>` — 按固件列出 OTA 任务
+- [x] `firmware job create <firmwareId>` — 创建 OTA 升级任务（指定目标设备/组、调度时间、超时、重试）；使用 batch endpoint，支持 --version/--filter/--scheduled-at/--upgradable-start/--upgradable-end
+      ~~- [ ] `firmware job create --bulk` — 批量创建 OTA 任务（跨多个固件/设备）~~ 不做这个功能，直接使用 `firmware job create` 创建多个任务
+- [x] `firmware job executions` — 列出所有 OTA 任务执行记录；支持 --status/--job/--sn/--module/--expand 过滤
+- [x] `firmware job executions --firmware <id>` — 按固件列出执行记录
+- [x] `firmware job executions --device <id>` — 查看设备已完成的 OTA 记录
+      ~~- [ ] `firmware job next --device <id>` — 查看设备下一个待执行的 OTA 任务~~ 不做这个功能
+- [x] `firmware job cancel <jobId>` — 取消 OTA 任务
+- [x] `firmware job executions cancel <executionId>` — 取消单个 OTA 执行
+- [x] `firmware job executions retry <executionId>` — 重试失败的 OTA 执行
 
 ### OTA 模块 (`incloud firmware module`)
 
@@ -55,16 +57,16 @@
 
 ## 不纳入 CLI 的端点（@InternalApi）
 
-| 功能 | 端点示例 | 理由 |
-|------|---------|------|
-| 固件创建/更新/删除 | `POST/PUT/DELETE /firmwares/{id}` | 系统管理员专用 |
-| 固件发布/废弃 | `PUT /firmwares/{id}/publish\|deprecate` | 系统管理员专用 |
-| 固件上传/下载 | `POST /firmwares/upload`, `GET .../download` | 系统管理员专用 |
-| Delta 包管理 | `POST/DELETE /firmwares/{id}/delta-packages/...` | 系统管理员专用 |
-| Full 包管理 | `POST/DELETE /firmwares/{id}/full-package` | 系统管理员专用 |
-| OTA 模块 CRUD | `POST/PUT/DELETE /ota/modules/{id}` | 系统管理员专用 |
-| 全局统计 | `GET /firmwares/global-summary` | 系统管理员专用 |
-| 配置页面代理 | `GET /config/static/...` | UI 专用 |
+| 功能               | 端点示例                                         | 理由           |
+| ------------------ | ------------------------------------------------ | -------------- |
+| 固件创建/更新/删除 | `POST/PUT/DELETE /firmwares/{id}`                | 系统管理员专用 |
+| 固件发布/废弃      | `PUT /firmwares/{id}/publish\|deprecate`         | 系统管理员专用 |
+| 固件上传/下载      | `POST /firmwares/upload`, `GET .../download`     | 系统管理员专用 |
+| Delta 包管理       | `POST/DELETE /firmwares/{id}/delta-packages/...` | 系统管理员专用 |
+| Full 包管理        | `POST/DELETE /firmwares/{id}/full-package`       | 系统管理员专用 |
+| OTA 模块 CRUD      | `POST/PUT/DELETE /ota/modules/{id}`              | 系统管理员专用 |
+| 全局统计           | `GET /firmwares/global-summary`                  | 系统管理员专用 |
+| 配置页面代理       | `GET /config/static/...`                         | UI 专用        |
 
 ## 备注
 
