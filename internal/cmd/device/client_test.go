@@ -49,8 +49,8 @@ var seriesResponse = map[string]interface{}{
 }
 
 func jsonHandler(resp interface{}) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(resp)
+	return func(w http.ResponseWriter, _ *http.Request) {
+		_ = json.NewEncoder(w).Encode(resp)
 	}
 }
 
@@ -61,7 +61,7 @@ func TestClientList_Basic(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gotPath = r.URL.Path
 		gotQuery = r.URL.RawQuery
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
 			"result": []interface{}{sampleClient},
 			"total":  1, "page": 0, "limit": 20,
 		})
@@ -89,7 +89,7 @@ func TestClientList_Filters(t *testing.T) {
 	var gotQuery string
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gotQuery = r.URL.RawQuery
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
 			"result": []interface{}{}, "total": 0, "page": 0, "limit": 5,
 		})
 	}))
@@ -141,7 +141,7 @@ func TestClientGet_Basic(t *testing.T) {
 	var gotPath string
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gotPath = r.URL.Path
-		json.NewEncoder(w).Encode(map[string]interface{}{"result": sampleClient})
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"result": sampleClient})
 	}))
 	defer server.Close()
 
@@ -168,7 +168,7 @@ func TestClientGet_RequiresArg(t *testing.T) {
 func TestClientGet_HTTPError(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
-		w.Write([]byte(`{"error":"client not found"}`))
+		_, _ = w.Write([]byte(`{"error":"client not found"}`))
 	}))
 	defer server.Close()
 
@@ -192,8 +192,8 @@ func TestClientUpdate_Basic(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gotPath = r.URL.Path
 		gotMethod = r.Method
-		json.NewDecoder(r.Body).Decode(&gotBody)
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewDecoder(r.Body).Decode(&gotBody)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
 			"result": map[string]interface{}{"_id": "c1", "name": "NewName"},
 		})
 	}))
@@ -231,7 +231,7 @@ func TestClientUpdate_RequiresName(t *testing.T) {
 func TestClientUpdate_HTTPError(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(`{"error":"invalid name"}`))
+		_, _ = w.Write([]byte(`{"error":"invalid name"}`))
 	}))
 	defer server.Close()
 
@@ -279,7 +279,7 @@ func TestClientThroughput_Basic(t *testing.T) {
 	var gotPath string
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gotPath = r.URL.Path
-		json.NewEncoder(w).Encode(seriesResponse)
+		_ = json.NewEncoder(w).Encode(seriesResponse)
 	}))
 	defer server.Close()
 
@@ -315,7 +315,7 @@ func TestClientRSSI_Basic(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gotPath = r.URL.Path
 		gotQuery = r.URL.RawQuery
-		json.NewEncoder(w).Encode(seriesResponse)
+		_ = json.NewEncoder(w).Encode(seriesResponse)
 	}))
 	defer server.Close()
 
@@ -355,7 +355,7 @@ func TestClientDatausageHourly_Basic(t *testing.T) {
 	var gotPath string
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gotPath = r.URL.Path
-		json.NewEncoder(w).Encode(seriesResponse)
+		_ = json.NewEncoder(w).Encode(seriesResponse)
 	}))
 	defer server.Close()
 
@@ -378,7 +378,7 @@ func TestClientDatausageDaily_Basic(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gotPath = r.URL.Path
 		gotQuery = r.URL.RawQuery
-		json.NewEncoder(w).Encode(seriesResponse)
+		_ = json.NewEncoder(w).Encode(seriesResponse)
 	}))
 	defer server.Close()
 
@@ -415,7 +415,7 @@ func TestClientOnlineEvents_Basic(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gotPath = r.URL.Path
 		gotQuery = r.URL.RawQuery
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
 			"result": []interface{}{
 				map[string]interface{}{
 					"eventType": "connect", "ssid": "TestSSID",
@@ -451,7 +451,7 @@ func TestClientOnlineStats_Basic(t *testing.T) {
 	var gotPath string
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gotPath = r.URL.Path
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
 			"result": map[string]interface{}{
 				"onlineTime": 10877, "offlineCount": 3, "onlineRate": 0.126,
 			},
