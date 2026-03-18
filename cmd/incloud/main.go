@@ -17,11 +17,9 @@ import (
 	"github.com/inhandnet/incloud-cli/internal/factory"
 )
 
-var version = "dev"
-
 func main() {
 	f := factory.New()
-	rootCmd := cmd.NewCmdRoot(f, version)
+	rootCmd := cmd.NewCmdRoot(f)
 	rootCmd.AddCommand(activityCmd.NewCmdActivity(f))
 	rootCmd.AddCommand(alertCmd.NewCmdAlert(f))
 	rootCmd.AddCommand(configCmd.NewCmdConfig(f))
@@ -30,7 +28,7 @@ func main() {
 	rootCmd.AddCommand(deviceCmd.NewCmdDevice(f))
 	rootCmd.AddCommand(overviewCmd.NewCmdOverview(f))
 	rootCmd.AddCommand(productCmd.NewCmdProduct(f))
-	rootCmd.AddCommand(versionCmd.NewCmdVersion(f, version))
+	rootCmd.AddCommand(versionCmd.NewCmdVersion(f))
 
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Fprintln(os.Stderr, err)

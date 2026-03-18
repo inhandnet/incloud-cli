@@ -5,16 +5,17 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/inhandnet/incloud-cli/internal/build"
 	"github.com/inhandnet/incloud-cli/internal/factory"
 )
 
-func NewCmdRoot(f *factory.Factory, version string) *cobra.Command {
+func NewCmdRoot(f *factory.Factory) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:           "incloud",
 		Short:         "InCloud Platform CLI",
 		SilenceUsage:  true,
 		SilenceErrors: true,
-		Version:       version,
+		Version:       build.Version,
 	}
 
 	cmd.PersistentFlags().StringP("output", "o", "", "Output format: json, table, yaml")
