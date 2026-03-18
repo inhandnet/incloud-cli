@@ -14,6 +14,11 @@ type uplinkOptions struct {
 var defaultUplinkFields = []string{"name", "type", "status", "mode", "publicIp", "latency", "loss"}
 var defaultUplinkDetailFields = []string{"name", "type", "status", "mode", "publicIp", "latency", "loss", "deviceName"}
 
+var uplinkFormatters = iostreams.ColumnFormatters{
+	"latency": iostreams.FormatMicroseconds,
+	"jitter":  iostreams.FormatMicroseconds,
+}
+
 func NewCmdUplink(f *factory.Factory) *cobra.Command {
 	opts := &uplinkOptions{}
 
@@ -48,7 +53,9 @@ func NewCmdUplink(f *factory.Factory) *cobra.Command {
 			if len(fields) == 0 {
 				fields = defaultUplinkFields
 			}
-			return iostreams.FormatOutput(body, f.IO, output, fields)
+			return iostreams.FormatOutput(body, f.IO, output, fields,
+				iostreams.WithFormatters(uplinkFormatters),
+			)
 		},
 	}
 

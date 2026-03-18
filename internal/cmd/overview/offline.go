@@ -25,6 +25,10 @@ type OfflineOptions struct {
 var (
 	defaultTopFields   = []string{"deviceName", "serialNumber", "offlineTimes"}
 	defaultStatsFields = []string{"deviceName", "serialNumber", "totalOfflineTimes", "maxOfflineTimes", "avgOfflineTimes", "totalOfflineDuration"}
+
+	offlineFormatters = iostreams.ColumnFormatters{
+		"totalOfflineDuration": iostreams.FormatDuration,
+	}
 )
 
 func NewCmdOffline(f *factory.Factory) *cobra.Command {
@@ -136,7 +140,9 @@ func runOffline(cmd *cobra.Command, f *factory.Factory, opts *OfflineOptions) er
 		if len(fields) == 0 {
 			fields = defaultStatsFields
 		}
-		if err := iostreams.FormatTable(statsBody, f.IO, fields); err != nil {
+		if err := iostreams.FormatOutput(statsBody, f.IO, "table", fields,
+			iostreams.WithFormatters(offlineFormatters),
+		); err != nil {
 			return err
 		}
 	default:

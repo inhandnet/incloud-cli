@@ -42,7 +42,9 @@ func newCmdUplinkGet(f *factory.Factory) *cobra.Command {
 			if len(fields) == 0 {
 				fields = defaultUplinkDetailFields
 			}
-			return iostreams.FormatOutput(body, f.IO, output, fields)
+			return iostreams.FormatOutput(body, f.IO, output, fields,
+				iostreams.WithFormatters(uplinkFormatters),
+			)
 		},
 	}
 

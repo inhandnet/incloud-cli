@@ -66,6 +66,8 @@ func newCmdUplinkPerf(f *factory.Factory) *cobra.Command {
 				iostreams.WithFormatters(iostreams.ColumnFormatters{
 					"throughputUp":   iostreams.FormatBitRate,
 					"throughputDown": iostreams.FormatBitRate,
+					"latency":        iostreams.FormatMicroseconds,
+					"jitter":         iostreams.FormatMicroseconds,
 				}),
 			)
 		},

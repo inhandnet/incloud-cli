@@ -60,8 +60,10 @@ func NewCmdExecSpeedtestHistory(f *factory.Factory) *cobra.Command {
 			output, _ := cmd.Flags().GetString("output")
 			return iostreams.FormatOutput(body, f.IO, output, cols,
 				iostreams.WithFormatters(iostreams.ColumnFormatters{
-					"download": iostreams.FormatMbps,
-					"upload":   iostreams.FormatMbps,
+					"download":    iostreams.FormatMbps,
+					"upload":      iostreams.FormatMbps,
+					"idleLatency": iostreams.FormatMs,
+					"jitter":      iostreams.FormatMs,
 				}),
 			)
 		},
