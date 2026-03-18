@@ -135,18 +135,6 @@
 - [ ] `network client online-events <id>` — 客户端上下线事件
 - [ ] `network client online-stats <id>` — 客户端在线统计
 
-### 远程访问 InTouch (`incloud network touch`)
-
-- [ ] `network touch client list` — 列出远程访问客户端
-- [ ] `network touch client get <id>` — 查看客户端详情
-- [ ] `network touch client create` — 注册远程访问客户端
-- [ ] `network touch client update <id>` — 更新客户端
-- [ ] `network touch client delete <id>` — 删除客户端
-- [ ] `network touch client export` — 导出客户端列表
-- [ ] `network touch client connections <id>` — 查看连接会话
-- [ ] `network touch connect` — 发起远程连接（WebRTC/TURN）
-- [ ] `network touch disconnect` — 断开活跃连接
-
 ---
 
 ## 不纳入 CLI 的功能
