@@ -28,12 +28,22 @@ golangci-lint run ./...
 - 格式：ISO 8601（`2024-01-01T00:00:00`）
 - 已有的 `--from/--to`（如 `alert list`）后续迁移为 `--after/--before`，保留 `--from/--to` 为隐藏别名
 
+### 搜索参数
+
+全文搜索 flag 统一使用 `--search`（短标志 `-q`），对应 API 参数 `q`。
+
 ### 命令层级
 
 扁平优先，避免无动作的中间命名空间。子命令多时用 cobra command groups 分组展示，而非加嵌套层。
 - 正确：`device signal <id>`、`device perf <id>`
 - 避免：`device monitor signal <id>`（`monitor` 层无自身动作）
 - 例外：子资源有自身 CRUD 时可嵌套（如 `device group list`、`alert rule create`）
+
+### 跨资源 ID 引用提示
+
+当 flag 引用了其他资源的 ID 且对应的 list 命令已存在时，应在 help 描述里用完整命令提示用户如何获取该 ID，例如：
+- `"Role ID to assign (required; use 'incloud role list' to find IDs)"`
+- `"Filter by device group ID (use 'incloud device group list' to find IDs)"`
 
 ### 分页参数
 

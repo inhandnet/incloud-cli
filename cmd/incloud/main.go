@@ -14,6 +14,8 @@ import (
 	firmwareCmd "github.com/inhandnet/incloud-cli/internal/cmd/firmware"
 	overviewCmd "github.com/inhandnet/incloud-cli/internal/cmd/overview"
 	productCmd "github.com/inhandnet/incloud-cli/internal/cmd/product"
+	roleCmd "github.com/inhandnet/incloud-cli/internal/cmd/role"
+	userCmd "github.com/inhandnet/incloud-cli/internal/cmd/user"
 	versionCmd "github.com/inhandnet/incloud-cli/internal/cmd/version"
 	"github.com/inhandnet/incloud-cli/internal/factory"
 )
@@ -30,6 +32,8 @@ func main() {
 	rootCmd.AddCommand(firmwareCmd.NewCmdFirmware(f))
 	rootCmd.AddCommand(overviewCmd.NewCmdOverview(f))
 	rootCmd.AddCommand(productCmd.NewCmdProduct(f))
+	rootCmd.AddCommand(roleCmd.NewCmdRole(f))
+	rootCmd.AddCommand(userCmd.NewCmdUser(f))
 	rootCmd.AddCommand(versionCmd.NewCmdVersion(f))
 
 	if err := rootCmd.Execute(); err != nil {

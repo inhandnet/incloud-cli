@@ -21,14 +21,14 @@
 
 ### 用户 CRUD (`incloud user`)
 
-- [ ] `user list` — 用户列表（分页、过滤）
-- [ ] `user get <id>` — 查看用户详情
-- [ ] `user create` — 创建用户（指定角色、发欢迎邮件）
-- [ ] `user update <id>` — 更新用户信息（名称、角色、组织转移、协作者过期）
-- [ ] `user delete <id>` — 删除用户
+- [x] `user list` — 用户列表（分页、过滤）
+- [x] `user get <id>` — 查看用户详情
+- [x] `user create` — 创建用户（指定角色、发欢迎邮件）
+- [x] `user update <id>` — 更新用户信息（名称、角色、组织转移、协作者过期）
+- [x] `user delete <id>` — 删除用户
 - [ ] `user delete --bulk <ids>` — 批量删除用户
-- [ ] `user lock <id>` — 锁定用户（禁止登录）
-- [ ] `user unlock <id>` — 解锁用户
+- [x] `user lock <id>` — 锁定用户（禁止登录）
+- [x] `user unlock <id>` — 解锁用户
 - [ ] `user reset-password <id>` — 管理员重置用户密码
 - [ ] `user export` — 导出用户列表
 - [ ] `user roles <id>` — 查看用户的角色列表
@@ -37,7 +37,7 @@
 
 ### 当前用户 (`incloud user me`)
 
-- [ ] `user me` — 查看当前用户资料
+- [x] `user me` — 查看当前用户资料
 - [ ] `user me update` — 更新个人资料
 - [ ] `user me change-password` — 修改自己的密码
 - [ ] `user me locale <locale>` — 更新语言偏好
