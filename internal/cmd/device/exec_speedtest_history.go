@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/inhandnet/incloud-cli/internal/factory"
+	"github.com/inhandnet/incloud-cli/internal/iostreams"
 )
 
 var defaultSpeedtestHistoryFields = []string{"_id", "interface", "download", "upload", "idleLatency", "jitter", "loss", "serverNode", "success", "createdAt"}
@@ -56,7 +57,13 @@ func NewCmdExecSpeedtestHistory(f *factory.Factory) *cobra.Command {
 			if len(fields) > 0 {
 				cols = fields
 			}
-			return formatOutput(cmd, f.IO, body, cols)
+			output, _ := cmd.Flags().GetString("output")
+			return iostreams.FormatOutput(body, f.IO, output, cols,
+				iostreams.WithFormatters(iostreams.ColumnFormatters{
+					"download": iostreams.FormatMbps,
+					"upload":   iostreams.FormatMbps,
+				}),
+			)
 		},
 	}
 

@@ -125,6 +125,58 @@ func TestFormatDuration_NotANumber(t *testing.T) {
 	}
 }
 
+// --- FormatBitRate tests ---
+
+func TestFormatBitRate_Bps(t *testing.T) {
+	if got := FormatBitRate("500"); got != "500 bps" {
+		t.Errorf("expected '500 bps', got %q", got)
+	}
+}
+
+func TestFormatBitRate_Kbps(t *testing.T) {
+	if got := FormatBitRate("1500"); got != "1.5 Kbps" {
+		t.Errorf("expected '1.5 Kbps', got %q", got)
+	}
+}
+
+func TestFormatBitRate_Mbps(t *testing.T) {
+	if got := FormatBitRate("1000000"); got != "1.0 Mbps" {
+		t.Errorf("expected '1.0 Mbps', got %q", got)
+	}
+}
+
+func TestFormatBitRate_Gbps(t *testing.T) {
+	if got := FormatBitRate("2500000000"); got != "2.5 Gbps" {
+		t.Errorf("expected '2.5 Gbps', got %q", got)
+	}
+}
+
+func TestFormatBitRate_NotANumber(t *testing.T) {
+	if got := FormatBitRate("N/A"); got != "N/A" {
+		t.Errorf("expected 'N/A', got %q", got)
+	}
+}
+
+// --- FormatMbps tests ---
+
+func TestFormatMbps_Normal(t *testing.T) {
+	if got := FormatMbps("25.5"); got != "25.50 Mbps" {
+		t.Errorf("expected '25.50 Mbps', got %q", got)
+	}
+}
+
+func TestFormatMbps_Zero(t *testing.T) {
+	if got := FormatMbps("0"); got != "0.00 Mbps" {
+		t.Errorf("expected '0.00 Mbps', got %q", got)
+	}
+}
+
+func TestFormatMbps_NotANumber(t *testing.T) {
+	if got := FormatMbps("err"); got != "err" {
+		t.Errorf("expected 'err', got %q", got)
+	}
+}
+
 // --- WithFormatters integration tests ---
 
 func TestFormatOutput_WithFormatters_Array(t *testing.T) {
@@ -227,6 +279,30 @@ func TestFormatOutput_WithFormatters_Percent(t *testing.T) {
 	out := buf.String()
 	if !strings.Contains(out, "45.2%") {
 		t.Errorf("expected 45.2%%, got:\n%s", out)
+	}
+}
+
+func TestFormatOutput_WithFormatters_NestedDotPath(t *testing.T) {
+	data := []byte(`{"result":[{"deviceId":"d1","sim":{"tx":1048576,"rx":2097152,"total":3145728}}]}`)
+	io, buf := newTestIOWithBuf(false)
+	fmts := ColumnFormatters{
+		"sim.tx":    FormatBytes,
+		"sim.rx":    FormatBytes,
+		"sim.total": FormatBytes,
+	}
+	err := FormatOutput(data, io, "table", nil, WithFormatters(fmts))
+	if err != nil {
+		t.Fatal(err)
+	}
+	out := buf.String()
+	if !strings.Contains(out, "1.0 MB") {
+		t.Errorf("expected sim.tx=1.0 MB, got:\n%s", out)
+	}
+	if !strings.Contains(out, "2.0 MB") {
+		t.Errorf("expected sim.rx=2.0 MB, got:\n%s", out)
+	}
+	if !strings.Contains(out, "3.0 MB") {
+		t.Errorf("expected sim.total=3.0 MB, got:\n%s", out)
 	}
 }
 

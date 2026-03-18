@@ -297,24 +297,7 @@ func fieldIndex(fields []string, name string) int {
 }
 
 func formatBytes(b float64) string {
-	const (
-		KB = 1024
-		MB = KB * 1024
-		GB = MB * 1024
-		TB = GB * 1024
-	)
-	switch {
-	case b >= TB:
-		return fmt.Sprintf("%.1f TB", b/TB)
-	case b >= GB:
-		return fmt.Sprintf("%.1f GB", b/GB)
-	case b >= MB:
-		return fmt.Sprintf("%.1f MB", b/MB)
-	case b >= KB:
-		return fmt.Sprintf("%.1f KB", b/KB)
-	default:
-		return fmt.Sprintf("%.0f B", b)
-	}
+	return iostreams.FormatBytes(strconv.FormatFloat(b, 'f', -1, 64))
 }
 
 // makeQuery builds url.Values from a map, skipping empty values.

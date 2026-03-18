@@ -63,5 +63,12 @@ func fetchDatausageSeries(f *factory.Factory, cmd *cobra.Command, deviceID, endp
 	if len(fields) == 0 {
 		fields = defaultDatausageFields
 	}
-	return iostreams.FormatOutput(body, f.IO, output, fields, iostreams.WithTransform(iostreams.FlattenSeries))
+	return iostreams.FormatOutput(body, f.IO, output, fields,
+		iostreams.WithTransform(iostreams.FlattenSeries),
+		iostreams.WithFormatters(iostreams.ColumnFormatters{
+			"tx":    iostreams.FormatBytes,
+			"rx":    iostreams.FormatBytes,
+			"total": iostreams.FormatBytes,
+		}),
+	)
 }

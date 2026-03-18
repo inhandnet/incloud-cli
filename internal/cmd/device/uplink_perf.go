@@ -61,7 +61,13 @@ func newCmdUplinkPerf(f *factory.Factory) *cobra.Command {
 			if len(fields) == 0 {
 				fields = defaultUplinkPerfFields
 			}
-			return iostreams.FormatOutput(body, f.IO, output, fields, iostreams.WithTransform(iostreams.FlattenSeries))
+			return iostreams.FormatOutput(body, f.IO, output, fields,
+				iostreams.WithTransform(iostreams.FlattenSeries),
+				iostreams.WithFormatters(iostreams.ColumnFormatters{
+					"throughputUp":   iostreams.FormatBitRate,
+					"throughputDown": iostreams.FormatBitRate,
+				}),
+			)
 		},
 	}
 

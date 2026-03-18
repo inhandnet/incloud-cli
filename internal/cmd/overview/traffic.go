@@ -155,7 +155,13 @@ func runTraffic(cmd *cobra.Command, f *factory.Factory, opts *TrafficOptions) er
 		if len(fields) == 0 {
 			fields = defaultTrafficFields
 		}
-		if err := iostreams.FormatTable(results["topk"], f.IO, fields); err != nil {
+		wrapped := []byte(`{"result":` + string(results["topk"]) + `}`)
+		fmts := iostreams.ColumnFormatters{
+			"tx":    iostreams.FormatBytes,
+			"rx":    iostreams.FormatBytes,
+			"total": iostreams.FormatBytes,
+		}
+		if err := iostreams.FormatOutput(wrapped, f.IO, "table", fields, iostreams.WithFormatters(fmts)); err != nil {
 			return err
 		}
 

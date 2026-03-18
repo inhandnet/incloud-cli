@@ -17,6 +17,14 @@ type perfOptions struct {
 	Fields  []string
 }
 
+var perfFormatters = iostreams.ColumnFormatters{
+	"memory.free":  iostreams.FormatBytes,
+	"memory.total": iostreams.FormatBytes,
+	"msata.free":   iostreams.FormatBytes,
+	"msata.total":  iostreams.FormatBytes,
+	"cpu.usage":    iostreams.FormatPercent,
+}
+
 func NewCmdPerf(f *factory.Factory) *cobra.Command {
 	opts := &perfOptions{}
 
@@ -78,7 +86,9 @@ func runPerfCurrent(f *factory.Factory, cmd *cobra.Command, deviceID string, opt
 	}
 
 	output, _ := cmd.Flags().GetString("output")
-	return iostreams.FormatOutput(body, f.IO, output, opts.Fields)
+	return iostreams.FormatOutput(body, f.IO, output, opts.Fields,
+		iostreams.WithFormatters(perfFormatters),
+	)
 }
 
 func runPerfSeries(f *factory.Factory, cmd *cobra.Command, deviceID string, opts *perfOptions) error {
@@ -101,5 +111,8 @@ func runPerfSeries(f *factory.Factory, cmd *cobra.Command, deviceID string, opts
 	}
 
 	output, _ := cmd.Flags().GetString("output")
-	return iostreams.FormatOutput(body, f.IO, output, opts.Fields, iostreams.WithTransform(iostreams.FlattenSeries))
+	return iostreams.FormatOutput(body, f.IO, output, opts.Fields,
+		iostreams.WithTransform(iostreams.FlattenSeries),
+		iostreams.WithFormatters(perfFormatters),
+	)
 }

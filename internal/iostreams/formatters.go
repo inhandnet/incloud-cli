@@ -43,6 +43,45 @@ func FormatBytes(s string) string {
 	}
 }
 
+// FormatBitRate converts a numeric string (bits per second) to a human-readable rate.
+//
+//	"1000000"    → "1.0 Mbps"
+//	"1500"       → "1.5 Kbps"
+//	"not-a-number"→ "not-a-number" (returned as-is)
+func FormatBitRate(s string) string {
+	b, err := strconv.ParseFloat(strings.TrimSpace(s), 64)
+	if err != nil {
+		return s
+	}
+	const (
+		Kbps = 1000.0
+		Mbps = Kbps * 1000
+		Gbps = Mbps * 1000
+	)
+	switch {
+	case b >= Gbps:
+		return fmt.Sprintf("%.1f Gbps", b/Gbps)
+	case b >= Mbps:
+		return fmt.Sprintf("%.1f Mbps", b/Mbps)
+	case b >= Kbps:
+		return fmt.Sprintf("%.1f Kbps", b/Kbps)
+	default:
+		return fmt.Sprintf("%.0f bps", b)
+	}
+}
+
+// FormatMbps appends " Mbps" to a numeric string.
+//
+//	"25.5" → "25.50 Mbps"
+//	"0"    → "0.00 Mbps"
+func FormatMbps(s string) string {
+	f, err := strconv.ParseFloat(strings.TrimSpace(s), 64)
+	if err != nil {
+		return s
+	}
+	return fmt.Sprintf("%.2f Mbps", f)
+}
+
 // FormatPercent converts a decimal fraction string to a percentage.
 //
 //	"0.452"  → "45.2%"

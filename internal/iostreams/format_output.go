@@ -3,6 +3,7 @@ package iostreams
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 )
 
 // TransformFunc converts raw API response bytes into a format suitable for FormatTable.
@@ -107,14 +108,38 @@ func applyFormatters(data []byte, fmts ColumnFormatters) []byte {
 	return out
 }
 
-// applyFormattersToObject applies formatters to matching keys in a flat object.
+// applyFormattersToObject applies formatters to matching keys in an object.
+// First tries an exact flat key match (e.g. "cpu.usage" as a literal key),
+// then falls back to dot-path navigation for nested objects (e.g. "sim" → "tx").
 func applyFormattersToObject(obj map[string]interface{}, fmts ColumnFormatters) {
 	for col, fn := range fmts {
-		v, ok := obj[col]
-		if !ok {
+		// Try exact key first (handles literal dots in key names)
+		if v, ok := obj[col]; ok {
+			obj[col] = fn(fmt.Sprint(v))
 			continue
 		}
-		obj[col] = fn(fmt.Sprint(v))
+
+		// Fall back to dot-path navigation for nested objects
+		parts := strings.Split(col, ".")
+		if len(parts) < 2 {
+			continue
+		}
+		cur := obj
+		for _, p := range parts[:len(parts)-1] {
+			nested, ok := cur[p].(map[string]interface{})
+			if !ok {
+				cur = nil
+				break
+			}
+			cur = nested
+		}
+		if cur == nil {
+			continue
+		}
+		leaf := parts[len(parts)-1]
+		if v, ok := cur[leaf]; ok {
+			cur[leaf] = fn(fmt.Sprint(v))
+		}
 	}
 }
 
