@@ -11,7 +11,7 @@ func NewCmdDevice(f *factory.Factory) *cobra.Command {
 		Use:     "device",
 		Aliases: []string{"dev"},
 		Short:   "Manage devices",
-		Long:  "List, create, update, delete, and manage devices on the InCloud platform.",
+		Long:    "List, create, update, delete, and manage devices on the InCloud platform.",
 	}
 
 	cmd.AddCommand(NewCmdList(f))
@@ -37,6 +37,7 @@ func NewCmdDevice(f *factory.Factory) *cobra.Command {
 	cmd.AddCommand(NewCmdShadow(f))
 	cmd.AddCommand(NewCmdGroup(f))
 	cmd.AddCommand(NewCmdConfig(f))
+	cmd.AddCommand(NewCmdClient(f))
 
 	return cmd
 }

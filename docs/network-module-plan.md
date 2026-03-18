@@ -117,23 +117,23 @@
 - [ ] `network asset import <file>` — 从 CSV/Excel 导入
 - [ ] `network asset export` — 导出资产列表
 
-### 网络客户端 (`incloud network client`)
+### 网络客户端（已移至 `incloud device client`）
 
-- [ ] `network client list` — 列出所有连接客户端
-- [ ] `network client get <id>` — 查看客户端详情
-- [ ] `network client update <id>` — 更新客户端名称
-- [ ] `network client device <deviceId>` — 查看设备的连接客户端
-- [ ] `network client stats` — 在线客户端统计
-- [ ] `network client export` — 导出客户端列表
-- [ ] `network client export --device <deviceId>` — 导出设备客户端
-- [ ] `network client mark-assets` — 批量标记客户端为网络资产
-- [ ] `network client throughput <id>` — 客户端吞吐量时序
-- [ ] `network client rssi <id>` — 客户端 RSSI 信号时序
-- [ ] `network client sinr <id>` — 客户端 SINR 信号时序
-- [ ] `network client datausage-hourly <id>` — 客户端小时流量
-- [ ] `network client datausage-daily <id>` — 客户端日流量
-- [ ] `network client online-events <id>` — 客户端上下线事件
-- [ ] `network client online-stats <id>` — 客户端在线统计
+- [x] `device client list` — 列出所有连接客户端
+- [x] `device client get <id>` — 查看客户端详情
+- [x] `device client update <id>` — 更新客户端名称
+- [x] `device client throughput <id>` — 客户端吞吐量时序
+- [x] `device client rssi <id>` — 客户端 RSSI 信号时序
+- [x] `device client sinr <id>` — 客户端 SINR 信号时序
+- [x] `device client datausage-hourly <id>` — 客户端小时流量
+- [x] `device client datausage-daily <id>` — 客户端日流量
+- [x] `device client online-events <id>` — 客户端上下线事件
+- [x] `device client online-stats <id>` — 客户端在线统计
+- ~~`network client device <deviceId>`~~ — 不实现（实时查看设备连接客户端）
+- ~~`network client stats`~~ — 不实现
+- ~~`network client export`~~ — 不实现
+- ~~`network client export --device <deviceId>`~~ — 不实现
+- ~~`network client mark-assets`~~ — 不实现
 
 ---
 
