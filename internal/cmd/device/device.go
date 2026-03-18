@@ -33,6 +33,7 @@ func NewCmdDevice(f *factory.Factory) *cobra.Command {
 	cmd.AddCommand(NewCmdExec(f))
 	cmd.AddCommand(NewCmdUplink(f))
 	cmd.AddCommand(NewCmdDatausage(f))
+	cmd.AddCommand(NewCmdShadow(f))
 
 	return cmd
 }

@@ -158,10 +158,10 @@
 
 ### 影子文档
 
-- [ ] `device shadow list <id>` — 列出影子文档名
-- [ ] `device shadow get <id> --name <n>` — 获取指定影子文档
-- [ ] `device shadow update <id> --name <n>` — 更新影子期望状态
-- [ ] `device shadow delete <id> --name <n>` — 删除影子文档
+- [x] `device shadow list <id>` — 列出影子文档名
+- [x] `device shadow get <id> --name <n>` — 获取指定影子文档
+- [x] `device shadow update <id> --name <n>` — 更新影子期望状态
+- [x] `device shadow delete <id> --name <n>` — 删除影子文档
 
 ## Phase 2: 聚合排查命令
 
