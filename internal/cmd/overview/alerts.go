@@ -74,6 +74,7 @@ func runAlerts(cmd *cobra.Command, f *factory.Factory, opts *AlertsOptions) erro
 
 	reqs := []apiReq{
 		{"stats", "/api/v1/alerts/stats", nil},
+		{"ackStats", "/api/v1/alerts/acknowledge/statistics", nil},
 		{"topDevices", "/api/v1/alert/top-alert-devices", topQuery},
 		{"topTypes", "/api/v1/alert/top-alert-types", topQuery},
 	}
@@ -111,6 +112,7 @@ func runAlerts(cmd *cobra.Command, f *factory.Factory, opts *AlertsOptions) erro
 	case "json", "jsonc":
 		merged := map[string]json.RawMessage{
 			"stats":      results["stats"],
+			"ackStats":   results["ackStats"],
 			"topDevices": results["topDevices"],
 			"topTypes":   results["topTypes"],
 		}
@@ -119,6 +121,7 @@ func runAlerts(cmd *cobra.Command, f *factory.Factory, opts *AlertsOptions) erro
 	case "yaml":
 		merged := map[string]json.RawMessage{
 			"stats":      results["stats"],
+			"ackStats":   results["ackStats"],
 			"topDevices": results["topDevices"],
 			"topTypes":   results["topTypes"],
 		}
@@ -146,13 +149,17 @@ func printAlertsDashboard(io *iostreams.IOStreams, data map[string]json.RawMessa
 		Closed int `json:"closed"`
 		Total  int `json:"total"`
 	}
-	if json.Unmarshal(data["stats"], &stats) == nil {
-		fmt.Fprintf(out, "  Active: %s  Closed: %s  Total: %s\n",
-			c.Red(strconv.Itoa(stats.Active)),
-			c.Green(strconv.Itoa(stats.Closed)),
-			c.Bold(strconv.Itoa(stats.Total)),
-		)
+	var ackStats struct {
+		Unacknowledged int `json:"unacknowledged"`
 	}
+	_ = json.Unmarshal(data["stats"], &stats)
+	_ = json.Unmarshal(data["ackStats"], &ackStats)
+	fmt.Fprintf(out, "  Active: %s  Closed: %s  Total: %s  Unacknowledged: %s\n",
+		c.Red(strconv.Itoa(stats.Active)),
+		c.Green(strconv.Itoa(stats.Closed)),
+		c.Bold(strconv.Itoa(stats.Total)),
+		c.Red(strconv.Itoa(ackStats.Unacknowledged)),
+	)
 	fmt.Fprintln(out)
 
 	// --- Top Devices by Alert Count ---
