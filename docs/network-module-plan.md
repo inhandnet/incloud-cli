@@ -87,25 +87,25 @@
 
 ### OOBM — 资源 (`incloud network oobm`)
 
-- [ ] `network oobm list` — 列出 OOBM 资源
-- [ ] `network oobm create` — 创建 OOBM 资源（Web/RDP/SSH）
-- [ ] `network oobm update <id>` — 更新 OOBM 资源
-- [ ] `network oobm delete <ids...>` — 删除 OOBM 资源
-- [ ] `network oobm connect <id>` — 打开 OOBM 连接（ngrok 隧道）
-- [ ] `network oobm close <id>` — 关闭 OOBM 连接
+- [x] `network oobm list` — 列出 OOBM 资源
+- [x] `network oobm create` — 创建 OOBM 资源（Web/RDP/SSH）
+- [x] `network oobm update <id>` — 更新 OOBM 资源
+- [x] `network oobm delete <ids...>` — 删除 OOBM 资源
+- [x] `network oobm connect <id>` — 打开 OOBM 连接（ngrok 隧道）
+- [x] `network oobm close <id>` — 关闭 OOBM 连接
 
 ### OOBM — 串口 (`incloud network oobm serial`)
 
-- [ ] `network oobm serial list` — 列出串口配置
-- [ ] `network oobm serial create` — 创建串口配置
-- [ ] `network oobm serial update <id>` — 更新串口配置
-- [ ] `network oobm serial delete <ids...>` — 删除串口配置
-- [ ] `network oobm serial connect <id>` — 打开串口隧道
-- [ ] `network oobm serial close <id>` — 关闭串口隧道
+- [x] `network oobm serial list` — 列出串口配置
+- [x] `network oobm serial create` — 创建串口配置
+- [x] `network oobm serial update <id>` — 更新串口配置
+- [x] `network oobm serial delete <ids...>` — 删除串口配置
+- [x] `network oobm serial connect <id>` — 打开串口隧道
+- [x] `network oobm serial close <id>` — 关闭串口隧道
 
 ### OOBM — 隧道日志
 
-- [ ] `network oobm logs <deviceId>` — 查看设备的 ngrok 隧道连接日志
+- [x] `network oobm logs <deviceId>` — 查看设备的 ngrok 隧道连接日志
 
 ### 网络资产 (`incloud network asset`)
 
