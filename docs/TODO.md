@@ -13,3 +13,12 @@
 - [ ] 迁移已有的 body 内错误检查逻辑到统一机制
 
 **预期收益**：消除命令层重复的错误检测代码；所有业务错误统一处理；新增命令不需要关心后端的"200 但实际是错误"问题。
+
+## [低] 简化 IOStreams 抽象
+
+**现状**：`IOStreams` 从 gh CLI 照搬，将 `Out`/`ErrOut`/`In` 全部抽象为可注入的 `io.Writer`/`io.Reader`。但实际上唯一真正需要抽象的是 `IsStdoutTTY()`（决定 table vs TSV、是否着色），其余的 `Out`/`ErrOut` 注入属于 YAGNI——测试中可以用 `os.Pipe()` 或只验证 API 调用正确性，不需要注入 buffer。
+
+**改动方向**：
+- [ ] 评估将 `Out`/`ErrOut` 改回直接用 `os.Stdout`/`os.Stderr`，仅保留 TTY 检测抽象
+- [ ] 测试改为验证 API 调用参数（mock server 断言）而非捕获输出内容
+- [ ] 如果保留注入，至少去掉 `In`（从未使用过）
