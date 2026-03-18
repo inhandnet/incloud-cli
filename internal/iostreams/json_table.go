@@ -75,12 +75,9 @@ func paginationHeader(raw *gjson.Result, count int, io *IOStreams) string {
 	var parts []string
 
 	if total.Exists() && total.Int() > 0 {
-		parts = append(parts, fmt.Sprintf("Showing %s of %s results",
-			c.Bold(fmt.Sprintf("%d", count)),
-			c.Bold(fmt.Sprintf("%d", total.Int()))))
+		parts = append(parts, fmt.Sprintf("Showing %d of %d results", count, total.Int()))
 	} else {
-		parts = append(parts, fmt.Sprintf("Showing %s results",
-			c.Bold(fmt.Sprintf("%d", count))))
+		parts = append(parts, fmt.Sprintf("Showing %d results", count))
 	}
 
 	if totalPages.Exists() && totalPages.Int() > 0 {

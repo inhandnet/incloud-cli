@@ -3,12 +3,19 @@ package iostreams
 import (
 	"bytes"
 	"os"
+	"regexp"
 	"strings"
 	"testing"
 
 	"github.com/muesli/termenv"
 	"github.com/tidwall/gjson"
 )
+
+var ansiRe = regexp.MustCompile(`\x1b\[[0-9;]*m`)
+
+func stripANSI(s string) string {
+	return ansiRe.ReplaceAllString(s, "")
+}
 
 func newTestIOWithBuf(isTTY bool) (*IOStreams, *bytes.Buffer) {
 	buf := &bytes.Buffer{}
@@ -132,7 +139,7 @@ func TestFormatTable_PaginationHeader_WithTotal(t *testing.T) {
 	if !strings.Contains(out, "2") || !strings.Contains(out, "50") {
 		t.Errorf("expected 'Showing 2 of 50', got:\n%s", out)
 	}
-	if !strings.Contains(out, "Page 1 of 5") {
+	if !strings.Contains(stripANSI(out), "Page 1 of 5") {
 		t.Errorf("expected 'Page 1 of 5', got:\n%s", out)
 	}
 }
@@ -168,7 +175,7 @@ func TestFormatTable_PaginationHeader_Page2(t *testing.T) {
 		t.Fatal(err)
 	}
 	out := buf.String()
-	if !strings.Contains(out, "Page 2 of 3") {
+	if !strings.Contains(stripANSI(out), "Page 2 of 3") {
 		t.Errorf("expected 'Page 2 of 3' (0-indexed page=1), got:\n%s", out)
 	}
 }
