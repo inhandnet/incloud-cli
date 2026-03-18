@@ -2,6 +2,7 @@ package device
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/url"
 	"strconv"
 	"strings"
@@ -16,12 +17,11 @@ var defaultGroupListFields = []string{"_id", "name", "product", "firmware", "cre
 var defaultGroupListSummaryFields = []string{"_id", "name", "product", "firmware", "online", "offline", "total", "createdAt"}
 
 type GroupListOptions struct {
-	Page    int
-	Limit   int
-	Sort    string
-	Name    string
-	Product []string
-
+	Page     int
+	Limit    int
+	Sort     string
+	Name     string
+	Product  []string
 	Firmware string
 	Fields   []string
 	Summary  bool
@@ -88,9 +88,11 @@ func newCmdGroupList(f *factory.Factory) *cobra.Command {
 			}
 
 			if opts.Summary {
-				body, err = mergeGroupSummary(client, body)
+				merged, err := mergeGroupSummary(client, body)
 				if err != nil {
-					return err
+					fmt.Fprintf(f.IO.ErrOut, "Warning: %v\n", err)
+				} else {
+					body = merged
 				}
 			}
 
@@ -122,7 +124,7 @@ func mergeGroupSummary(client interface {
 		Limit  int              `json:"limit"`
 	}
 	if err := json.Unmarshal(body, &listResp); err != nil {
-		return body, nil
+		return nil, fmt.Errorf("failed to parse group list: %w", err)
 	}
 	if len(listResp.Result) == 0 {
 		return body, nil
@@ -135,7 +137,7 @@ func mergeGroupSummary(client interface {
 
 	summaryBody, err := client.Post("/api/v1/devicegroups/devices/summary", map[string]any{"ids": ids})
 	if err != nil {
-		return body, nil
+		return nil, fmt.Errorf("failed to fetch device summary: %w", err)
 	}
 
 	var summaryResp struct {
@@ -148,7 +150,7 @@ func mergeGroupSummary(client interface {
 		} `json:"result"`
 	}
 	if err := json.Unmarshal(summaryBody, &summaryResp); err != nil {
-		return body, nil
+		return nil, fmt.Errorf("failed to parse device summary: %w", err)
 	}
 
 	summaryMap := make(map[string]int, len(summaryResp.Result))
