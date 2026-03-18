@@ -46,15 +46,15 @@
 
 ### `incloud device group` — 设备组 (~14 端点)
 
-- [ ] `device group list` — 列出设备组
-- [ ] `device group get <id>` — 查看设备组详情
-- [ ] `device group create` — 创建设备组
-- [ ] `device group update <id>` — 更新设备组
-- [ ] `device group delete <id>` — 删除设备组
-- [ ] `device group summary <id>` — 组内设备统计
-- [ ] `device group candidates <id>` — 可加入该组的设备
-- [ ] `device group export` — 导出设备组
-- [ ] `device group firmware-versions <id>` — 组内固件版本分布
+- [x] `device group list` — 列出设备组
+- [x] `device group get <id>` — 查看设备组详情
+- [x] `device group create` — 创建设备组
+- [x] `device group update <id>` — 更新设备组
+- [x] `device group delete <id>` — 删除设备组
+- [x] `device group list --summary` — 组内设备统计（合并到 list 命令）
+- ~~`device group candidates <id>` — 可加入该组的设备~~ — 不实现
+- ~~`device group export` — 导出设备组~~ — 不实现
+- [x] `device group firmwares <id>` — 组内固件版本分布
 
 ## Phase 1b: 诊断工具 + 远程方法
 

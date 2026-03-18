@@ -91,3 +91,4 @@ jsonBoolRe   = regexp.MustCompile(`: (true|false|null)(,?)$`)
 
 **预期收益**：修复转义字符和嵌套数组的着色问题；减少 ~40 行正则代码。
 
+
