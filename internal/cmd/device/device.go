@@ -8,8 +8,9 @@ import (
 
 func NewCmdDevice(f *factory.Factory) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "device",
-		Short: "Manage devices",
+		Use:     "device",
+		Aliases: []string{"dev"},
+		Short:   "Manage devices",
 		Long:  "List, create, update, delete, and manage devices on the InCloud platform.",
 	}
 
