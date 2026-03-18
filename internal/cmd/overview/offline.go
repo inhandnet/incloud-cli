@@ -123,28 +123,10 @@ func runOffline(cmd *cobra.Command, f *factory.Factory, opts *OfflineOptions) er
 	output, _ := cmd.Flags().GetString("output")
 
 	switch output {
-	case "json", "jsonc":
+	case "json", "jsonc", "yaml":
 		merged := buildMergedOutput(topnData, statsBody)
 		b, _ := json.Marshal(merged)
-		fmt.Fprintln(f.IO.Out, iostreams.FormatJSON(b, f.IO, output))
-	case "yaml":
-		merged := buildMergedOutput(topnData, statsBody)
-		b, _ := json.Marshal(merged)
-		s, err := iostreams.FormatYAML(b)
-		if err != nil {
-			return err
-		}
-		fmt.Fprintln(f.IO.Out, s)
-	case "table":
-		fields := opts.Fields
-		if len(fields) == 0 {
-			fields = defaultStatsFields
-		}
-		if err := iostreams.FormatOutput(statsBody, f.IO, "table", fields,
-			iostreams.WithFormatters(offlineFormatters),
-		); err != nil {
-			return err
-		}
+		return iostreams.FormatOutput(b, f.IO, output, nil)
 	default:
 		printOfflineDashboard(f.IO, opts, topnData, statsBody)
 	}
@@ -183,8 +165,8 @@ func printOfflineDashboard(streams *iostreams.IOStreams, opts *OfflineOptions, t
 	c := iostreams.NewColorizer(streams.TermOutput())
 	out := streams.Out
 
-	// --- Time Range ---
-	fmt.Fprintf(out, "%s %s ~ %s\n\n", c.Bold("Period:"), opts.After, opts.Before)
+	fmt.Fprintln(out, c.Gray(fmt.Sprintf("Period: %s ~ %s", opts.After, opts.Before)))
+	fmt.Fprintln(out)
 
 	// --- Top Offline Devices ---
 	fmt.Fprintln(out, c.Bold("Top Offline Devices"))
@@ -192,9 +174,8 @@ func printOfflineDashboard(streams *iostreams.IOStreams, opts *OfflineOptions, t
 	if len(topFields) == 0 {
 		topFields = defaultTopFields
 	}
-	// Wrap topnData as a body for FormatTable
 	topWrapper, _ := json.Marshal(map[string]json.RawMessage{"result": topnData})
-	if err := iostreams.FormatTable(topWrapper, streams, topFields); err != nil {
+	if err := iostreams.FormatOutput(topWrapper, streams, "table", topFields); err != nil {
 		fmt.Fprintln(out, c.Gray("  No data"))
 	}
 	fmt.Fprintln(out)
@@ -205,7 +186,9 @@ func printOfflineDashboard(streams *iostreams.IOStreams, opts *OfflineOptions, t
 	if len(statsFields) == 0 {
 		statsFields = defaultStatsFields
 	}
-	if err := iostreams.FormatTable(statsBody, streams, statsFields); err != nil {
+	if err := iostreams.FormatOutput(statsBody, streams, "table", statsFields,
+		iostreams.WithFormatters(offlineFormatters),
+	); err != nil {
 		fmt.Fprintln(out, c.Gray("  No data"))
 	}
 }
