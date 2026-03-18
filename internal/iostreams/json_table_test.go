@@ -104,6 +104,23 @@ func TestFormatTable_Columns_Filter(t *testing.T) {
 	}
 }
 
+func TestFormatTable_Columns_ExcludeMode(t *testing.T) {
+	// Backend has already excluded "id"; response only contains name+status.
+	// The client should display all returned fields without treating "!id" as a column name.
+	data := []byte(`{"result":[{"name":"dev1","status":"online"},{"name":"dev2","status":"offline"}]}`)
+	io, buf := newTestIOWithBuf(false)
+	if err := FormatTable(data, io, []string{"!id"}); err != nil {
+		t.Fatal(err)
+	}
+	out := buf.String()
+	if !strings.Contains(out, "dev1") || !strings.Contains(out, "online") {
+		t.Errorf("exclude mode should show all returned fields, got:\n%s", out)
+	}
+	if strings.Contains(out, "!id") {
+		t.Errorf("exclude prefix should not appear as column name, got:\n%s", out)
+	}
+}
+
 func TestFormatTable_EmptyArray(t *testing.T) {
 	data := []byte(`{"result":[]}`)
 	io, buf := newTestIOWithBuf(true)

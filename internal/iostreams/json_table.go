@@ -89,6 +89,23 @@ func paginationHeader(raw *gjson.Result, count int, io *IOStreams) string {
 	return c.Gray(strings.Join(parts, " "))
 }
 
+// resolveColumns returns the effective column list for table rendering.
+// Exclude entries (prefixed with "!") are stripped — the backend already
+// omitted those fields, so the client just shows whatever was returned.
+// If the result is empty, allKeys is returned (show all fields).
+func resolveColumns(columns, allKeys []string) []string {
+	result := columns[:0:0]
+	for _, c := range columns {
+		if !strings.HasPrefix(c, "!") {
+			result = append(result, c)
+		}
+	}
+	if len(result) == 0 {
+		return allKeys
+	}
+	return result
+}
+
 // renderArray renders an array of gjson results as a table with header row.
 func renderArray(tp *TablePrinter, items []gjson.Result, columns []string, io *IOStreams) {
 	first := items[0]
@@ -100,10 +117,7 @@ func renderArray(tp *TablePrinter, items []gjson.Result, columns []string, io *I
 		return
 	}
 
-	cols := columns
-	if len(cols) == 0 {
-		cols = flattenKeys(&first)
-	}
+	cols := resolveColumns(columns, flattenKeys(&first))
 
 	// Header row (bold in TTY)
 	header := make([]string, len(cols))
@@ -133,10 +147,7 @@ func renderArray(tp *TablePrinter, items []gjson.Result, columns []string, io *I
 
 // renderObject renders a single object as KEY / VALUE pairs.
 func renderObject(tp *TablePrinter, obj *gjson.Result, columns []string, io *IOStreams) {
-	cols := columns
-	if len(cols) == 0 {
-		cols = flattenKeys(obj)
-	}
+	cols := resolveColumns(columns, flattenKeys(obj))
 
 	c := NewColorizer(io.TermOutput())
 	for _, key := range cols {
