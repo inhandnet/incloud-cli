@@ -1,4 +1,4 @@
-package network
+package oobm
 
 import (
 	"net/url"
@@ -30,19 +30,19 @@ func NewCmdOobmList(f *factory.Factory) *cobra.Command {
 		Short:   "List OOBM resources",
 		Aliases: []string{"ls"},
 		Example: `  # List OOBM resources
-  incloud network oobm list
+  incloud oobm list
 
   # Filter by device
-  incloud network oobm list --device-id 507f1f77bcf86cd799439011
+  incloud oobm list --device-id 507f1f77bcf86cd799439011
 
   # Filter by name
-  incloud network oobm list --name "Router SSH"
+  incloud oobm list --name "Router SSH"
 
   # Paginate
-  incloud network oobm list --page 2 --limit 50
+  incloud oobm list --page 2 --limit 50
 
   # Table with selected fields
-  incloud network oobm list -o table -f _id -f name -f clientIp`,
+  incloud oobm list -o table -f _id -f name -f clientIp`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := f.APIClient()
 			if err != nil {

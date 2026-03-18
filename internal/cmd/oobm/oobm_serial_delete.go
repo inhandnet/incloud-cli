@@ -1,4 +1,4 @@
-package network
+package oobm
 
 import (
 	"fmt"
@@ -18,10 +18,10 @@ func NewCmdOobmSerialDelete(f *factory.Factory) *cobra.Command {
 		Aliases: []string{"rm"},
 		Short:   "Delete OOBM serial port configurations",
 		Example: `  # Delete a single serial configuration
-  incloud network oobm serial delete 507f1f77bcf86cd799439011
+  incloud oobm serial delete 507f1f77bcf86cd799439011
 
   # Delete multiple, skip confirmation
-  incloud network oobm serial delete id1 id2 -y`,
+  incloud oobm serial delete id1 id2 -y`,
 		Args: cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if !yes {

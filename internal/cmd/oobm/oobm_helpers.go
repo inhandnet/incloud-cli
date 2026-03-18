@@ -1,4 +1,4 @@
-package network
+package oobm
 
 import (
 	"encoding/json"

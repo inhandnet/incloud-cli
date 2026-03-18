@@ -1,4 +1,4 @@
-package network
+package oobm
 
 import (
 	"fmt"
@@ -23,10 +23,10 @@ func NewCmdOobmClose(f *factory.Factory) *cobra.Command {
 Without --service, all services on the resource are closed.
 Use --service to close only specific services (protocol:port[:usage] format).`,
 		Example: `  # Close all services on the resource
-  incloud network oobm close 507f1f77bcf86cd799439011
+  incloud oobm close 507f1f77bcf86cd799439011
 
   # Close only SSH service
-  incloud network oobm close 507f1f77bcf86cd799439011 --service ssh:22:cli`,
+  incloud oobm close 507f1f77bcf86cd799439011 --service ssh:22:cli`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			id := args[0]

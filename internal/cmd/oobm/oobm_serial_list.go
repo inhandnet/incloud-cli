@@ -1,4 +1,4 @@
-package network
+package oobm
 
 import (
 	"net/url"
@@ -32,13 +32,13 @@ func NewCmdOobmSerialList(f *factory.Factory) *cobra.Command {
 		Short:   "List OOBM serial port configurations",
 		Aliases: []string{"ls"},
 		Example: `  # List serial port configurations
-  incloud network oobm serial list
+  incloud oobm serial list
 
   # Filter by device
-  incloud network oobm serial list --device-id 507f1f77bcf86cd799439011
+  incloud oobm serial list --device-id 507f1f77bcf86cd799439011
 
   # Table with selected fields
-  incloud network oobm serial list -o table -f _id -f name -f speed -f connected`,
+  incloud oobm serial list -o table -f _id -f name -f speed -f connected`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := f.APIClient()
 			if err != nil {

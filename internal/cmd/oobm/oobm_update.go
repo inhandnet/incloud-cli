@@ -1,10 +1,8 @@
-package network
+package oobm
 
 import (
 	"encoding/json"
 	"fmt"
-	"strconv"
-	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -12,7 +10,7 @@ import (
 	"github.com/inhandnet/incloud-cli/internal/iostreams"
 )
 
-type OobmCreateOptions struct {
+type OobmUpdateOptions struct {
 	DeviceID string
 	Name     string
 	ClientIP string
@@ -21,68 +19,35 @@ type OobmCreateOptions struct {
 	ConnTime int
 }
 
-func parseService(s string) (map[string]any, error) {
-	parts := strings.SplitN(s, ":", 3)
-	if len(parts) < 2 {
-		return nil, fmt.Errorf("invalid service format %q: expected protocol:port[:usage]", s)
-	}
-
-	protocol := strings.ToLower(parts[0])
-	validProtocols := map[string]bool{"http": true, "https": true, "tcp": true, "telnet": true, "ssh": true}
-	if !validProtocols[protocol] {
-		return nil, fmt.Errorf("unsupported protocol %q (supported: http, https, tcp, telnet, ssh)", protocol)
-	}
-
-	port, err := strconv.Atoi(parts[1])
-	if err != nil {
-		return nil, fmt.Errorf("invalid port %q in service %q", parts[1], s)
-	}
-
-	svc := map[string]any{
-		"protocol": protocol,
-		"port":     port,
-	}
-
-	if len(parts) == 3 {
-		usage := strings.ToLower(parts[2])
-		if usage != "web" && usage != "cli" {
-			return nil, fmt.Errorf("invalid usage %q in service %q (supported: web, cli)", usage, s)
-		}
-		svc["usage"] = usage
-	}
-
-	return svc, nil
-}
-
-func NewCmdOobmCreate(f *factory.Factory) *cobra.Command {
-	opts := &OobmCreateOptions{}
+func NewCmdOobmUpdate(f *factory.Factory) *cobra.Command {
+	opts := &OobmUpdateOptions{}
 
 	cmd := &cobra.Command{
-		Use:   "create",
-		Short: "Create an OOBM resource",
-		Long: `Create a new Out-of-Band Management resource to establish remote access tunnels.
+		Use:   "update <id>",
+		Short: "Update an OOBM resource",
+		Long: `Update an Out-of-Band Management resource.
 
-Supported protocols: http, https, tcp, telnet, ssh
-Service usage types: web (browser-based), cli (command-line)
-
-Service format: protocol:port[:usage]
-  When usage is omitted, the server determines the default based on protocol.`,
-		Example: `  # Create a resource with SSH access
-  incloud network oobm create \
-    --device-id 507f1f77bcf86cd799439011 \
+All fields are required because the API performs a full replacement.
+Service format: protocol:port[:usage]`,
+		Example: `  # Update a resource (all fields required — full replacement)
+  incloud oobm update 507f1f77bcf86cd799439011 \
+    --device-id 607f1f77bcf86cd799439022 \
     --name "Router SSH" \
     --client-ip 192.168.1.1 \
     --service ssh:22:cli
 
-  # Create with multiple services
-  incloud network oobm create \
-    --device-id 507f1f77bcf86cd799439011 \
+  # Update with multiple services
+  incloud oobm update 507f1f77bcf86cd799439011 \
+    --device-id 607f1f77bcf86cd799439022 \
     --name "Router Web+SSH" \
     --client-ip 192.168.1.1 \
     --service https:443 \
     --service ssh:22:web \
     --idle-time 600 --conn-time 7200`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			id := args[0]
+
 			services, err := parseServices(opts.Services)
 			if err != nil {
 				return err
@@ -102,7 +67,7 @@ Service format: protocol:port[:usage]
 				"connTime": opts.ConnTime,
 			}
 
-			respBody, err := client.Post("/api/v1/oobm/resources", body)
+			respBody, err := client.Put("/api/v1/oobm/resources/"+id, body)
 			if err != nil {
 				output, _ := cmd.Flags().GetString("output")
 				if respBody != nil {
@@ -116,7 +81,7 @@ Service format: protocol:port[:usage]
 				Name string `json:"name"`
 			}
 			_ = json.Unmarshal(respBody, &resp)
-			fmt.Fprintf(f.IO.ErrOut, "OOBM resource %q created. (id: %s)\n", resp.Name, resp.ID)
+			fmt.Fprintf(f.IO.ErrOut, "OOBM resource %q (%s) updated.\n", resp.Name, resp.ID)
 
 			output, _ := cmd.Flags().GetString("output")
 			return iostreams.FormatOutput(respBody, f.IO, output, nil)

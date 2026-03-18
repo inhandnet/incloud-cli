@@ -1,4 +1,4 @@
-package network
+package oobm
 
 import (
 	"encoding/json"
@@ -25,10 +25,10 @@ func NewCmdOobmConnect(f *factory.Factory) *cobra.Command {
 Without --service, all services defined on the resource are connected.
 Use --service to connect only specific services (protocol:port[:usage] format).`,
 		Example: `  # Connect all services on the resource
-  incloud network oobm connect 507f1f77bcf86cd799439011
+  incloud oobm connect 507f1f77bcf86cd799439011
 
   # Connect only SSH service
-  incloud network oobm connect 507f1f77bcf86cd799439011 --service ssh:22:cli`,
+  incloud oobm connect 507f1f77bcf86cd799439011 --service ssh:22:cli`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			id := args[0]

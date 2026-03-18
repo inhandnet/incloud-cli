@@ -1,4 +1,4 @@
-package network
+package oobm
 
 import (
 	"fmt"
@@ -18,13 +18,13 @@ func NewCmdOobmDelete(f *factory.Factory) *cobra.Command {
 		Aliases: []string{"rm"},
 		Short:   "Delete OOBM resources",
 		Example: `  # Delete a single resource
-  incloud network oobm delete 507f1f77bcf86cd799439011
+  incloud oobm delete 507f1f77bcf86cd799439011
 
   # Delete multiple resources
-  incloud network oobm delete 507f1f77bcf86cd799439011 507f1f77bcf86cd799439012
+  incloud oobm delete 507f1f77bcf86cd799439011 507f1f77bcf86cd799439012
 
   # Skip confirmation
-  incloud network oobm delete 507f1f77bcf86cd799439011 -y`,
+  incloud oobm delete 507f1f77bcf86cd799439011 -y`,
 		Args: cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if !yes {

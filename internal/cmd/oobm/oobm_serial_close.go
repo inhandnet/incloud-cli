@@ -1,4 +1,4 @@
-package network
+package oobm
 
 import (
 	"fmt"
@@ -14,7 +14,7 @@ func NewCmdOobmSerialClose(f *factory.Factory) *cobra.Command {
 		Use:   "close <id>",
 		Short: "Close an OOBM serial port connection",
 		Example: `  # Close a serial port connection
-  incloud network oobm serial close 507f1f77bcf86cd799439011`,
+  incloud oobm serial close 507f1f77bcf86cd799439011`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			id := args[0]

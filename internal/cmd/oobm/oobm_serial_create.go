@@ -1,4 +1,4 @@
-package network
+package oobm
 
 import (
 	"encoding/json"
@@ -34,12 +34,12 @@ func NewCmdOobmSerialCreate(f *factory.Factory) *cobra.Command {
 Parity values: 0=None, 1=Odd, 2=Even
 Usage types: web (browser-based terminal), cli (SSH tunnel)`,
 		Example: `  # Create a serial port with defaults
-  incloud network oobm serial create \
+  incloud oobm serial create \
     --device-id 507f1f77bcf86cd799439011 \
     --name "Console Port"
 
   # Create with custom serial settings
-  incloud network oobm serial create \
+  incloud oobm serial create \
     --device-id 507f1f77bcf86cd799439011 \
     --name "RS232" \
     --speed 115200 --data-bits 8 --stop-bits 1 --parity 0 \

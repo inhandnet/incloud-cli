@@ -1,4 +1,4 @@
-package network
+package oobm
 
 import (
 	"github.com/spf13/cobra"

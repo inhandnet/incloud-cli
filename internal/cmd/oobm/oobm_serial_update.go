@@ -1,4 +1,4 @@
-package network
+package oobm
 
 import (
 	"encoding/json"
@@ -31,7 +31,7 @@ func NewCmdOobmSerialUpdate(f *factory.Factory) *cobra.Command {
 		Short: "Update an OOBM serial port configuration",
 		Long:  "Update an OOBM serial port configuration. This is a full replacement of all fields.",
 		Example: `  # Update serial port settings
-  incloud network oobm serial update 507f1f77bcf86cd799439011 \
+  incloud oobm serial update 507f1f77bcf86cd799439011 \
     --device-id 607f1f77bcf86cd799439022 \
     --name "Console" --speed 115200 --usage cli`,
 		Args: cobra.ExactArgs(1),

@@ -1,4 +1,4 @@
-package network
+package oobm
 
 import (
 	"net/url"
@@ -34,16 +34,16 @@ func NewCmdOobmLogs(f *factory.Factory) *cobra.Command {
 		Short: "List OOBM tunnel connection logs",
 		Long:  "List tunnel connection logs for a device, with optional filtering by type, protocol, and business resource.",
 		Example: `  # List logs for a device
-  incloud network oobm logs 507f1f77bcf86cd799439011
+  incloud oobm logs 507f1f77bcf86cd799439011
 
   # Filter by protocol
-  incloud network oobm logs 507f1f77bcf86cd799439011 --protocol ssh --protocol tcp
+  incloud oobm logs 507f1f77bcf86cd799439011 --protocol ssh --protocol tcp
 
   # Filter by type and business ID
-  incloud network oobm logs 507f1f77bcf86cd799439011 --type oobm --business-id abc123
+  incloud oobm logs 507f1f77bcf86cd799439011 --type oobm --business-id abc123
 
   # Paginate and sort
-  incloud network oobm logs 507f1f77bcf86cd799439011 --page 2 --limit 50 --sort "createdAt,desc"`,
+  incloud oobm logs 507f1f77bcf86cd799439011 --page 2 --limit 50 --sort "createdAt,desc"`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			deviceID := args[0]

@@ -1,4 +1,4 @@
-package network
+package oobm
 
 import (
 	"encoding/json"
@@ -19,7 +19,7 @@ func NewCmdOobmSerialConnect(f *factory.Factory) *cobra.Command {
 On success, prints the connection URL and credentials. For CLI usage,
 the URL is an SSH command you can run directly.`,
 		Example: `  # Connect a serial port
-  incloud network oobm serial connect 507f1f77bcf86cd799439011`,
+  incloud oobm serial connect 507f1f77bcf86cd799439011`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			id := args[0]
