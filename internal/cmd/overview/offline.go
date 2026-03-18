@@ -123,18 +123,10 @@ func runOffline(cmd *cobra.Command, f *factory.Factory, opts *OfflineOptions) er
 	output, _ := cmd.Flags().GetString("output")
 
 	switch output {
-	case "json", "jsonc":
+	case "json", "jsonc", "yaml":
 		merged := buildMergedOutput(topnData, statsBody)
 		b, _ := json.Marshal(merged)
-		fmt.Fprintln(f.IO.Out, iostreams.FormatJSON(b, f.IO, output))
-	case "yaml":
-		merged := buildMergedOutput(topnData, statsBody)
-		b, _ := json.Marshal(merged)
-		s, err := iostreams.FormatYAML(b)
-		if err != nil {
-			return err
-		}
-		fmt.Fprintln(f.IO.Out, s)
+		return iostreams.FormatOutput(b, f.IO, output, nil)
 	case "table":
 		fields := opts.Fields
 		if len(fields) == 0 {
@@ -205,7 +197,9 @@ func printOfflineDashboard(streams *iostreams.IOStreams, opts *OfflineOptions, t
 	if len(statsFields) == 0 {
 		statsFields = defaultStatsFields
 	}
-	if err := iostreams.FormatTable(statsBody, streams, statsFields); err != nil {
+	if err := iostreams.FormatOutput(statsBody, streams, "table", statsFields,
+		iostreams.WithFormatters(offlineFormatters),
+	); err != nil {
 		fmt.Fprintln(out, c.Gray("  No data"))
 	}
 }

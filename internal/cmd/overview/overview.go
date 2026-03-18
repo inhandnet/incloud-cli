@@ -124,15 +124,7 @@ func runOverview(cmd *cobra.Command, f *factory.Factory, opts *OverviewOptions) 
 			"offline":    results["offline"],
 		}
 		b, _ := json.Marshal(merged)
-		if output == "yaml" {
-			s, err := iostreams.FormatYAML(b)
-			if err != nil {
-				return err
-			}
-			fmt.Fprintln(f.IO.Out, s)
-		} else {
-			fmt.Fprintln(f.IO.Out, iostreams.FormatJSON(b, f.IO, output))
-		}
+		return iostreams.FormatOutput(b, f.IO, output, nil)
 	default:
 		printDashboard(f.IO, opts, results)
 	}

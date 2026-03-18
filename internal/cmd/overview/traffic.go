@@ -24,6 +24,12 @@ type TrafficOptions struct {
 
 var defaultTrafficFields = []string{"deviceName", "serialNumber", "tx", "rx", "total"}
 
+var trafficFormatters = iostreams.ColumnFormatters{
+	"tx":    iostreams.FormatBytes,
+	"rx":    iostreams.FormatBytes,
+	"total": iostreams.FormatBytes,
+}
+
 func NewCmdTraffic(f *factory.Factory) *cobra.Command {
 	opts := &TrafficOptions{}
 
@@ -130,25 +136,13 @@ func runTraffic(cmd *cobra.Command, f *factory.Factory, opts *TrafficOptions) er
 	output, _ := cmd.Flags().GetString("output")
 
 	switch output {
-	case "json", "jsonc":
+	case "json", "jsonc", "yaml":
 		merged := map[string]json.RawMessage{
 			"overview":   results["overview"],
 			"topDevices": results["topk"],
 		}
 		b, _ := json.Marshal(merged)
-		fmt.Fprintln(f.IO.Out, iostreams.FormatJSON(b, f.IO, output))
-
-	case "yaml":
-		merged := map[string]json.RawMessage{
-			"overview":   results["overview"],
-			"topDevices": results["topk"],
-		}
-		b, _ := json.Marshal(merged)
-		s, err := iostreams.FormatYAML(b)
-		if err != nil {
-			return err
-		}
-		fmt.Fprintln(f.IO.Out, s)
+		return iostreams.FormatOutput(b, f.IO, output, nil)
 
 	case "table":
 		fields := opts.Fields
@@ -156,12 +150,7 @@ func runTraffic(cmd *cobra.Command, f *factory.Factory, opts *TrafficOptions) er
 			fields = defaultTrafficFields
 		}
 		wrapped := []byte(`{"result":` + string(results["topk"]) + `}`)
-		fmts := iostreams.ColumnFormatters{
-			"tx":    iostreams.FormatBytes,
-			"rx":    iostreams.FormatBytes,
-			"total": iostreams.FormatBytes,
-		}
-		if err := iostreams.FormatOutput(wrapped, f.IO, "table", fields, iostreams.WithFormatters(fmts)); err != nil {
+		if err := iostreams.FormatOutput(wrapped, f.IO, "table", fields, iostreams.WithFormatters(trafficFormatters)); err != nil {
 			return err
 		}
 
@@ -216,25 +205,14 @@ func printTrafficDashboard(io *iostreams.IOStreams, data map[string]json.RawMess
 
 	// --- Top Devices by Data Usage ---
 	fmt.Fprintln(out, c.Bold("Top Devices by Data Usage"))
-	var topDevices []struct {
-		DeviceName   string  `json:"deviceName"`
-		SerialNumber string  `json:"serialNumber"`
-		TX           float64 `json:"tx"`
-		RX           float64 `json:"rx"`
-		Total        float64 `json:"total"`
+	topFields := fields
+	if len(topFields) == 0 {
+		topFields = defaultTrafficFields
 	}
-	if json.Unmarshal(data["topk"], &topDevices) == nil && len(topDevices) > 0 {
-		tp := iostreams.NewTablePrinter(out, io.IsStdoutTTY())
-		tp.AddRow(c.Bold("DEVICE"), c.Bold("SERIAL"), c.Bold("TX"), c.Bold("RX"), c.Bold("TOTAL"))
-		for _, d := range topDevices {
-			name := d.DeviceName
-			if name == "" {
-				name = d.SerialNumber
-			}
-			tp.AddRow(name, d.SerialNumber, formatBytes(d.TX), formatBytes(d.RX), formatBytes(d.Total))
-		}
-		_ = tp.Render()
-	} else {
+	wrapped := []byte(`{"result":` + string(data["topk"]) + `}`)
+	if err := iostreams.FormatOutput(wrapped, io, "table", topFields,
+		iostreams.WithFormatters(trafficFormatters),
+	); err != nil {
 		fmt.Fprintln(out, c.Gray("  No top device data"))
 	}
 }
