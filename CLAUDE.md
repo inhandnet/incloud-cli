@@ -46,6 +46,15 @@ golangci-lint run ./...
 - table 模式下若未指定 `--fields`，默认显示全部字段
 - 仅当 API 返回字段过多、全显示不可读时，才定义 `defaultXxxFields` 控制 table 默认列（如 `device list` 返回 20+ 字段）
 
+### 写操作反馈
+
+所有写操作（create/update/delete）成功后必须在 stderr 输出确认信息，格式统一为：
+- create: `<Resource> "<name>" created. (id: <id>)`
+- update: `<Resource> "<name>" (<id>) updated.`
+- delete: `<Resource> "<name>" (<id>) deleted.`
+
+delete 前先 GET 拿到名称用于确认提示；create/update 从响应体解析名称和 ID。确认信息写 stderr，响应数据写 stdout，互不干扰管道。
+
 ### Top-K 参数
 
 排名类命令统一使用 `--n`（默认 10）表示返回条数。
