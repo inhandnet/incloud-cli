@@ -67,8 +67,11 @@ func newCmdConfigHistoryList(f *factory.Factory) *cobra.Command {
 			}
 
 			output, _ := cmd.Flags().GetString("output")
+			if output == "" {
+				output = "table"
+			}
 			displayFields := fields
-			if len(displayFields) == 0 && output == "table" {
+			if len(displayFields) == 0 {
 				// Always use default fields in table mode to avoid
 				// expanding the huge mergedConfig nested object.
 				displayFields = defaultConfigHistoryFields

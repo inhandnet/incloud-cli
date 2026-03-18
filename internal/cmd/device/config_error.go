@@ -45,7 +45,7 @@ func newCmdConfigError(f *factory.Factory) *cobra.Command {
 			output, _ := cmd.Flags().GetString("output")
 
 			// For table mode, extract and display only the error list
-			if output == "table" {
+			if output == "" || output == "table" {
 				return formatConfigErrors(body, f)
 			}
 
