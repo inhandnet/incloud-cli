@@ -10,7 +10,7 @@
 | 1   | 固件查询     | `incloud firmware`        | ~8           | 列表、详情、按产品查询    |
 | 2   | OTA 任务     | `incloud firmware job`    | ~9           | 创建/查看/重试升级任务    |
 | 3   | OTA 模块     | `incloud firmware module` | ~2           | 查看 OTA 模块定义         |
-| 4   | 设备固件状态 | `incloud firmware device` | ~6           | 查看设备当前固件/OTA 状态 |
+| 4   | 设备固件状态 | `incloud firmware status` | ~2           | 查看设备固件/OTA 升级状态 |
 
 ---
 
@@ -45,13 +45,11 @@
 - [ ] `firmware module list` — 列出 OTA 模块定义（按产品过滤）
 - [ ] `firmware module get <id>` — 查看 OTA 模块详情
 
-### 设备固件状态 (`incloud firmware device`)
+### 设备固件状态 (`incloud firmware status`)
 
-- [ ] `firmware device get <id>` — 查看设备当前固件（默认模块）
-- [ ] `firmware device list` — 列出所有设备的固件状态
-- [ ] `firmware device ota-list` — 列出 OTA 设备及其状态
-- [ ] `firmware device modules <id>` — 查看设备所有 OTA 模块状态
-- [ ] `firmware device module <id> <module>` — 查看设备特定 OTA 模块状态
+- [x] `firmware status` — 列出设备固件升级状态（支持 --device/--product/--module/--status/--version/--expand 过滤）
+      - 默认调用 `GET /device/firmwares`（列出所有设备默认模块状态）
+      - 指定 `--device <id>` 时调用 `GET /devices/{id}/ota/modules`（列出该设备所有模块状态）
 
 ---
 
