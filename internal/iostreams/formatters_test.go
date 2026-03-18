@@ -19,27 +19,27 @@ func TestFormatBytes_Bytes(t *testing.T) {
 	}
 }
 
-func TestFormatBytes_KB(t *testing.T) {
-	if got := FormatBytes("1024"); got != "1.0 KB" {
-		t.Errorf("expected '1.0 KB', got %q", got)
+func TestFormatBytes_KiB(t *testing.T) {
+	if got := FormatBytes("1024"); got != "1.0 KiB" {
+		t.Errorf("expected '1.0 KiB', got %q", got)
 	}
 }
 
-func TestFormatBytes_MB(t *testing.T) {
-	if got := FormatBytes("1048576"); got != "1.0 MB" {
-		t.Errorf("expected '1.0 MB', got %q", got)
+func TestFormatBytes_MiB(t *testing.T) {
+	if got := FormatBytes("1048576"); got != "1.0 MiB" {
+		t.Errorf("expected '1.0 MiB', got %q", got)
 	}
 }
 
-func TestFormatBytes_GB(t *testing.T) {
-	if got := FormatBytes("21114126336"); got != "19.7 GB" {
-		t.Errorf("expected '19.7 GB', got %q", got)
+func TestFormatBytes_GiB(t *testing.T) {
+	if got := FormatBytes("21114126336"); got != "20 GiB" {
+		t.Errorf("expected '20 GiB', got %q", got)
 	}
 }
 
-func TestFormatBytes_TB(t *testing.T) {
-	if got := FormatBytes("1099511627776"); got != "1.0 TB" {
-		t.Errorf("expected '1.0 TB', got %q", got)
+func TestFormatBytes_TiB(t *testing.T) {
+	if got := FormatBytes("1099511627776"); got != "1.0 TiB" {
+		t.Errorf("expected '1.0 TiB', got %q", got)
 	}
 }
 
@@ -134,14 +134,14 @@ func TestFormatBitRate_Bps(t *testing.T) {
 }
 
 func TestFormatBitRate_Kbps(t *testing.T) {
-	if got := FormatBitRate("1500"); got != "1.5 Kbps" {
-		t.Errorf("expected '1.5 Kbps', got %q", got)
+	if got := FormatBitRate("1500"); got != "1.5 kbps" {
+		t.Errorf("expected '1.5 kbps', got %q", got)
 	}
 }
 
 func TestFormatBitRate_Mbps(t *testing.T) {
-	if got := FormatBitRate("1000000"); got != "1.0 Mbps" {
-		t.Errorf("expected '1.0 Mbps', got %q", got)
+	if got := FormatBitRate("1000000"); got != "1 Mbps" {
+		t.Errorf("expected '1 Mbps', got %q", got)
 	}
 }
 
@@ -162,6 +162,46 @@ func TestFormatBitRate_NotANumber(t *testing.T) {
 func TestFormatMbps_Normal(t *testing.T) {
 	if got := FormatMbps("25.5"); got != "25.50 Mbps" {
 		t.Errorf("expected '25.50 Mbps', got %q", got)
+	}
+}
+
+// --- FormatMicroseconds tests ---
+
+func TestFormatMicroseconds_Normal(t *testing.T) {
+	if got := FormatMicroseconds("4765"); got != "4.765 ms" {
+		t.Errorf("expected '4.765 ms', got %q", got)
+	}
+}
+
+func TestFormatMicroseconds_Small(t *testing.T) {
+	if got := FormatMicroseconds("500"); got != "0.500 ms" {
+		t.Errorf("expected '0.500 ms', got %q", got)
+	}
+}
+
+func TestFormatMicroseconds_NotANumber(t *testing.T) {
+	if got := FormatMicroseconds("N/A"); got != "N/A" {
+		t.Errorf("expected 'N/A', got %q", got)
+	}
+}
+
+// --- FormatMs tests ---
+
+func TestFormatMs_Normal(t *testing.T) {
+	if got := FormatMs("12.5"); got != "12.50 ms" {
+		t.Errorf("expected '12.50 ms', got %q", got)
+	}
+}
+
+func TestFormatMs_Zero(t *testing.T) {
+	if got := FormatMs("0"); got != "0.00 ms" {
+		t.Errorf("expected '0.00 ms', got %q", got)
+	}
+}
+
+func TestFormatMs_NotANumber(t *testing.T) {
+	if got := FormatMs("err"); got != "err" {
+		t.Errorf("expected 'err', got %q", got)
 	}
 }
 
@@ -191,17 +231,17 @@ func TestFormatOutput_WithFormatters_Array(t *testing.T) {
 		t.Fatal(err)
 	}
 	out := buf.String()
-	if !strings.Contains(out, "1.0 MB") {
-		t.Errorf("expected tx=1.0 MB, got:\n%s", out)
+	if !strings.Contains(out, "1.0 MiB") {
+		t.Errorf("expected tx=1.0 MiB, got:\n%s", out)
 	}
-	if !strings.Contains(out, "2.0 MB") {
-		t.Errorf("expected rx=2.0 MB, got:\n%s", out)
+	if !strings.Contains(out, "2.0 MiB") {
+		t.Errorf("expected rx=2.0 MiB, got:\n%s", out)
 	}
 	if !strings.Contains(out, "512 B") {
 		t.Errorf("expected tx=512 B, got:\n%s", out)
 	}
-	if !strings.Contains(out, "1.0 KB") {
-		t.Errorf("expected rx=1.0 KB, got:\n%s", out)
+	if !strings.Contains(out, "1.0 KiB") {
+		t.Errorf("expected rx=1.0 KiB, got:\n%s", out)
 	}
 	// name should not be formatted
 	if !strings.Contains(out, "dev1") {
@@ -220,8 +260,8 @@ func TestFormatOutput_WithFormatters_Object(t *testing.T) {
 		t.Fatal(err)
 	}
 	out := buf.String()
-	if !strings.Contains(out, "1.0 MB") {
-		t.Errorf("expected tx=1.0 MB, got:\n%s", out)
+	if !strings.Contains(out, "1.0 MiB") {
+		t.Errorf("expected tx=1.0 MiB, got:\n%s", out)
 	}
 }
 
@@ -237,7 +277,7 @@ func TestFormatOutput_WithFormatters_JSON_NotApplied(t *testing.T) {
 	}
 	out := buf.String()
 	// JSON output should NOT apply formatters
-	if strings.Contains(out, "1.0 MB") {
+	if strings.Contains(out, "MiB") {
 		t.Errorf("json output should not apply formatters, got:\n%s", out)
 	}
 	if !strings.Contains(out, "1048576") {
@@ -258,11 +298,11 @@ func TestFormatOutput_WithFormatters_AndTransform(t *testing.T) {
 		t.Fatal(err)
 	}
 	out := buf.String()
-	if !strings.Contains(out, "1.0 MB") {
-		t.Errorf("expected tx=1.0 MB after transform+format, got:\n%s", out)
+	if !strings.Contains(out, "1.0 MiB") {
+		t.Errorf("expected tx=1.0 MiB after transform+format, got:\n%s", out)
 	}
-	if !strings.Contains(out, "2.0 MB") {
-		t.Errorf("expected rx=2.0 MB after transform+format, got:\n%s", out)
+	if !strings.Contains(out, "2.0 MiB") {
+		t.Errorf("expected rx=2.0 MiB after transform+format, got:\n%s", out)
 	}
 }
 
@@ -295,14 +335,14 @@ func TestFormatOutput_WithFormatters_NestedDotPath(t *testing.T) {
 		t.Fatal(err)
 	}
 	out := buf.String()
-	if !strings.Contains(out, "1.0 MB") {
-		t.Errorf("expected sim.tx=1.0 MB, got:\n%s", out)
+	if !strings.Contains(out, "1.0 MiB") {
+		t.Errorf("expected sim.tx=1.0 MiB, got:\n%s", out)
 	}
-	if !strings.Contains(out, "2.0 MB") {
-		t.Errorf("expected sim.rx=2.0 MB, got:\n%s", out)
+	if !strings.Contains(out, "2.0 MiB") {
+		t.Errorf("expected sim.rx=2.0 MiB, got:\n%s", out)
 	}
-	if !strings.Contains(out, "3.0 MB") {
-		t.Errorf("expected sim.total=3.0 MB, got:\n%s", out)
+	if !strings.Contains(out, "3.0 MiB") {
+		t.Errorf("expected sim.total=3.0 MiB, got:\n%s", out)
 	}
 }
 

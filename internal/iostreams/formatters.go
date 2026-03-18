@@ -5,6 +5,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/dustin/go-humanize"
 )
 
 // ColumnFormatter transforms a display string for a specific column.
@@ -13,61 +15,30 @@ type ColumnFormatter func(string) string
 // ColumnFormatters maps column names (gjson paths) to their formatter functions.
 type ColumnFormatters map[string]ColumnFormatter
 
-// FormatBytes converts a numeric string (bytes) to a human-readable size.
+// FormatBytes converts a numeric string (bytes) to a human-readable size (IEC, 1024-based).
 //
-//	"21114126336" → "19.7 GB"
-//	"1024"        → "1.0 KB"
+//	"21114126336" → "20 GiB"
+//	"1024"        → "1.0 KiB"
 //	"not-a-number"→ "not-a-number" (returned as-is)
 func FormatBytes(s string) string {
-	b, err := strconv.ParseFloat(strings.TrimSpace(s), 64)
+	f, err := strconv.ParseFloat(strings.TrimSpace(s), 64)
 	if err != nil {
 		return s
 	}
-	const (
-		KB = 1024.0
-		MB = KB * 1024
-		GB = MB * 1024
-		TB = GB * 1024
-	)
-	switch {
-	case b >= TB:
-		return fmt.Sprintf("%.1f TB", b/TB)
-	case b >= GB:
-		return fmt.Sprintf("%.1f GB", b/GB)
-	case b >= MB:
-		return fmt.Sprintf("%.1f MB", b/MB)
-	case b >= KB:
-		return fmt.Sprintf("%.1f KB", b/KB)
-	default:
-		return fmt.Sprintf("%.0f B", b)
-	}
+	return humanize.IBytes(uint64(f))
 }
 
 // FormatBitRate converts a numeric string (bits per second) to a human-readable rate.
 //
-//	"1000000"    → "1.0 Mbps"
-//	"1500"       → "1.5 Kbps"
+//	"1000000"    → "1 Mbps"
+//	"1500"       → "1.5 kbps"
 //	"not-a-number"→ "not-a-number" (returned as-is)
 func FormatBitRate(s string) string {
-	b, err := strconv.ParseFloat(strings.TrimSpace(s), 64)
+	f, err := strconv.ParseFloat(strings.TrimSpace(s), 64)
 	if err != nil {
 		return s
 	}
-	const (
-		Kbps = 1000.0
-		Mbps = Kbps * 1000
-		Gbps = Mbps * 1000
-	)
-	switch {
-	case b >= Gbps:
-		return fmt.Sprintf("%.1f Gbps", b/Gbps)
-	case b >= Mbps:
-		return fmt.Sprintf("%.1f Mbps", b/Mbps)
-	case b >= Kbps:
-		return fmt.Sprintf("%.1f Kbps", b/Kbps)
-	default:
-		return fmt.Sprintf("%.0f bps", b)
-	}
+	return humanize.SIWithDigits(f, 1, "bps")
 }
 
 // FormatMbps appends " Mbps" to a numeric string.
@@ -80,6 +51,31 @@ func FormatMbps(s string) string {
 		return s
 	}
 	return fmt.Sprintf("%.2f Mbps", f)
+}
+
+// FormatMicroseconds converts a numeric string (microseconds) to a human-readable latency.
+//
+//	"4765"  → "4.765 ms"
+//	"1200000" → "1200.000 ms"
+//	"500"   → "0.500 ms"
+func FormatMicroseconds(s string) string {
+	f, err := strconv.ParseFloat(strings.TrimSpace(s), 64)
+	if err != nil {
+		return s
+	}
+	return fmt.Sprintf("%.3f ms", f/1000)
+}
+
+// FormatMs appends " ms" to a numeric string.
+//
+//	"12.5" → "12.50 ms"
+//	"0"    → "0.00 ms"
+func FormatMs(s string) string {
+	f, err := strconv.ParseFloat(strings.TrimSpace(s), 64)
+	if err != nil {
+		return s
+	}
+	return fmt.Sprintf("%.2f ms", f)
 }
 
 // FormatPercent converts a decimal fraction string to a percentage.
@@ -164,44 +160,5 @@ func FormatRelativeTime(s string) string {
 		return s
 	}
 
-	d := time.Since(t)
-	if d < 0 {
-		d = -d
-		return formatTimeDistance(d) + " from now"
-	}
-	return formatTimeDistance(d) + " ago"
-}
-
-func formatTimeDistance(d time.Duration) string {
-	switch {
-	case d < time.Minute:
-		return "just now"
-	case d < time.Hour:
-		m := int(d.Minutes())
-		if m == 1 {
-			return "1 minute"
-		}
-		return fmt.Sprintf("%d minutes", m)
-	case d < 24*time.Hour:
-		h := int(d.Hours())
-		if h == 1 {
-			return "1 hour"
-		}
-		return fmt.Sprintf("%d hours", h)
-	case d < 30*24*time.Hour:
-		days := int(d.Hours()) / 24
-		if days == 1 {
-			return "1 day"
-		}
-		return fmt.Sprintf("%d days", days)
-	default:
-		months := int(d.Hours()) / (24 * 30)
-		if months == 0 {
-			months = 1
-		}
-		if months == 1 {
-			return "1 month"
-		}
-		return fmt.Sprintf("%d months", months)
-	}
+	return humanize.Time(t)
 }
