@@ -82,15 +82,14 @@
 
 ### `incloud device config` — 配置管理 (~12 端点)
 
-- [ ] `device config get <id>` — 查看当前设备配置
-- [ ] `device config merge <id>` — 查看完整合并配置（设备+组+默认层）
-- [ ] `device config edit <id>` — 直接更新配置（一步提交）
-- [ ] `device config history <id>` — 配置变更历史
-- [ ] `device config snapshot <id> <snapId>` — 查看历史快照
-- [ ] `device config restore <id> <snapId>` — 从快照恢复配置
-- [ ] `device config discard <id>` — 丢弃待提交的变更
-- [ ] `device config error <id>` — 查看最近配置下发错误
-- [ ] `device config copy --from <src> --to <dst>` — 配置复制到其他设备/组
+- [x] `device config get <id>` — 默认查看合并配置，`--layer` 切换分层视图
+- [x] `device config update <id>` — 直接更新配置（`--payload`/`--file`，JSON merge patch）
+- [x] `device config error <id>` — 查看配置下发错误（table 模式只显示 error 列表）
+- [x] `device config abort <id>` — 中止待同步的配置变更（`--yes` 跳过确认）
+- [x] `device config copy` — 配置复制（`--source/--source-group` → `--to/--to-group`）
+- [x] `device config snapshots list <id>` — 配置快照列表（`--page/--limit/--after/--before`）
+- [x] `device config snapshots get <id> <snapId>` — 查看快照详情
+- [x] `device config snapshots restore <id> <snapId>` — 从快照恢复配置（`--yes` 跳过确认）
 
 ### `incloud device log` — 日志 (~4 端点)
 
