@@ -1,16 +1,12 @@
 package device
 
 import (
-	"bufio"
 	"fmt"
-	"io"
-	"os"
-	"strings"
 
-	"github.com/mattn/go-isatty"
 	"github.com/spf13/cobra"
 
 	"github.com/inhandnet/incloud-cli/internal/factory"
+	"github.com/inhandnet/incloud-cli/internal/ui"
 )
 
 func NewCmdTransfer(f *factory.Factory) *cobra.Command {
@@ -36,19 +32,11 @@ source organization and recreated in the target organization.`,
 			deviceID := args[0]
 
 			if !yes {
-				if file, ok := f.IO.In.(*os.File); !ok || !isatty.IsTerminal(file.Fd()) {
-					return fmt.Errorf("terminal is non-interactive; use --yes to confirm")
-				}
-
-				fmt.Fprintf(f.IO.ErrOut, "Transfer device %s to organization %s? This cannot be undone. (y/N) ", deviceID, org)
-				reader := bufio.NewReader(f.IO.In)
-				answer, err := reader.ReadString('\n')
-				if err != nil && err != io.EOF {
+				confirmed, err := ui.Confirm(f, fmt.Sprintf("Transfer device %s to organization %s? This cannot be undone.", deviceID, org))
+				if err != nil {
 					return err
 				}
-				answer = strings.TrimSpace(answer)
-				if answer != "y" && answer != "Y" {
-					fmt.Fprintln(f.IO.ErrOut, "Aborted.")
+				if !confirmed {
 					return nil
 				}
 			}

@@ -1,16 +1,12 @@
 package product
 
 import (
-	"bufio"
 	"fmt"
-	"io"
-	"os"
-	"strings"
 
-	"github.com/mattn/go-isatty"
 	"github.com/spf13/cobra"
 
 	"github.com/inhandnet/incloud-cli/internal/factory"
+	"github.com/inhandnet/incloud-cli/internal/ui"
 )
 
 func NewCmdDelete(f *factory.Factory) *cobra.Command {
@@ -25,20 +21,11 @@ func NewCmdDelete(f *factory.Factory) *cobra.Command {
 			id := args[0]
 
 			if !yes {
-				// Check if stdin is a TTY
-				if file, ok := f.IO.In.(*os.File); !ok || !isatty.IsTerminal(file.Fd()) {
-					return fmt.Errorf("terminal is non-interactive; use --yes to confirm")
-				}
-
-				fmt.Fprintf(f.IO.ErrOut, "Delete product %s? (y/N) ", id)
-				reader := bufio.NewReader(f.IO.In)
-				answer, err := reader.ReadString('\n')
-				if err != nil && err != io.EOF {
+				confirmed, err := ui.Confirm(f, fmt.Sprintf("Delete product %s?", id))
+				if err != nil {
 					return err
 				}
-				answer = strings.TrimSpace(answer)
-				if answer != "y" && answer != "Y" {
-					fmt.Fprintln(f.IO.ErrOut, "Aborted.")
+				if !confirmed {
 					return nil
 				}
 			}

@@ -1,13 +1,6 @@
 package device
 
 import (
-	"bufio"
-	"fmt"
-	"io"
-	"os"
-	"strings"
-
-	"github.com/mattn/go-isatty"
 	"github.com/spf13/cobra"
 
 	"github.com/inhandnet/incloud-cli/internal/factory"
@@ -55,19 +48,4 @@ Diagnostics:
 	cmd.AddCommand(NewCmdExecInterfaces(f))
 
 	return cmd
-}
-
-// confirmPrompt asks the user for confirmation. Returns true if confirmed.
-func confirmPrompt(f *factory.Factory, message string) (bool, error) {
-	if file, ok := f.IO.In.(*os.File); !ok || !isatty.IsTerminal(file.Fd()) {
-		return false, fmt.Errorf("terminal is non-interactive; use --yes to confirm")
-	}
-	fmt.Fprintf(f.IO.ErrOut, "%s (y/N) ", message)
-	reader := bufio.NewReader(f.IO.In)
-	answer, err := reader.ReadString('\n')
-	if err != nil && err != io.EOF {
-		return false, err
-	}
-	a := strings.TrimSpace(answer)
-	return a == "y" || a == "Y", nil
 }

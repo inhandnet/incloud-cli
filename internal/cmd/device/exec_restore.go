@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/inhandnet/incloud-cli/internal/factory"
+	"github.com/inhandnet/incloud-cli/internal/ui"
 )
 
 func NewCmdExecRestore(f *factory.Factory) *cobra.Command {
@@ -28,12 +29,11 @@ func NewCmdExecRestore(f *factory.Factory) *cobra.Command {
 			idsArg := args[0]
 
 			if !yes {
-				confirmed, err := confirmPrompt(f, fmt.Sprintf("Restore factory defaults on %s?", idsArg))
+				confirmed, err := ui.Confirm(f, fmt.Sprintf("Restore factory defaults on %s?", idsArg))
 				if err != nil {
 					return err
 				}
 				if !confirmed {
-					fmt.Fprintln(f.IO.ErrOut, "Aborted.")
 					return nil
 				}
 			}

@@ -7,6 +7,7 @@ import (
 
 	"github.com/inhandnet/incloud-cli/internal/factory"
 	"github.com/inhandnet/incloud-cli/internal/iostreams"
+	"github.com/inhandnet/incloud-cli/internal/ui"
 )
 
 func newCmdShadowDelete(f *factory.Factory) *cobra.Command {
@@ -29,12 +30,11 @@ func newCmdShadowDelete(f *factory.Factory) *cobra.Command {
 			deviceID := args[0]
 
 			if !yes {
-				confirmed, err := confirmPrompt(f, fmt.Sprintf("Delete shadow %q from device %s?", name, deviceID))
+				confirmed, err := ui.Confirm(f, fmt.Sprintf("Delete shadow %q from device %s?", name, deviceID))
 				if err != nil {
 					return err
 				}
 				if !confirmed {
-					fmt.Fprintln(f.IO.ErrOut, "Aborted.")
 					return nil
 				}
 			}

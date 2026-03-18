@@ -1,22 +1,20 @@
 package device
 
 import (
-	"bufio"
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
 
-	"github.com/mattn/go-isatty"
 	"github.com/spf13/cobra"
 	"github.com/xuri/excelize/v2"
 
 	"github.com/inhandnet/incloud-cli/internal/api"
 	"github.com/inhandnet/incloud-cli/internal/factory"
+	"github.com/inhandnet/incloud-cli/internal/ui"
 )
 
 type ImportOptions struct {
@@ -129,17 +127,11 @@ func runImport(f *factory.Factory, opts *ImportOptions, filePath string) error {
 
 	// Step 3: Confirm
 	if !opts.Yes {
-		if file, ok := f.IO.In.(*os.File); !ok || !isatty.IsTerminal(file.Fd()) {
-			return fmt.Errorf("terminal is non-interactive; use --yes to confirm")
-		}
-		fmt.Fprintf(f.IO.ErrOut, "Proceed with importing %d device(s)? (y/N) ", job.Total)
-		reader := bufio.NewReader(f.IO.In)
-		answer, err := reader.ReadString('\n')
-		if err != nil && err != io.EOF {
+		confirmed, err := ui.Confirm(f, fmt.Sprintf("Proceed with importing %d device(s)?", job.Total))
+		if err != nil {
 			return err
 		}
-		if a := strings.TrimSpace(answer); a != "y" && a != "Y" {
-			fmt.Fprintln(f.IO.ErrOut, "Aborted.")
+		if !confirmed {
 			return nil
 		}
 	}
