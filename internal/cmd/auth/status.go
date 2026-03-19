@@ -75,14 +75,6 @@ func NewCmdStatus(f *factory.Factory) *cobra.Command {
 				}
 			}
 
-			if !ctx.ExpiresAt.IsZero() {
-				label := "Expires:  "
-				if tokenExpired {
-					label = "Expired:  "
-				}
-				fmt.Fprintf(out, "%s%s\n", label, ctx.ExpiresAt.Local().Format("2006-01-02 15:04:05"))
-			}
-
 			// Fetch current user and org from API when logged in
 			if ctx.EffectiveToken() != "" && !tokenExpired {
 				client, err := f.APIClient()
