@@ -1,7 +1,9 @@
 package auth
 
 import (
+	"encoding/json"
 	"fmt"
+	"net/url"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -79,6 +81,42 @@ func NewCmdStatus(f *factory.Factory) *cobra.Command {
 					label = "Expired:  "
 				}
 				fmt.Fprintf(out, "%s%s\n", label, ctx.ExpiresAt.Local().Format("2006-01-02 15:04:05"))
+			}
+
+			// Fetch current user and org from API when logged in
+			if ctx.EffectiveToken() != "" && !tokenExpired {
+				client, err := f.APIClient()
+				if err == nil {
+					q := url.Values{}
+					q.Set("fields", "username,email")
+					q.Set("expand", "org")
+					body, err := client.Get("/api/v1/users/me", q)
+					if err == nil {
+						var resp struct {
+							Result struct {
+								Username string `json:"username"`
+								Email    string `json:"email"`
+								Org      struct {
+									Name string `json:"name"`
+									ID   string `json:"_id"`
+								} `json:"org"`
+							} `json:"result"`
+						}
+						if json.Unmarshal(body, &resp) == nil {
+							me := resp.Result
+							if me.Username != "" {
+								fmt.Fprintf(out, "Account:  %s", me.Username)
+								if me.Email != "" {
+									fmt.Fprintf(out, " (%s)", me.Email)
+								}
+								fmt.Fprintln(out)
+							}
+							if me.Org.Name != "" {
+								fmt.Fprintf(out, "Org:      %s (%s)\n", me.Org.Name, me.Org.ID)
+							}
+						}
+					}
+				}
 			}
 
 			return nil
