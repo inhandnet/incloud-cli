@@ -7,7 +7,7 @@
 
 | # | 子模块 | CLI 路径 | 端点数 | 说明 |
 |---|--------|---------|--------|------|
-| 1 | AutoVPN | `incloud network vpn` | ~14 | SD-WAN 网络、隧道、连接 |
+| 1 | AutoVPN | `incloud sdwan` | ~14 | SD-WAN 网络、隧道、连接 |
 | 2 | InConnect 连接器 | `incloud network connector` | ~39 | 连接器网络 + 账号 + 设备 + 端点 + 日志 |
 | 3 | OOBM | `incloud network oobm` | ~13 | 带外管理（Web/RDP/SSH/串口） |
 | 4 | 网络资产 | `incloud network asset` | ~7 | MAC 追踪的网络资产 |
@@ -18,20 +18,20 @@
 
 ## TODO List
 
-### AutoVPN (`incloud network vpn`)
+### SD-WAN (`incloud sdwan`)
 
-- [ ] `network vpn list` — 列出 AutoVPN 网络
-- [ ] `network vpn get <id>` — 查看网络详情（含隧道信息）
-- [ ] `network vpn create` — 创建 AutoVPN 网络
-- [ ] `network vpn update <id>` — 更新网络（添加/移除设备，重建隧道）
-- [ ] `network vpn delete <id>` — 删除网络
-- [ ] `network vpn export` — 导出网络列表
-- [ ] `network vpn devices <id>` — 查看网络中的设备
-- [ ] `network vpn tunnels <id>` — 查看网络隧道
-- [ ] `network vpn connections <id>` — 查看网络连接
-- [ ] `network vpn candidates` — 查找可加入网络的候选设备
-- [ ] `network vpn verify-subnets` — 验证子网列表
-- [ ] `network vpn device-subnets <deviceId>` — 查看设备子网信息
+- [x] `sdwan network list` — 列出 SD-WAN 网络
+- [x] `sdwan network get <id>` — 查看网络详情（含隧道信息）
+- [x] `sdwan network create` — 创建 SD-WAN 网络
+- [x] `sdwan network update <id>` — 更新网络（添加/移除设备，重建隧道）
+- [x] `sdwan network delete <id>` — 删除网络
+- [x] `sdwan network tunnels <id>` — 查看网络隧道
+- [x] `sdwan network connections <id>` — 查看网络连接
+- [x] `sdwan network connection-tunnels <networkId> <connectionId>` — 查看连接的隧道详情
+- [x] `sdwan devices <networkId>` — 查看网络中的设备
+- [x] `sdwan candidates` — 查找可加入网络的候选设备
+- [x] `sdwan verify-subnets` — 验证子网列表
+- [x] `sdwan device-subnets <deviceId>` — 查看设备子网信息
 
 ### InConnect 连接器 — 网络 (`incloud network connector`)
 
