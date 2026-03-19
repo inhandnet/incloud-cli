@@ -190,7 +190,7 @@
 - [ ] 实现通用过滤参数（`--filter`, `-q`）
 - [ ] 实现 `--device <id>` 全局参数，支持 ID / name / SN 查找
 - [x] 表格输出：device 列表的默认列选择
-- [ ] 考虑异步诊断任务的轮询/等待机制（diag/exec 类命令）
+- [x] 异步诊断任务的实时流机制：ping/traceroute 通过 SSE 流实时输出结果
 - [ ] cobra command groups 分组展示（Core / Diagnostics / Monitoring / Data）
 - [x] 统一时间参数 `--after/--before`，提取到公共 flag helper
 
@@ -204,4 +204,4 @@
 | Touch（远程访问） | 独立远程连接域 | `touch` 顶级命令 |
 | Client Identification Rules | 内部管理 API | 不实现 |
 | Config Documents/Schema | 内部管理 API | 不实现 |
-| Stream（实时数据流 SSE） | 内部 API，前端 WebSocket 用 | 不直接暴露 |
+| Stream（实时数据流 SSE） | 内部 API，ping/traceroute 已通过 SSE 流实现实时输出 | 不单独暴露 |

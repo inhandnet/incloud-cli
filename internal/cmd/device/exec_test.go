@@ -160,7 +160,7 @@ func TestExecRestoreDefaults_WithYes(t *testing.T) {
 	}
 }
 
-func TestExecPing(t *testing.T) {
+func TestExecPing_JSON(t *testing.T) {
 	var gotPath string
 	var gotBody map[string]interface{}
 
@@ -176,7 +176,7 @@ func TestExecPing(t *testing.T) {
 	f, _ := newTestFactory(t, server.URL)
 
 	cmd := NewCmdExec(f)
-	cmd.SetArgs([]string{"ping", "device123", "--host", "8.8.8.8", "--count", "5"})
+	cmd.SetArgs([]string{"ping", "device123", "--host", "8.8.8.8", "--count", "5", "--json"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -190,9 +190,74 @@ func TestExecPing(t *testing.T) {
 	if gotBody["pingCount"] != float64(5) {
 		t.Errorf("expected pingCount=5, got %v", gotBody["pingCount"])
 	}
-	// interface should be omitted when empty
-	if _, ok := gotBody["interface"]; ok {
-		t.Errorf("expected interface to be omitted, got %v", gotBody["interface"])
+	// interface defaults to "any"
+	if gotBody["interface"] != "any" {
+		t.Errorf("expected interface=any, got %v", gotBody["interface"])
+	}
+}
+
+func TestExecPing_Stream(t *testing.T) {
+	var gotPath string
+	var gotBody map[string]interface{}
+	streamID := "stream-test-123"
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasSuffix(r.URL.Path, "/subscribe") {
+			// SSE endpoint — matches real API format: sliding window of {index, content} items
+			w.Header().Set("Content-Type", "text/event-stream")
+			flusher, ok := w.(http.Flusher)
+			if !ok {
+				t.Fatal("expected http.Flusher")
+			}
+			// Event 1: lines 0-1 (sliding window)
+			event1 := `{"status":"open","data":[` +
+				`{"index":0,"content":"PING 8.8.8.8 (8.8.8.8) 56(84) bytes of data."},` +
+				`{"index":1,"content":"64 bytes from 8.8.8.8: icmp_seq=1 ttl=117 time=3.45 ms"}]}`
+			_, _ = w.Write([]byte("event: live\ndata: " + event1 + "\n\n"))
+			flusher.Flush()
+			// Event 2: lines 1-2 (overlapping window)
+			event2 := `{"status":"closed","data":[` +
+				`{"index":1,"content":"64 bytes from 8.8.8.8: icmp_seq=1 ttl=117 time=3.45 ms"},` +
+				`{"index":2,"content":"--- 8.8.8.8 ping statistics ---"}]}`
+			_, _ = w.Write([]byte("event: closed\ndata: " + event2 + "\n\n"))
+			flusher.Flush()
+			return
+		}
+		// POST diagnosis endpoint
+		gotPath = r.URL.Path
+		body, _ := io.ReadAll(r.Body)
+		_ = json.Unmarshal(body, &gotBody)
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"result":{"_id":"diag123","streamId":"` + streamID + `"}}`))
+	}))
+	defer server.Close()
+
+	f, _ := newTestFactory(t, server.URL)
+	out := f.IO.Out.(*bytes.Buffer)
+
+	cmd := NewCmdExec(f)
+	cmd.SetArgs([]string{"ping", "device123", "--host", "8.8.8.8"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if gotPath != "/api/v1/devices/device123/diagnosis/ping" {
+		t.Errorf("unexpected path: %s", gotPath)
+	}
+	output := out.String()
+	if !strings.Contains(output, "PING 8.8.8.8") {
+		t.Errorf("expected ping output, got: %s", output)
+	}
+	if !strings.Contains(output, "icmp_seq=1") {
+		t.Errorf("expected icmp_seq=1 in output, got: %s", output)
+	}
+	if !strings.Contains(output, "ping statistics") {
+		t.Errorf("expected statistics line from second event, got: %s", output)
+	}
+	// Verify deduplication: icmp_seq=1 should appear only once despite being in both events
+	if strings.Count(output, "icmp_seq=1") != 1 {
+		t.Errorf("expected icmp_seq=1 exactly once (dedup), got %d in: %s",
+			strings.Count(output, "icmp_seq=1"), output)
 	}
 }
 
