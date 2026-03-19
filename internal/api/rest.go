@@ -114,6 +114,17 @@ func (c *APIClient) execute(r *resty.Request, method, path string) ([]byte, erro
 	return body, nil
 }
 
+// HTTPClient returns the underlying *http.Client with auth transport configured.
+// Use this for SSE streaming or other cases that need raw http.Client access.
+func (c *APIClient) HTTPClient() *http.Client {
+	return c.inner.GetClient()
+}
+
+// BaseURL returns the configured base URL.
+func (c *APIClient) BaseURL() string {
+	return c.inner.BaseURL
+}
+
 // cleanValues returns a copy of v with empty string values removed.
 func cleanValues(v url.Values) url.Values {
 	if v == nil {
