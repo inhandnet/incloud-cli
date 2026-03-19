@@ -2,6 +2,7 @@ stages:
   - check
   - test
   - build
+  - release
 
 variables:
   GOPROXY: https://goproxy.cn,direct
@@ -36,3 +37,61 @@ build:
     paths:
       - bin/
     expire_in: 7 days
+  rules:
+    - if: $CI_COMMIT_TAG
+    - if: $CI_COMMIT_BRANCH
+
+upload:
+  stage: release
+  image: curlimages/curl:latest
+  tags:
+    - docker
+  before_script: []
+  needs:
+    - job: build
+      artifacts: true
+  script:
+    - |
+      for file in bin/incloud-*; do
+        name=$(basename "$file")
+        echo "Uploading $name..."
+        curl --header "JOB-TOKEN: $CI_JOB_TOKEN" \
+          --upload-file "$file" \
+          "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/incloud-cli/${CI_COMMIT_TAG}/${name}"
+      done
+  rules:
+    - if: $CI_COMMIT_TAG
+
+release:
+  stage: release
+  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  tags:
+    - docker
+  before_script: []
+  needs:
+    - job: upload
+  script:
+    - echo "Creating release for $CI_COMMIT_TAG"
+  release:
+    tag_name: $CI_COMMIT_TAG
+    name: "$CI_COMMIT_TAG"
+    description: "Release $CI_COMMIT_TAG"
+    assets:
+      links:
+        - name: incloud-linux-amd64
+          url: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/incloud-cli/${CI_COMMIT_TAG}/incloud-linux-amd64"
+          link_type: package
+        - name: incloud-linux-arm64
+          url: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/incloud-cli/${CI_COMMIT_TAG}/incloud-linux-arm64"
+          link_type: package
+        - name: incloud-darwin-amd64
+          url: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/incloud-cli/${CI_COMMIT_TAG}/incloud-darwin-amd64"
+          link_type: package
+        - name: incloud-darwin-arm64
+          url: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/incloud-cli/${CI_COMMIT_TAG}/incloud-darwin-arm64"
+          link_type: package
+        - name: incloud-windows-amd64.exe
+          url: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/incloud-cli/${CI_COMMIT_TAG}/incloud-windows-amd64.exe"
+          link_type: package
+  rules:
+    - if: $CI_COMMIT_TAG
