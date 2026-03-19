@@ -75,15 +75,15 @@
 - [ ] `network connector endpoint delete <networkId> <endpointId>` — 删除端点
 - [ ] `network connector endpoint delete --bulk <networkId>` — 批量删除
 
-### InConnect 连接器 — 日志与流量 (`incloud network connector usage`)
+### InConnect 连接器 — 日志与流量 (`incloud connector account` / `incloud connector usage`)
 
-- [ ] `network connector usage events <networkId> <accountId>` — 账号上下线事件
-- [ ] `network connector usage logs <networkId> <accountId>` — 连接日志历史
-- [ ] `network connector usage tendency <networkId> <accountId>` — 连接趋势
-- [ ] `network connector usage stats` — 总体流量统计
-- [ ] `network connector usage stats export` — 导出流量统计
-- [ ] `network connector usage trend` — 流量趋势
-- [ ] `network connector usage topk` — Top-K 流量消耗排名
+- [x] `connector account events <networkId> <accountId>` — 账号上下线事件
+- [x] `connector account logs <networkId> <accountId>` — 连接日志历史
+- [x] `connector account tendency <networkId> <accountId>` — 连接趋势
+- [x] `connector usage stats` — 总体流量统计
+- ~~`connector usage stats export`~~ — 不实现
+- [x] `connector usage trend` — 流量趋势
+- [x] `connector usage topk` — Top-K 流量消耗排名
 
 ### OOBM — 资源 (`incloud network oobm`)
 

@@ -18,6 +18,7 @@ func NewCmdConnector(f *factory.Factory) *cobra.Command {
 	cmd.AddCommand(newCmdAccount(f))
 	cmd.AddCommand(newCmdDevice(f))
 	cmd.AddCommand(newCmdEndpoint(f))
+	cmd.AddCommand(newCmdUsage(f))
 
 	return cmd
 }
