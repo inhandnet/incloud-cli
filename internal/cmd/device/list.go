@@ -17,6 +17,7 @@ type ListOptions struct {
 	Sort    string
 	Query   string
 	Online  string
+	Status  string
 	Product []string
 	Group   []string
 	Fields  []string
@@ -70,6 +71,14 @@ func NewCmdList(f *factory.Factory) *cobra.Command {
 			if opts.Online != "" {
 				q.Set("online", opts.Online)
 			}
+			if opts.Status != "" {
+				switch opts.Status {
+				case "online":
+					q.Set("online", "true")
+				case "offline":
+					q.Set("online", "false")
+				}
+			}
 			for _, p := range opts.Product {
 				q.Add("product", p)
 			}
@@ -100,6 +109,7 @@ func NewCmdList(f *factory.Factory) *cobra.Command {
 	cmd.Flags().StringVar(&opts.Sort, "sort", "", "Sort order (e.g. \"createdAt,desc\")")
 	cmd.Flags().StringVarP(&opts.Query, "query", "q", "", "Search by name or serial number")
 	cmd.Flags().StringVar(&opts.Online, "online", "", "Filter by online status (true/false)")
+	cmd.Flags().StringVar(&opts.Status, "status", "", "Filter by status (online/offline)")
 	cmd.Flags().StringArrayVar(&opts.Product, "product", nil, "Filter by product (can be repeated)")
 	cmd.Flags().StringArrayVar(&opts.Group, "group", nil, "Filter by device group ID (can be repeated)")
 	cmd.Flags().StringSliceVarP(&opts.Fields, "fields", "f", nil, "Fields to return and display")
