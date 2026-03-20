@@ -55,8 +55,8 @@ will be prompted to enter it.`,
 		},
 	}
 
-	cmd.Flags().StringVar(&opts.Name, "name", "", "Device name")
-	cmd.Flags().StringVar(&opts.SN, "sn", "", "Serial number")
+	cmd.Flags().StringVar(&opts.Name, "name", "", "Device name (required)")
+	cmd.Flags().StringVar(&opts.SN, "sn", "", "Serial number (required)")
 	cmd.Flags().StringVar(&opts.Product, "product", "", "Product model (auto-detected from serial number)")
 	cmd.Flags().StringVar(&opts.Description, "description", "", "Device description (max 256 chars)")
 	cmd.Flags().StringVar(&opts.Group, "group", "", "Device group ID (use 'incloud device group list' to find IDs)")
