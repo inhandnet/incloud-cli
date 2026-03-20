@@ -8,6 +8,7 @@ import (
 
 	"github.com/inhandnet/incloud-cli/internal/api"
 	"github.com/inhandnet/incloud-cli/internal/config"
+	"github.com/inhandnet/incloud-cli/internal/debug"
 	"github.com/inhandnet/incloud-cli/internal/iostreams"
 )
 
@@ -54,6 +55,7 @@ func (f *Factory) APIClient() (*api.APIClient, error) {
 	if err != nil {
 		return nil, err
 	}
+	f.debugConfig(actx)
 	return api.NewAPIClient(actx.Host, f.newTransport(actx)), nil
 }
 
@@ -63,6 +65,38 @@ func (f *Factory) activeContext() (*config.Context, error) {
 		return nil, err
 	}
 	return cfg.ActiveContext()
+}
+
+func (f *Factory) debugConfig(ctx *config.Context) {
+	if !debug.Enabled {
+		return
+	}
+
+	cfg, _ := f.Config()
+
+	// Context source
+	if envCtx := os.Getenv("INCLOUD_CONTEXT"); envCtx != "" {
+		debug.Log("context: %s (from: env INCLOUD_CONTEXT)", envCtx)
+	} else {
+		debug.Log("context: %s (from: config)", cfg.CurrentContext)
+	}
+
+	// Host source
+	if envHost := os.Getenv("INCLOUD_HOST"); envHost != "" {
+		debug.Log("host: %s (from: env INCLOUD_HOST)", envHost)
+	} else {
+		debug.Log("host: %s (from: config)", ctx.Host)
+	}
+
+	// Org
+	if ctx.Org != "" {
+		debug.Log("org: %s", ctx.Org)
+	}
+
+	// User
+	if ctx.User != "" {
+		debug.Log("user: %s", ctx.User)
+	}
 }
 
 func (f *Factory) newTransport(ctx *config.Context) *api.TokenTransport {
