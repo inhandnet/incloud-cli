@@ -20,11 +20,18 @@ func NewCmdRoot(f *factory.Factory) *cobra.Command {
 
 	cmd.PersistentFlags().StringP("output", "o", "", "Output format: json, table, yaml")
 	cmd.PersistentFlags().String("context", "", "Override active context (env: INCLOUD_CONTEXT)")
+	cmd.PersistentFlags().String("sudo", "", "Impersonate a user (env: INCLOUD_SUDO)")
+	cmd.PersistentFlags().Lookup("sudo").Hidden = true
 
-	// Propagate --context flag to env so config.ActiveContext() picks it up
+	// Propagate --context and --sudo flags to env so downstream code picks them up
 	cmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
 		if ctx, _ := cmd.Flags().GetString("context"); ctx != "" {
 			if err := os.Setenv("INCLOUD_CONTEXT", ctx); err != nil {
+				return err
+			}
+		}
+		if sudo, _ := cmd.Flags().GetString("sudo"); sudo != "" {
+			if err := os.Setenv("INCLOUD_SUDO", sudo); err != nil {
 				return err
 			}
 		}

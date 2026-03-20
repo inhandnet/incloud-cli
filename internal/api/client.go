@@ -14,6 +14,7 @@ type TokenTransport struct {
 	Host         string
 	ClientID     string
 	ClientSecret string
+	Sudo         string
 	OnRefresh    func(accessToken, refreshToken string, expiry time.Time)
 	Base         http.RoundTripper
 }
@@ -21,6 +22,9 @@ type TokenTransport struct {
 func (t *TokenTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	if t.Token != "" && t.isSameHost(req) {
 		req.Header.Set("Authorization", "Bearer "+t.Token)
+		if t.Sudo != "" {
+			req.Header.Set("Sudo", t.Sudo)
+		}
 	}
 	resp, err := t.Base.RoundTrip(req)
 	if err != nil {

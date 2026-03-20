@@ -2,6 +2,7 @@ package factory
 
 import (
 	"net/http"
+	"os"
 	"sync"
 	"time"
 
@@ -71,6 +72,7 @@ func (f *Factory) newTransport(ctx *config.Context) *api.TokenTransport {
 		Host:         ctx.Host,
 		ClientID:     ctx.ClientID,
 		ClientSecret: ctx.ClientSecret,
+		Sudo:         os.Getenv("INCLOUD_SUDO"),
 		OnRefresh: func(accessToken, refreshToken string, expiry time.Time) {
 			ctx.Token = accessToken
 			if refreshToken != "" {
