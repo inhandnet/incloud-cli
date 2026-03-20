@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestExecMethod_SingleDevice(t *testing.T) {
@@ -236,18 +237,35 @@ func TestExecPing_RequiresHost(t *testing.T) {
 	}
 }
 
-func TestExecCapture(t *testing.T) {
+func TestExecCapture_WaitForCompletion(t *testing.T) {
+	// Speed up polling for tests
+	oldInterval := capturePollInterval
+	capturePollInterval = 10 * time.Millisecond
+	defer func() { capturePollInterval = oldInterval }()
+
 	var gotBody map[string]interface{}
+	pollCount := 0
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		body, _ := io.ReadAll(r.Body)
-		_ = json.Unmarshal(body, &gotBody)
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"result":{"_id":"diag456","status":"RUNNING"}}`))
+		if r.Method == http.MethodPost {
+			body, _ := io.ReadAll(r.Body)
+			_ = json.Unmarshal(body, &gotBody)
+			_, _ = w.Write([]byte(`{"result":{"_id":"diag456","status":"RUNNING"}}`))
+			return
+		}
+		// GET status polling
+		pollCount++
+		if pollCount < 2 {
+			_, _ = w.Write([]byte(`{"result":{"_id":"diag456","status":"RUNNING"}}`))
+		} else {
+			_, _ = w.Write([]byte(`{"result":{"_id":"diag456","status":"FINISHED","fileUrl":"https://example.com/file.pcap"}}`))
+		}
 	}))
 	defer server.Close()
 
 	f, _ := newTestFactory(t, server.URL)
+	out := f.IO.Out.(*bytes.Buffer)
 
 	cmd := NewCmdExec(f)
 	cmd.SetArgs([]string{"capture", "device123", "--interface", "eth0", "--duration", "60"})
@@ -261,32 +279,11 @@ func TestExecCapture(t *testing.T) {
 	if gotBody["captureTime"] != float64(60) {
 		t.Errorf("expected captureTime=60, got %v", gotBody["captureTime"])
 	}
-}
-
-func TestExecCaptureStatus(t *testing.T) {
-	var gotMethod, gotPath string
-
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		gotMethod = r.Method
-		gotPath = r.URL.Path
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"result":{"status":"FINISHED","fileUrl":"https://example.com/file.pcap"}}`))
-	}))
-	defer server.Close()
-
-	f, _ := newTestFactory(t, server.URL)
-
-	cmd := NewCmdExec(f)
-	cmd.SetArgs([]string{"capture-status", "device123"})
-	if err := cmd.Execute(); err != nil {
-		t.Fatalf("unexpected error: %v", err)
+	if pollCount < 1 {
+		t.Errorf("expected at least 1 poll, got %d", pollCount)
 	}
-
-	if gotMethod != http.MethodGet {
-		t.Errorf("expected GET, got %s", gotMethod)
-	}
-	if gotPath != "/api/v1/devices/device123/diagnosis/capture" {
-		t.Errorf("unexpected path: %s", gotPath)
+	if !strings.Contains(out.String(), "FINISHED") {
+		t.Errorf("expected FINISHED in output, got: %s", out.String())
 	}
 }
 

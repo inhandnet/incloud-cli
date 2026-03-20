@@ -58,6 +58,26 @@ func runDiagnosis(f *factory.Factory, cmd *cobra.Command, deviceID, tool string,
 	return formatOutput(cmd, f.IO, respBody, nil)
 }
 
+// setupTaskCancellation wires Ctrl+C to cancel a diagnosis task.
+// Returns a context and cancel function. Caller must defer cancel().
+func setupTaskCancellation(client *api.APIClient, taskID string) (context.Context, context.CancelFunc) {
+	ctx, cancel := context.WithCancel(context.Background())
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, os.Interrupt)
+	go func() {
+		select {
+		case <-sigCh:
+			cancel()
+			if taskID != "" {
+				_, _ = client.Put("/api/v1/diagnosis/"+taskID+"/cancel", nil)
+			}
+		case <-ctx.Done():
+		}
+		signal.Stop(sigCh)
+	}()
+	return ctx, cancel
+}
+
 // diagnosisStream holds the state returned by startDiagnosisStream.
 type diagnosisStream struct {
 	client   *api.APIClient
@@ -89,21 +109,7 @@ func startDiagnosisStream(f *factory.Factory, cmd *cobra.Command, deviceID, tool
 		return diagnosisStream{}, fmt.Errorf("no streamId in response: %s", string(respBody))
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
-	sigCh := make(chan os.Signal, 1)
-	signal.Notify(sigCh, os.Interrupt)
-	go func() {
-		select {
-		case <-sigCh:
-			cancel()
-			if taskID != "" {
-				_, _ = client.Put("/api/v1/diagnosis/"+taskID+"/cancel", nil)
-			}
-		case <-ctx.Done():
-		}
-		signal.Stop(sigCh)
-	}()
-
+	ctx, cancel := setupTaskCancellation(client, taskID)
 	return diagnosisStream{client: client, streamID: streamID, ctx: ctx, cancel: cancel}, nil
 }
 

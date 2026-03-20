@@ -1,10 +1,13 @@
 package api
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
+	"os"
+	"strings"
 
 	"github.com/go-resty/resty/v2"
 )
@@ -112,6 +115,43 @@ func (c *APIClient) execute(r *resty.Request, method, path string) ([]byte, erro
 		return body, fmt.Errorf("HTTP %d: %s", resp.StatusCode(), string(body))
 	}
 	return body, nil
+}
+
+// Download performs a GET request and writes the response body to a file.
+// Suitable for binary downloads (e.g. pcap files, firmware images).
+// path can be a relative API path or an absolute URL.
+func (c *APIClient) Download(path, destFile string) error {
+	reqURL := path
+	if !strings.HasPrefix(path, "http://") && !strings.HasPrefix(path, "https://") {
+		reqURL = c.inner.BaseURL + path
+	}
+
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, reqURL, http.NoBody)
+	if err != nil {
+		return fmt.Errorf("creating download request: %w", err)
+	}
+	resp, err := c.inner.GetClient().Do(req)
+	if err != nil {
+		return fmt.Errorf("download request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= 400 {
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("HTTP %d: %s", resp.StatusCode, string(body))
+	}
+
+	f, err := os.Create(destFile)
+	if err != nil {
+		return fmt.Errorf("creating file: %w", err)
+	}
+
+	if _, err := io.Copy(f, resp.Body); err != nil {
+		_ = f.Close()
+		_ = os.Remove(destFile)
+		return fmt.Errorf("writing file: %w", err)
+	}
+	return f.Close()
 }
 
 // HTTPClient returns the underlying *http.Client with auth transport configured.

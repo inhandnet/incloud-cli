@@ -21,6 +21,7 @@ type ApiOptions struct {
 	BodyFields  []string
 	Headers     []string
 	InputFile   string
+	OutputFile  string
 	Columns     []string
 }
 
@@ -52,7 +53,10 @@ Authorization header is automatically injected.`,
   echo '{"name":"test"}' | incloud api /api/v1/devices -X POST --input -
 
   # Custom header
-  incloud api /api/v1/users/me -H "Sudo: user@example.com"`,
+  incloud api /api/v1/users/me -H "Sudo: user@example.com"
+
+  # Download a file
+  incloud api /api/v1/devices/DEVICE_ID/files/capture_result.pcap --output-file capture.pcap`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			opts.Path = args[0]
@@ -64,6 +68,15 @@ Authorization header is automatically injected.`,
 			client, err := f.APIClient()
 			if err != nil {
 				return err
+			}
+
+			// File download mode: stream response directly to file
+			if opts.OutputFile != "" {
+				if err := client.Download(opts.Path, opts.OutputFile); err != nil {
+					return err
+				}
+				fmt.Fprintf(f.IO.ErrOut, "Saved to %s\n", opts.OutputFile)
+				return nil
 			}
 
 			reqOpts, err := buildRequestOptions(opts)
@@ -93,6 +106,7 @@ Authorization header is automatically injected.`,
 	cmd.Flags().StringArrayVarP(&opts.BodyFields, "field", "f", nil, "Body field (key=value), sent as JSON")
 	cmd.Flags().StringArrayVarP(&opts.Headers, "header", "H", nil, "Additional header (Key: Value)")
 	cmd.Flags().StringVar(&opts.InputFile, "input", "", "Read body from file (use - for stdin)")
+	cmd.Flags().StringVar(&opts.OutputFile, "output-file", "", "Save response body to file (for binary downloads)")
 	cmd.Flags().StringArrayVarP(&opts.Columns, "column", "c", nil, "Columns to show in table output")
 
 	return cmd

@@ -24,7 +24,6 @@ Diagnostics:
   speedtest-config   Get speed test configuration
   speedtest-history  View speed test history
   capture            Start packet capture (tcpdump)
-  capture-status     Get capture status
   flowscan           Start flow scan
   flowscan-status    Get flow scan status
   cancel             Cancel a diagnostic task
@@ -43,7 +42,6 @@ Diagnostics:
 	cmd.AddCommand(NewCmdExecSpeedtestConfig(f))
 	cmd.AddCommand(NewCmdExecSpeedtestHistory(f))
 	cmd.AddCommand(NewCmdExecCapture(f))
-	cmd.AddCommand(NewCmdExecCaptureStatus(f))
 	cmd.AddCommand(NewCmdExecFlowscan(f))
 	cmd.AddCommand(NewCmdExecFlowscanStatus(f))
 	cmd.AddCommand(NewCmdExecCancel(f))
