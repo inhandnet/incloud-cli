@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	cmd "github.com/inhandnet/incloud-cli/internal/cmd"
 	activityCmd "github.com/inhandnet/incloud-cli/internal/cmd/activity"
@@ -44,8 +45,21 @@ func main() {
 	rootCmd.AddCommand(userCmd.NewCmdUser(f))
 	rootCmd.AddCommand(versionCmd.NewCmdVersion(f))
 
-	if err := rootCmd.Execute(); err != nil {
+	executedCmd, err := rootCmd.ExecuteC()
+	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
+		// Show usage for flag-related errors (missing required flags, unknown flags)
+		if isFlagError(err) && executedCmd != nil {
+			fmt.Fprintln(os.Stderr)
+			fmt.Fprint(os.Stderr, executedCmd.UsageString())
+		}
 		os.Exit(1)
 	}
+}
+
+func isFlagError(err error) bool {
+	msg := err.Error()
+	return strings.Contains(msg, "required flag") ||
+		strings.Contains(msg, "unknown flag") ||
+		strings.Contains(msg, "flag needs an argument")
 }
