@@ -19,19 +19,28 @@ func NewCmdRoot(f *factory.Factory) *cobra.Command {
 		Version:       build.Version,
 	}
 
-	cmd.PersistentFlags().StringP("output", "o", "", "Output format: json, table, yaml")
+	cmd.PersistentFlags().StringP("output", "o", "", "Output format: json, table, yaml (default: table for TTY, json otherwise)")
 	cmd.PersistentFlags().String("context", "", "Override active context (env: INCLOUD_CONTEXT)")
 	cmd.PersistentFlags().String("sudo", "", "Impersonate a user (env: INCLOUD_SUDO)")
 	cmd.PersistentFlags().Lookup("sudo").Hidden = true
 	cmd.PersistentFlags().Bool("debug", false, "Enable debug output (env: INCLOUD_DEBUG)")
 
-	// Propagate --context and --sudo flags to env so downstream code picks them up
+	// Propagate flags to env and set output default based on TTY
 	cmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
 		// Enable debug mode from flag or env var
 		if d, _ := cmd.Flags().GetBool("debug"); d {
 			debug.Enabled = true
 		} else if os.Getenv("INCLOUD_DEBUG") != "" {
 			debug.Enabled = true
+		}
+
+		// Default output format: table for TTY, json for pipes/redirects
+		if !cmd.Flags().Changed("output") {
+			if f.IO.IsStdoutTTY() {
+				_ = cmd.Flags().Set("output", "table")
+			} else {
+				_ = cmd.Flags().Set("output", "json")
+			}
 		}
 
 		if ctx, _ := cmd.Flags().GetString("context"); ctx != "" {

@@ -119,9 +119,9 @@ func commonQuery(opts *JobExecutionsOptions) url.Values {
 	return q
 }
 
-func resolveExecutionFields(opts *JobExecutionsOptions, output string, io *iostreams.IOStreams) []string {
+func resolveExecutionFields(opts *JobExecutionsOptions, output string) []string {
 	fields := opts.Fields
-	if len(fields) == 0 && output == "table" && io.IsStdoutTTY() {
+	if len(fields) == 0 && output == "table" {
 		fields = defaultExecutionFields
 	}
 	if len(fields) > 0 {
@@ -145,7 +145,7 @@ func runOTAExecutions(cmd *cobra.Command, f *factory.Factory, opts *JobExecution
 	}
 
 	output, _ := cmd.Flags().GetString("output")
-	fields := resolveExecutionFields(opts, output, f.IO)
+	fields := resolveExecutionFields(opts, output)
 
 	body, err := client.Get("/api/v1/ota/job/executions", q)
 	if err != nil {
@@ -169,7 +169,7 @@ func runFirmwareExecutions(cmd *cobra.Command, f *factory.Factory, opts *JobExec
 	}
 
 	output, _ := cmd.Flags().GetString("output")
-	fields := resolveExecutionFields(opts, output, f.IO)
+	fields := resolveExecutionFields(opts, output)
 
 	body, err := client.Get("/api/v1/firmwares/"+url.PathEscape(opts.Firmware)+"/job/executions", q)
 	if err != nil {
@@ -193,7 +193,7 @@ func runDeviceExecutions(cmd *cobra.Command, f *factory.Factory, opts *JobExecut
 	}
 
 	output, _ := cmd.Flags().GetString("output")
-	fields := resolveExecutionFields(opts, output, f.IO)
+	fields := resolveExecutionFields(opts, output)
 
 	body, err := client.Get("/api/v1/devices/"+url.PathEscape(opts.Device)+"/ota/jobs/completed", q)
 	if err != nil {

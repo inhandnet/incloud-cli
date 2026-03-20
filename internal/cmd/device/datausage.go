@@ -59,9 +59,6 @@ func fetchDatausageSeries(f *factory.Factory, cmd *cobra.Command, deviceID, endp
 	}
 
 	output, _ := cmd.Flags().GetString("output")
-	if !cmd.Flags().Changed("output") {
-		output = "table"
-	}
 	fields := opts.Fields
 	if len(fields) == 0 {
 		fields = defaultDatausageFields
