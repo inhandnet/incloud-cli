@@ -78,10 +78,19 @@ echo '{}' | incloud api /api/v1/devices -X POST --input - # 从 stdin 读取 JSO
 incloud api /api/v1/users/me -H "Sudo: user@example.com" # 自定义 header
 ```
 
+### 调试
+
+```bash
+incloud device list --debug                              # 输出 config/auth/HTTP 调试信息到 stderr
+INCLOUD_DEBUG=1 incloud device list                      # 通过环境变量开启
+incloud device list --debug -o json 2>/tmp/debug.log     # 调试信息写文件，不影响 stdout
+```
+
 ### 全局 Flag
 
 ```bash
 incloud --context prod api /api/v1/users/me              # 临时切换 context
+incloud --debug device list                              # 开启调试输出
 incloud version                                          # 查看版本
 ```
 
@@ -131,6 +140,7 @@ incloud device list --page 2 --limit 50           # 第二页，每页 50 条
 | `INCLOUD_CONTEXT` | 覆盖当前 context |
 | `INCLOUD_HOST` | 覆盖 context 中的 host |
 | `INCLOUD_TOKEN` | 覆盖 context 中的 token |
+| `INCLOUD_DEBUG` | 设为任意非空值开启调试输出 |
 
 ## 配置文件
 
@@ -183,6 +193,7 @@ internal/
   api/              # OAuth 认证、Token 传输
   cmd/              # 各子命令实现（api、auth、config、version）
   config/           # 配置文件读写、Context 模型
+  debug/            # 调试输出（--debug / INCLOUD_DEBUG）
   factory/          # 依赖注入工厂
   iostreams/        # 终端输出、格式化（JSON/Table/YAML）
 ```
