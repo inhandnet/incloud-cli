@@ -2,6 +2,7 @@ package api
 
 import (
 	"net/http"
+	"net/url"
 	"time"
 )
 
@@ -18,7 +19,7 @@ type TokenTransport struct {
 }
 
 func (t *TokenTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-	if t.Token != "" {
+	if t.Token != "" && t.isSameHost(req) {
 		req.Header.Set("Authorization", "Bearer "+t.Token)
 	}
 	resp, err := t.Base.RoundTrip(req)
@@ -48,4 +49,17 @@ func (t *TokenTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 		return t.Base.RoundTrip(req)
 	}
 	return resp, err
+}
+
+// isSameHost returns true if the request target matches the configured API host,
+// preventing auth headers from leaking to third-party domains (e.g. S3 pre-signed URLs).
+func (t *TokenTransport) isSameHost(req *http.Request) bool {
+	if t.Host == "" {
+		return true
+	}
+	parsed, err := url.Parse(t.Host)
+	if err != nil {
+		return true
+	}
+	return req.URL.Host == parsed.Host
 }
