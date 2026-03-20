@@ -45,13 +45,6 @@ Target bindings (type and targetIds) are preserved from the existing rule.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ruleID := args[0]
 
-			if len(opts.Types) == 0 {
-				return fmt.Errorf("--type is required")
-			}
-			if len(opts.Channels) == 0 {
-				return fmt.Errorf("--channel is required")
-			}
-
 			client, err := f.APIClient()
 			if err != nil {
 				return err
@@ -125,6 +118,9 @@ Target bindings (type and targetIds) are preserved from the existing rule.`,
 	cmd.Flags().StringArrayVar(&opts.Days, "day", nil, "Active day of week (can be repeated: MONDAY..SUNDAY, default all)")
 	cmd.Flags().StringVar(&opts.StartTime, "start-time", "", "Active start time (HH:mm, default 00:00)")
 	cmd.Flags().StringVar(&opts.EndTime, "end-time", "", "Active end time (HH:mm, default 23:59)")
+
+	_ = cmd.MarkFlagRequired("type")
+	_ = cmd.MarkFlagRequired("channel")
 
 	return cmd
 }

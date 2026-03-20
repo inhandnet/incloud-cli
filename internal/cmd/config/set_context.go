@@ -18,9 +18,6 @@ func NewCmdSetContext(f *factory.Factory) *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			name := args[0]
-			if host == "" {
-				return fmt.Errorf("--host is required")
-			}
 
 			cfg, err := f.Config()
 			if err != nil {
@@ -52,6 +49,8 @@ func NewCmdSetContext(f *factory.Factory) *cobra.Command {
 
 	cmd.Flags().StringVar(&host, "host", "", "Platform host URL (required)")
 	cmd.Flags().StringVar(&org, "org", "", "Organization ID")
+
+	_ = cmd.MarkFlagRequired("host")
 
 	return cmd
 }

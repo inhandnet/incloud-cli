@@ -37,12 +37,6 @@ func NewCmdLogin(f *factory.Factory) *cobra.Command {
   # Login with explicit client ID (skips auto-detection)
   incloud auth login --context prod --host https://portal.nezha.inhand.cn --client-id my-client`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if opts.Host == "" {
-				return fmt.Errorf("--host is required")
-			}
-			if opts.ContextName == "" {
-				return fmt.Errorf("--context is required")
-			}
 			return runLogin(f, opts)
 		},
 	}
@@ -52,6 +46,9 @@ func NewCmdLogin(f *factory.Factory) *cobra.Command {
 	cmd.Flags().StringVar(&opts.ClientID, "client-id", "", "OAuth client ID (auto-detected from host if omitted)")
 	cmd.Flags().IntVar(&opts.Port, "port", oauthapi.DefaultPort, "Local callback server port")
 	cmd.Flags().DurationVar(&opts.Timeout, "timeout", 2*time.Minute, "Timeout waiting for browser callback")
+
+	_ = cmd.MarkFlagRequired("context")
+	_ = cmd.MarkFlagRequired("host")
 
 	return cmd
 }

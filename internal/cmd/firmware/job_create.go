@@ -94,13 +94,6 @@ Target types:
 		RunE: func(cmd *cobra.Command, args []string) error {
 			firmwareID := args[0]
 
-			if opts.TargetType == "" {
-				return fmt.Errorf("--target-type is required (DEVICE or GROUP)")
-			}
-			if len(opts.Targets) == 0 {
-				return fmt.Errorf("--target is required")
-			}
-
 			client, err := f.APIClient()
 			if err != nil {
 				return err
@@ -148,6 +141,9 @@ Target types:
 	cmd.Flags().BoolVar(&opts.Filter, "filter", false, "Enable smart filtering (skip devices already at target version)")
 	cmd.Flags().StringVar(&opts.UpgradableStart, "upgradable-start", "", "Upgradable period start time (HH:mm)")
 	cmd.Flags().StringVar(&opts.UpgradableEnd, "upgradable-end", "", "Upgradable period end time (HH:mm)")
+
+	_ = cmd.MarkFlagRequired("target-type")
+	_ = cmd.MarkFlagRequired("target")
 
 	return cmd
 }
