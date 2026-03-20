@@ -63,10 +63,6 @@ func NewCmdMe(f *factory.Factory) *cobra.Command {
 
 			output, _ := cmd.Flags().GetString("output")
 			fields := opts.Fields
-			// TTY default: show table with key fields for quick "who am I" check
-			if output == "" && !cmd.Flags().Changed("output") && f.IO.IsStdoutTTY() {
-				output = "table"
-			}
 			if len(fields) == 0 && output == "table" {
 				fields = defaultMeFields
 			}

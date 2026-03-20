@@ -56,7 +56,7 @@ func newCmdDeviceListAll(f *factory.Factory) *cobra.Command {
 
 			output, _ := cmd.Flags().GetString("output")
 			fields := opts.Fields
-			if len(fields) == 0 && output == "table" && f.IO.IsStdoutTTY() {
+			if len(fields) == 0 && output == "table" {
 				fields = defaultDeviceFields
 			}
 			if len(fields) > 0 {
