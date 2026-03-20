@@ -31,7 +31,7 @@
 
 - [x] `device list` — 设备列表（分页、过滤、排序）
 - [x] `device get <id>` — 查看设备详情
-- [x] `device create` — 创建设备（交互式输入 SN/凭证）
+- [x] `device create` — 创建设备（SN 验证 → 自动检测产品/MAC/IMEI 要求 → 条件交互提示 → 富错误信息）
 - [x] `device update <id>` — 更新设备属性（name/description/tags）
 - [x] `device delete <id>` — 删除设备
 - ~~`device summary` — 设备统计概览~~ → 迁移至 `overview devices`

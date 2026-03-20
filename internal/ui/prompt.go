@@ -47,8 +47,7 @@ func Select[T comparable](f *factory.Factory, title string, options []huh.Option
 // Confirm displays an interactive yes/no prompt and returns the user's choice.
 // Returns an error if stdin is not a terminal (use --yes to skip).
 func Confirm(f *factory.Factory, message string) (bool, error) {
-	file, ok := f.IO.In.(*os.File)
-	if !ok || (!isatty.IsTerminal(file.Fd()) && !isatty.IsCygwinTerminal(file.Fd())) {
+	if !IsTTY(f) {
 		return false, fmt.Errorf("terminal is non-interactive; use --yes to confirm")
 	}
 
@@ -70,4 +69,34 @@ func Confirm(f *factory.Factory, message string) (bool, error) {
 		return false, err
 	}
 	return confirmed, nil
+}
+
+// Input displays an interactive text input prompt and returns the entered value.
+// validate is optional (nil = no validation).
+// Returns an error if stdin is not a terminal.
+func Input(f *factory.Factory, title, placeholder string, validate func(string) error) (string, error) {
+	if !IsTTY(f) {
+		return "", fmt.Errorf("terminal is non-interactive; specify the value via flags")
+	}
+
+	var result string
+	input := huh.NewInput().
+		Title(title).
+		Placeholder(placeholder).
+		Value(&result)
+	if validate != nil {
+		input.Validate(validate)
+	}
+
+	err := huh.NewForm(
+		huh.NewGroup(input),
+	).
+		WithTheme(huh.ThemeBase()).
+		WithOutput(f.IO.ErrOut).
+		WithInput(f.IO.In).
+		Run()
+	if err != nil {
+		return "", err
+	}
+	return result, nil
 }
