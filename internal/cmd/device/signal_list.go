@@ -30,8 +30,11 @@ func newCmdSignalList(f *factory.Factory) *cobra.Command {
   # Filter by time range
   incloud device signal list 507f1f77bcf86cd799439011 --after 2024-01-01T00:00:00 --before 2024-01-02T00:00:00
 
-  # Table output with selected fields
-  incloud device signal list 507f1f77bcf86cd799439011 -o table -f time -f rsrp -f sinr`,
+  # Select specific fields
+  incloud device signal list 507f1f77bcf86cd799439011 -f time -f rsrp -f sinr
+
+  # JSON output
+  incloud device signal list 507f1f77bcf86cd799439011 -o json`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			deviceID := args[0]
@@ -55,6 +58,9 @@ func newCmdSignalList(f *factory.Factory) *cobra.Command {
 			}
 
 			output, _ := cmd.Flags().GetString("output")
+			if !cmd.Flags().Changed("output") {
+				output = "table"
+			}
 			fields := opts.Fields
 			if len(fields) == 0 {
 				fields = defaultSignalFields

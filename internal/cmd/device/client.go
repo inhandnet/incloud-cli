@@ -64,6 +64,9 @@ func fetchClientSeries(f *factory.Factory, cmd *cobra.Command, clientID, endpoin
 	}
 
 	output, _ := cmd.Flags().GetString("output")
+	if !cmd.Flags().Changed("output") {
+		output = "table"
+	}
 	fields := opts.Fields
 	if len(fields) == 0 {
 		fields = defaultFields
