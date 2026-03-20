@@ -21,6 +21,7 @@ Diagnostics:
   ping               Ping a host from the device
   traceroute         Traceroute to a host
   speedtest          Run speed test
+  speedtest-config   Get speed test configuration
   speedtest-history  View speed test history
   capture            Start packet capture (tcpdump)
   capture-status     Get capture status
@@ -39,6 +40,7 @@ Diagnostics:
 	cmd.AddCommand(NewCmdExecPing(f))
 	cmd.AddCommand(NewCmdExecTraceroute(f))
 	cmd.AddCommand(NewCmdExecSpeedtest(f))
+	cmd.AddCommand(NewCmdExecSpeedtestConfig(f))
 	cmd.AddCommand(NewCmdExecSpeedtestHistory(f))
 	cmd.AddCommand(NewCmdExecCapture(f))
 	cmd.AddCommand(NewCmdExecCaptureStatus(f))

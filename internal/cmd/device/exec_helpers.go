@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"os"
 	"os/signal"
+	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/tidwall/gjson"
@@ -57,55 +58,70 @@ func runDiagnosis(f *factory.Factory, cmd *cobra.Command, deviceID, tool string,
 	return formatOutput(cmd, f.IO, respBody, nil)
 }
 
-// runDiagnosisStream starts a diagnosis task, subscribes to its SSE stream,
-// and prints each result line to stdout in real time. On Ctrl+C, it cancels
-// the task before exiting.
-func runDiagnosisStream(f *factory.Factory, deviceID, tool string, params map[string]any) error {
+// diagnosisStream holds the state returned by startDiagnosisStream.
+type diagnosisStream struct {
+	client   *api.APIClient
+	streamID string
+	ctx      context.Context
+	cancel   context.CancelFunc
+}
+
+// startDiagnosisStream posts a diagnosis task and returns the stream state
+// with a cancel function wired to Ctrl+C. Caller must defer ds.cancel().
+func startDiagnosisStream(f *factory.Factory, cmd *cobra.Command, deviceID, tool string, params map[string]any) (diagnosisStream, error) {
+	if output, _ := cmd.Flags().GetString("output"); output != "" {
+		return diagnosisStream{}, fmt.Errorf("--output is not supported for streaming commands; output format is controlled by the device")
+	}
 	client, err := f.APIClient()
 	if err != nil {
-		return err
+		return diagnosisStream{}, err
 	}
 
 	body := cleanDiagnosisParams(params)
-
-	// 1. POST to start the diagnosis task
 	respBody, err := client.Post("/api/v1/devices/"+deviceID+"/diagnosis/"+tool, body)
 	if err != nil {
-		return err
+		return diagnosisStream{}, err
 	}
 
 	taskID := gjson.GetBytes(respBody, "result._id").String()
 	streamID := gjson.GetBytes(respBody, "result.streamId").String()
 	if streamID == "" {
-		return fmt.Errorf("no streamId in response: %s", string(respBody))
+		return diagnosisStream{}, fmt.Errorf("no streamId in response: %s", string(respBody))
 	}
 
-	// 2. Set up Ctrl+C to cancel the task
 	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, os.Interrupt)
-	defer signal.Stop(sigCh)
 	go func() {
 		select {
 		case <-sigCh:
 			cancel()
 			if taskID != "" {
-				// Best-effort cancel
 				_, _ = client.Put("/api/v1/diagnosis/"+taskID+"/cancel", nil)
 			}
 		case <-ctx.Done():
 		}
+		signal.Stop(sigCh)
 	}()
 
-	// 3. Subscribe to SSE stream and print results.
-	// The SSE events contain a sliding window of result lines in data[].
-	// Each line has an index sorted ascending; we track the highest printed
-	// index to deduplicate overlapping windows across events.
-	sseURL := client.BaseURL() + "/api/v1/streams/" + streamID + "/subscribe"
+	return diagnosisStream{client: client, streamID: streamID, ctx: ctx, cancel: cancel}, nil
+}
+
+// runDiagnosisStream starts a diagnosis task, subscribes to its SSE stream,
+// and prints each result line to stdout in real time (append mode).
+// On Ctrl+C, it cancels the task before exiting.
+func runDiagnosisStream(f *factory.Factory, cmd *cobra.Command, deviceID, tool string, params map[string]any) error {
+	ds, err := startDiagnosisStream(f, cmd, deviceID, tool, params)
+	if err != nil {
+		return err
+	}
+	defer ds.cancel()
+
+	// Append mode: track the highest printed index to deduplicate overlapping
+	// sliding windows across events.
+	sseURL := ds.client.BaseURL() + "/api/v1/streams/" + ds.streamID + "/subscribe"
 	maxPrinted := -1
-	return api.StreamSSE(ctx, client.HTTPClient(), sseURL, func(event api.SSEEvent) {
+	return api.StreamSSE(ds.ctx, ds.client.HTTPClient(), sseURL, func(event api.SSEEvent) {
 		items := gjson.Get(event.Data, "data").Array()
 		for _, item := range items {
 			idx := int(item.Get("index").Int())
@@ -121,14 +137,77 @@ func runDiagnosisStream(f *factory.Factory, deviceID, tool string, params map[st
 	})
 }
 
+// runDiagnosisStreamReplace starts a diagnosis task and streams output in
+// replace mode: each SSE event contains the full current state, so previous
+// output is cleared and reprinted. In TTY mode, ANSI escape codes are used
+// to overwrite; in non-TTY mode, only the final state is printed.
+func runDiagnosisStreamReplace(f *factory.Factory, cmd *cobra.Command, deviceID, tool string, params map[string]any) error {
+	ds, err := startDiagnosisStream(f, cmd, deviceID, tool, params)
+	if err != nil {
+		return err
+	}
+	defer ds.cancel()
+
+	sseURL := ds.client.BaseURL() + "/api/v1/streams/" + ds.streamID + "/subscribe"
+	isTTY := f.IO.IsStdoutTTY()
+	prevLines := 0
+	var lastContent []string
+
+	err = api.StreamSSE(ds.ctx, ds.client.HTTPClient(), sseURL, func(event api.SSEEvent) {
+		items := gjson.Get(event.Data, "data").Array()
+
+		// Collect all content lines from this event
+		var lines []string
+		for _, item := range items {
+			content := item.Get("content").String()
+			if content != "" {
+				lines = append(lines, content)
+			}
+		}
+		if len(lines) == 0 {
+			return
+		}
+
+		lastContent = lines
+
+		if isTTY {
+			// Clear previous output by moving cursor up and clearing lines
+			if prevLines > 0 {
+				fmt.Fprintf(f.IO.Out, "\033[%dA\033[J", prevLines)
+			}
+			printed := 0
+			for _, line := range lines {
+				fmt.Fprintln(f.IO.Out, line)
+				// Count actual terminal lines (content may contain embedded newlines)
+				printed += 1 + strings.Count(line, "\n")
+			}
+			prevLines = printed
+		}
+	})
+
+	// Non-TTY: print only the final state once the stream ends
+	if !isTTY && len(lastContent) > 0 {
+		for _, line := range lastContent {
+			fmt.Fprintln(f.IO.Out, line)
+		}
+	}
+	return err
+}
+
 // getDiagnosisStatus is a shared helper for GET diagnosis status endpoints.
-func getDiagnosisStatus(f *factory.Factory, cmd *cobra.Command, deviceID, tool string) error {
+// An optional url.Values can be passed to add query parameters.
+func getDiagnosisStatus(f *factory.Factory, cmd *cobra.Command, deviceID, tool string, query ...url.Values) error {
 	client, err := f.APIClient()
 	if err != nil {
 		return err
 	}
 
-	respBody, err := client.Get("/api/v1/devices/"+deviceID+"/diagnosis/"+tool, url.Values{})
+	q := url.Values{}
+	if len(query) > 0 && query[0] != nil {
+		q = query[0]
+	}
+
+	respBody, err := client.Get("/api/v1/devices/"+deviceID+"/diagnosis/"+tool, q)
 	if err != nil {
 		return err
 	}

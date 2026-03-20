@@ -160,42 +160,6 @@ func TestExecRestoreDefaults_WithYes(t *testing.T) {
 	}
 }
 
-func TestExecPing_JSON(t *testing.T) {
-	var gotPath string
-	var gotBody map[string]interface{}
-
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		gotPath = r.URL.Path
-		body, _ := io.ReadAll(r.Body)
-		_ = json.Unmarshal(body, &gotBody)
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"result":{"_id":"diag123","status":"RUNNING"}}`))
-	}))
-	defer server.Close()
-
-	f, _ := newTestFactory(t, server.URL)
-
-	cmd := NewCmdExec(f)
-	cmd.SetArgs([]string{"ping", "device123", "--host", "8.8.8.8", "--count", "5", "--json"})
-	if err := cmd.Execute(); err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	if gotPath != "/api/v1/devices/device123/diagnosis/ping" {
-		t.Errorf("unexpected path: %s", gotPath)
-	}
-	if gotBody["host"] != "8.8.8.8" {
-		t.Errorf("expected host=8.8.8.8, got %v", gotBody["host"])
-	}
-	if gotBody["pingCount"] != float64(5) {
-		t.Errorf("expected pingCount=5, got %v", gotBody["pingCount"])
-	}
-	// interface defaults to "any"
-	if gotBody["interface"] != "any" {
-		t.Errorf("expected interface=any, got %v", gotBody["interface"])
-	}
-}
-
 func TestExecPing_Stream(t *testing.T) {
 	var gotPath string
 	var gotBody map[string]interface{}
