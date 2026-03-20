@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/muesli/termenv"
 	"github.com/tidwall/gjson"
@@ -608,6 +609,67 @@ func TestFormatTable_ArrayOfScalars(t *testing.T) {
 }
 
 // --- FormatTable integration: no envelope (raw object) ---
+
+// --- formatLocalTime tests ---
+
+func TestFormatLocalTime_RFC3339_UTC(t *testing.T) {
+	got := formatLocalTime("2026-03-20T08:30:00Z")
+	// Should convert to local time
+	expected := time.Date(2026, 3, 20, 8, 30, 0, 0, time.UTC).Local().Format("2006-01-02 15:04:05")
+	if got != expected {
+		t.Errorf("expected %q, got %q", expected, got)
+	}
+}
+
+func TestFormatLocalTime_RFC3339_WithOffset(t *testing.T) {
+	got := formatLocalTime("2026-03-20T08:30:00+08:00")
+	expected := time.Date(2026, 3, 20, 0, 30, 0, 0, time.UTC).Local().Format("2006-01-02 15:04:05")
+	if got != expected {
+		t.Errorf("expected %q, got %q", expected, got)
+	}
+}
+
+func TestFormatLocalTime_RFC3339Nano(t *testing.T) {
+	got := formatLocalTime("2026-03-20T08:30:00.123456789Z")
+	expected := time.Date(2026, 3, 20, 8, 30, 0, 123456789, time.UTC).Local().Format("2006-01-02 15:04:05")
+	if got != expected {
+		t.Errorf("expected %q, got %q", expected, got)
+	}
+}
+
+func TestFormatLocalTime_NoTimezone(t *testing.T) {
+	got := formatLocalTime("2026-03-20T08:30:00")
+	// Without timezone, time.Parse treats as UTC
+	expected := time.Date(2026, 3, 20, 8, 30, 0, 0, time.UTC).Local().Format("2006-01-02 15:04:05")
+	if got != expected {
+		t.Errorf("expected %q, got %q", expected, got)
+	}
+}
+
+func TestFormatLocalTime_NotTimestamp(t *testing.T) {
+	tests := []string{
+		"hello",
+		"2026-03-20",
+		"12:30:00",
+		"",
+		"not-a-date",
+		"2026-03-20 08:30:00", // no T separator
+	}
+	for _, s := range tests {
+		if got := formatLocalTime(s); got != "" {
+			t.Errorf("formatLocalTime(%q) = %q, want empty", s, got)
+		}
+	}
+}
+
+func TestFormatResult_Timestamp(t *testing.T) {
+	r := gjson.Parse(`"2026-03-20T08:30:00Z"`)
+	got := formatResult(&r)
+	expected := time.Date(2026, 3, 20, 8, 30, 0, 0, time.UTC).Local().Format("2006-01-02 15:04:05")
+	if got != expected {
+		t.Errorf("expected %q, got %q", expected, got)
+	}
+}
 
 func TestFormatTable_NoEnvelope(t *testing.T) {
 	data := []byte(`{"name":"alice","age":30}`)

@@ -5,6 +5,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/tidwall/gjson"
 )
@@ -169,6 +170,9 @@ func formatResult(r *gjson.Result) string {
 	case gjson.Null:
 		return ""
 	case gjson.String:
+		if s := formatLocalTime(r.Str); s != "" {
+			return s
+		}
 		return r.Str
 	case gjson.True:
 		return "true"
@@ -227,6 +231,28 @@ func flattenKeysWithPrefix(r *gjson.Result, prefix string) []string {
 		return true
 	})
 	return keys
+}
+
+// timestampLayouts are the ISO 8601 formats we auto-detect in table output.
+var timestampLayouts = []string{
+	time.RFC3339Nano,
+	time.RFC3339,
+	"2006-01-02T15:04:05",
+}
+
+// formatLocalTime tries to parse s as an ISO 8601 timestamp and returns it
+// formatted in local time. Returns "" if s is not a recognized timestamp.
+func formatLocalTime(s string) string {
+	// Quick reject: must start with a 4-digit year and be long enough
+	if len(s) < 19 || s[4] != '-' || s[7] != '-' || s[10] != 'T' {
+		return ""
+	}
+	for _, layout := range timestampLayouts {
+		if t, err := time.Parse(layout, s); err == nil {
+			return t.Local().Format("2006-01-02 15:04:05")
+		}
+	}
+	return ""
 }
 
 // formatFloat formats a float64 for table display.
