@@ -174,3 +174,43 @@ func TestSchemaGet_NotFound(t *testing.T) {
 		t.Errorf("expected 'not found' in error, got: %v", err)
 	}
 }
+
+func TestSchemaOverview(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/v1/config-documents/overview" {
+			t.Errorf("unexpected path: %s", r.URL.Path)
+		}
+		_, _ = w.Write([]byte(`{"result":{"_id":"ov1","product":"CPE02","module":"default","version":"V2.0.8","content":"### JSON KEYS\n- wan: WAN\n- cellular: Cellular"}}`))
+	}))
+	defer server.Close()
+
+	f, _ := newTestFactory(t, server.URL)
+	out := f.IO.Out.(*bytes.Buffer)
+
+	root := newSchemaRoot(f)
+	root.SetArgs([]string{"schema", "overview", "--product", "CPE02", "--version", "V2.0.8"})
+	if err := root.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out.String(), "### JSON KEYS") {
+		t.Errorf("expected markdown content in output, got: %s", out.String())
+	}
+}
+
+func TestSchemaOverview_NotAvailable(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{"result":null}`))
+	}))
+	defer server.Close()
+
+	f, errBuf := newTestFactory(t, server.URL)
+
+	root := newSchemaRoot(f)
+	root.SetArgs([]string{"schema", "overview", "--product", "MR805", "--version", "V2.0.15-111"})
+	if err := root.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(errBuf.String(), "No overview available") {
+		t.Errorf("expected 'No overview available' in stderr, got: %s", errBuf.String())
+	}
+}
