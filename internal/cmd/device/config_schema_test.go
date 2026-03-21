@@ -2,6 +2,7 @@ package device
 
 import (
 	"bytes"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -212,5 +213,58 @@ func TestSchemaOverview_NotAvailable(t *testing.T) {
 	}
 	if !strings.Contains(errBuf.String(), "No overview available") {
 		t.Errorf("expected 'No overview available' in stderr, got: %s", errBuf.String())
+	}
+}
+
+func TestSchemaValidate_Pass(t *testing.T) {
+	schema := `{"type":"object","properties":{"dns":{"type":"object","properties":{"primary":{"type":"string"}},"required":["primary"]}}}`
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintf(w, `{"result":[{"_id":"1","name":"System DNS","jsonKeys":["dns"],"content":%q}]}`, schema)
+	}))
+	defer server.Close()
+
+	f, errBuf := newTestFactory(t, server.URL)
+
+	root := newSchemaRoot(f)
+	root.SetArgs([]string{"schema", "validate", "--product", "MR805", "--version", "V2.0.15-111",
+		"--key", "dns", "--payload", `{"dns":{"primary":"8.8.8.8"}}`})
+	if err := root.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(errBuf.String(), "Validation passed") {
+		t.Errorf("expected 'Validation passed' in stderr, got: %s", errBuf.String())
+	}
+}
+
+func TestSchemaValidate_Fail(t *testing.T) {
+	schema := `{"type":"object","properties":{"dns":{"type":"object","properties":{"primary":{"type":"string"}},"required":["primary"]}}}`
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintf(w, `{"result":[{"_id":"1","name":"System DNS","jsonKeys":["dns"],"content":%q}]}`, schema)
+	}))
+	defer server.Close()
+
+	f, _ := newTestFactory(t, server.URL)
+
+	root := newSchemaRoot(f)
+	root.SetArgs([]string{"schema", "validate", "--product", "MR805", "--version", "V2.0.15-111",
+		"--key", "dns", "--payload", `{"dns":{"primary":123}}`})
+	err := root.Execute()
+	if err == nil {
+		t.Fatal("expected validation error")
+	}
+}
+
+func TestSchemaValidate_PayloadFileMutualExclusion(t *testing.T) {
+	f, _ := newTestFactory(t, "https://example.com")
+
+	root := newSchemaRoot(f)
+	root.SetArgs([]string{"schema", "validate", "--product", "MR805", "--version", "V1",
+		"--key", "dns", "--payload", "{}", "--file", "f.json"})
+	err := root.Execute()
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	if !strings.Contains(err.Error(), "mutually exclusive") {
+		t.Errorf("expected 'mutually exclusive' in error, got: %v", err)
 	}
 }
