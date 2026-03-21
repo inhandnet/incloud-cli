@@ -68,6 +68,7 @@ AI tools workflow:
 	}
 
 	cmd.AddCommand(newCmdSchemaList(f))
+	cmd.AddCommand(newCmdSchemaGet(f))
 
 	return cmd
 }

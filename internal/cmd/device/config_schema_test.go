@@ -124,3 +124,53 @@ func TestSchemaList_JSON(t *testing.T) {
 		t.Errorf("expected 'System DNS' in output, got: %s", out.String())
 	}
 }
+
+func TestSchemaGet(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/v1/config-documents" {
+			t.Errorf("unexpected path: %s", r.URL.Path)
+		}
+		if r.URL.Query().Get("jsonKeys") != "dns" {
+			t.Errorf("expected jsonKeys=dns, got %s", r.URL.Query().Get("jsonKeys"))
+		}
+		_, _ = w.Write([]byte(`{"result":[{
+			"_id":"1",
+			"name":"System DNS",
+			"jsonKeys":["dns"],
+			"descriptions":["Global DNS configuration. Higher priority than upstream DNS."],
+			"content":"{\"type\":\"object\",\"properties\":{\"primary\":{\"type\":\"string\"}}}"
+		}]}`))
+	}))
+	defer server.Close()
+
+	f, _ := newTestFactory(t, server.URL)
+	out := f.IO.Out.(*bytes.Buffer)
+
+	root := newSchemaRoot(f)
+	root.SetArgs([]string{"schema", "get", "--product", "MR805", "--version", "V2.0.15-111", "dns"})
+	if err := root.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out.String(), "System DNS") {
+		t.Errorf("expected 'System DNS' in output, got: %s", out.String())
+	}
+}
+
+func TestSchemaGet_NotFound(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{"result":[]}`))
+	}))
+	defer server.Close()
+
+	f, _ := newTestFactory(t, server.URL)
+
+	root := newSchemaRoot(f)
+	root.SetArgs([]string{"schema", "get", "--product", "MR805", "--version", "V2.0.15", "nonexistent"})
+	err := root.Execute()
+	if err == nil {
+		t.Fatal("expected error for not found")
+	}
+	if !strings.Contains(err.Error(), "not found") {
+		t.Errorf("expected 'not found' in error, got: %v", err)
+	}
+}
