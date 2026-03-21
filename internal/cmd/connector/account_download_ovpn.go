@@ -24,7 +24,7 @@ func newCmdAccountDownloadOvpn(f *factory.Factory) *cobra.Command {
   incloud connector account download-ovpn <account-id>
 
   # Specify output path
-  incloud connector account download-ovpn <account-id> --out /tmp/client.ovpn`,
+  incloud connector account download-ovpn <account-id> --output-file /tmp/client.ovpn`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			accountID := args[0]
@@ -58,7 +58,11 @@ func newCmdAccountDownloadOvpn(f *factory.Factory) *cobra.Command {
 		},
 	}
 
+	cmd.Flags().StringVar(&opts.OutPath, "output-file", "", "Output file path (default: <account-id>.ovpn)")
+
+	// Hidden alias for backward compatibility
 	cmd.Flags().StringVar(&opts.OutPath, "out", "", "Output file path (default: <account-id>.ovpn)")
+	_ = cmd.Flags().MarkHidden("out")
 
 	return cmd
 }

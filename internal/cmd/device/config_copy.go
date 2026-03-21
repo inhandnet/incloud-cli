@@ -14,8 +14,8 @@ func newCmdConfigCopy(f *factory.Factory) *cobra.Command {
 		module      string
 		source      string
 		sourceGroup string
-		to          []string
-		toGroup     []string
+		target      []string
+		targetGroup []string
 	)
 
 	cmd := &cobra.Command{
@@ -23,16 +23,16 @@ func newCmdConfigCopy(f *factory.Factory) *cobra.Command {
 		Short: "Copy configuration to other devices or groups",
 		Long:  "Copy a device or group configuration to one or more target devices or groups.",
 		Example: `  # Copy from device to device
-  incloud device config copy --source DEV1 --to DEV2
+  incloud device config copy --source DEV1 --target DEV2
 
   # Copy from device to multiple targets
-  incloud device config copy --source DEV1 --to DEV2 --to DEV3
+  incloud device config copy --source DEV1 --target DEV2 --target DEV3
 
   # Copy from device to groups
-  incloud device config copy --source DEV1 --to-group GRP1 --to-group GRP2
+  incloud device config copy --source DEV1 --target-group GRP1 --target-group GRP2
 
   # Copy from group to groups
-  incloud device config copy --source-group GRP1 --to-group GRP2`,
+  incloud device config copy --source-group GRP1 --target-group GRP2`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Validate: exactly one source
 			if source == "" && sourceGroup == "" {
@@ -43,8 +43,8 @@ func newCmdConfigCopy(f *factory.Factory) *cobra.Command {
 			}
 
 			// Validate: at least one target
-			if len(to) == 0 && len(toGroup) == 0 {
-				return fmt.Errorf("at least one --to or --to-group is required")
+			if len(target) == 0 && len(targetGroup) == 0 {
+				return fmt.Errorf("at least one --target or --target-group is required")
 			}
 
 			body := map[string]interface{}{}
@@ -54,11 +54,11 @@ func newCmdConfigCopy(f *factory.Factory) *cobra.Command {
 			if sourceGroup != "" {
 				body["sourceGroupId"] = sourceGroup
 			}
-			if len(to) > 0 {
-				body["targetDeviceIds"] = to
+			if len(target) > 0 {
+				body["targetDeviceIds"] = target
 			}
-			if len(toGroup) > 0 {
-				body["targetGroupIds"] = toGroup
+			if len(targetGroup) > 0 {
+				body["targetGroupIds"] = targetGroup
 			}
 			if module != "" {
 				body["module"] = module
@@ -85,8 +85,14 @@ func newCmdConfigCopy(f *factory.Factory) *cobra.Command {
 
 	cmd.Flags().StringVar(&source, "source", "", "Source device ID")
 	cmd.Flags().StringVar(&sourceGroup, "source-group", "", "Source group ID (mutually exclusive with --source)")
-	cmd.Flags().StringArrayVar(&to, "to", nil, "Target device ID (can be repeated)")
-	cmd.Flags().StringArrayVar(&toGroup, "to-group", nil, "Target group ID (can be repeated)")
+	cmd.Flags().StringArrayVar(&target, "target", nil, "Target device ID (can be repeated)")
+	cmd.Flags().StringArrayVar(&targetGroup, "target-group", nil, "Target group ID (can be repeated)")
+
+	// Hidden aliases for backward compatibility
+	cmd.Flags().StringArrayVar(&target, "to", nil, "Target device ID (can be repeated)")
+	cmd.Flags().StringArrayVar(&targetGroup, "to-group", nil, "Target group ID (can be repeated)")
+	_ = cmd.Flags().MarkHidden("to")
+	_ = cmd.Flags().MarkHidden("to-group")
 	cmd.Flags().StringVar(&module, "module", "", "Module name (defaults to 'default' on the server)")
 
 	return cmd
