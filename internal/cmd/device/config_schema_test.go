@@ -36,7 +36,7 @@ func TestResolveProductVersion_FromDevice(t *testing.T) {
 			t.Errorf("unexpected path: %s", r.URL.Path)
 		}
 		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte(`{"result":{"_id":"dev123","partNumber":"MR805","firmware":"V2.0.15-111"}}`))
+		_, _ = w.Write([]byte(`{"result":{"_id":"dev123","product":"MR805","firmware":"V2.0.15-111"}}`))
 	}))
 	defer server.Close()
 
@@ -74,7 +74,7 @@ func TestSchemaList_Table(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/api/v1/devices/dev1":
-			_, _ = w.Write([]byte(`{"result":{"_id":"dev1","partNumber":"MR805","firmware":"V2.0.15-111"}}`))
+			_, _ = w.Write([]byte(`{"result":{"_id":"dev1","product":"MR805","firmware":"V2.0.15-111"}}`))
 		case "/api/v1/config-documents":
 			if r.URL.Query().Get("product") != "MR805" {
 				t.Errorf("expected product=MR805, got %s", r.URL.Query().Get("product"))

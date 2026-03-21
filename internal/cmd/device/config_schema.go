@@ -28,16 +28,16 @@ func resolveProductVersion(client *api.APIClient, deviceID, product, version str
 		return nil, fmt.Errorf("--device and --product/--version are mutually exclusive")
 	case hasDevice:
 		body, err := client.Get("/api/v1/devices/"+deviceID, url.Values{
-			"fields": {"partNumber,firmware"},
+			"fields": {"product,firmware"},
 		})
 		if err != nil {
 			return nil, fmt.Errorf("fetching device %s: %w", deviceID, err)
 		}
 		r := gjson.ParseBytes(body)
-		p := r.Get("result.partNumber").String()
+		p := r.Get("result.product").String()
 		v := r.Get("result.firmware").String()
 		if p == "" || v == "" {
-			return nil, fmt.Errorf("device %s is missing partNumber or firmware info", deviceID)
+			return nil, fmt.Errorf("device %s is missing product or firmware info", deviceID)
 		}
 		return &productVersion{product: p, version: v}, nil
 	case hasProduct && hasVersion:
