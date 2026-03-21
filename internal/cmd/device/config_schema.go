@@ -53,8 +53,6 @@ func resolveProductVersion(client *api.APIClient, deviceID, product, version str
 
 // newCmdConfigSchema creates the `device config schema` parent command.
 func newCmdConfigSchema(f *factory.Factory) *cobra.Command {
-	_ = f // subcommands will use the factory when added
-
 	cmd := &cobra.Command{
 		Use:   "schema",
 		Short: "Browse and validate device configuration schemas",
@@ -68,6 +66,8 @@ AI tools workflow:
   4. incloud device config schema validate --device <id> --key <json-key> --payload '{...}'
   5. incloud device config update <id> --payload '{...}'`,
 	}
+
+	cmd.AddCommand(newCmdSchemaList(f))
 
 	return cmd
 }
