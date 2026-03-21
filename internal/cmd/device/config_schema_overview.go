@@ -2,7 +2,6 @@ package device
 
 import (
 	"fmt"
-	"net/url"
 
 	"github.com/spf13/cobra"
 	"github.com/tidwall/gjson"
@@ -41,10 +40,7 @@ which config sections depend on each other.`,
 				return err
 			}
 
-			q := url.Values{}
-			q.Set("product", pv.product)
-			q.Set("version", pv.version)
-			q.Set("module", "default")
+			q := pv.configDocumentQuery()
 
 			body, err := client.Get("/api/v1/config-documents/overview", q)
 			if err != nil {

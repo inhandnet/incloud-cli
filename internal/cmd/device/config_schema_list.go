@@ -3,7 +3,6 @@ package device
 import (
 	"encoding/json"
 	"fmt"
-	"net/url"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -69,10 +68,7 @@ Use --device to auto-detect product/version, or --product/--version to specify d
 				return err
 			}
 
-			q := url.Values{}
-			q.Set("product", pv.product)
-			q.Set("version", pv.version)
-			q.Set("module", "default")
+			q := pv.configDocumentQuery()
 			q.Set("limit", "200")
 			if name != "" {
 				q.Set("name", name)
@@ -121,12 +117,13 @@ func transformSchemaList(body []byte) ([]byte, error) {
 		}
 		row["jsonKeys"] = strings.Join(keys, ", ")
 
-		// Use first description, truncate for table
+		// Use first description, truncate for table (rune-safe for CJK)
 		descs := item.Get("descriptions").Array()
 		if len(descs) > 0 {
 			desc := descs[0].String()
-			if len(desc) > 80 {
-				desc = desc[:77] + "..."
+			runes := []rune(desc)
+			if len(runes) > 80 {
+				desc = string(runes[:77]) + "..."
 			}
 			row["description"] = desc
 		} else {

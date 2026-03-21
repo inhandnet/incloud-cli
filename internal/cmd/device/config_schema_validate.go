@@ -3,7 +3,6 @@ package device
 import (
 	"encoding/json"
 	"fmt"
-	"net/url"
 	"os"
 	"strings"
 
@@ -77,10 +76,7 @@ validation failure. Useful for AI tools to pre-check generated config.`,
 			}
 
 			// Fetch schema
-			q := url.Values{}
-			q.Set("product", pv.product)
-			q.Set("version", pv.version)
-			q.Set("module", "default")
+			q := pv.configDocumentQuery()
 			q.Set("jsonKeys", key)
 
 			body, err := client.Get("/api/v1/config-documents", q)

@@ -2,7 +2,6 @@ package device
 
 import (
 	"fmt"
-	"net/url"
 
 	"github.com/spf13/cobra"
 	"github.com/tidwall/gjson"
@@ -40,10 +39,7 @@ The JSON key can be found from 'incloud device config schema list'.`,
 				return err
 			}
 
-			q := url.Values{}
-			q.Set("product", pv.product)
-			q.Set("version", pv.version)
-			q.Set("module", "default")
+			q := pv.configDocumentQuery()
 			q.Set("jsonKeys", jsonKey)
 
 			body, err := client.Get("/api/v1/config-documents", q)

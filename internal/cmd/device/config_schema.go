@@ -11,9 +11,20 @@ import (
 	"github.com/inhandnet/incloud-cli/internal/factory"
 )
 
+const defaultConfigModule = "default"
+
 type productVersion struct {
 	product string
 	version string
+}
+
+// configDocumentQuery builds common query params for the config-documents API.
+func (pv *productVersion) configDocumentQuery() url.Values {
+	q := url.Values{}
+	q.Set("product", pv.product)
+	q.Set("version", pv.version)
+	q.Set("module", defaultConfigModule)
+	return q
 }
 
 // resolveProductVersion resolves product and version from either a device ID
