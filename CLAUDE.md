@@ -39,6 +39,12 @@ incloud-cli 的用户有两类：自然人（终端操作）和 AI 工具（如 
 - `--help` 输出要完整：包含用法示例、参数说明、关联命令提示——AI 工具依赖 help 文本理解命令能力
 - 子命令的 help 里引用相关命令时用完整路径（如 `incloud device list`），方便 AI 直接复制执行
 
+**Flag 命名：AI 零文档可猜对**
+- Flag 名优先选择业界最常见的叫法（`--target` 而非 `--to`，`--output-file` 而非 `--out`）
+- 判断标准：AI 没看 help 时第一直觉会猜什么名字，就用那个名字
+- 如果有充分理由选非常规名，必须将常规名注册为隐藏别名（`cmd.Flags().MarkHidden`）
+- 多值 flag 统一用单数形式 + StringArray（`--group` 可重复，而非 `--groups` 逗号分隔）
+
 **非交互性**
 - 危险操作（delete、批量修改）需要 `--yes`/`-y` 跳过确认——AI 工具无法响应交互式 prompt，必须能通过 flag 跳过
 
