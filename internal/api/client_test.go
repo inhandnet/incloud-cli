@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"net/http"
 	"testing"
 )
@@ -27,13 +28,21 @@ func TestTokenTransport_StripsAuthOnCrossOriginRedirect(t *testing.T) {
 		}),
 	}
 
+	ctx := context.Background()
+
 	// Same-host request — should have auth
-	sameHost, _ := http.NewRequest("GET", "https://portal.example.com/api/v1/files", nil)
-	transport.RoundTrip(sameHost)
+	sameHost, _ := http.NewRequestWithContext(ctx, "GET", "https://portal.example.com/api/v1/files", http.NoBody)
+	resp, _ := transport.RoundTrip(sameHost)
+	if resp != nil && resp.Body != nil {
+		resp.Body.Close()
+	}
 
 	// Cross-origin request (simulating a redirect to S3) — should NOT have auth
-	crossOrigin, _ := http.NewRequest("GET", "https://s3.amazonaws.com/bucket/file?X-Amz-Algorithm=AWS4", nil)
-	transport.RoundTrip(crossOrigin)
+	crossOrigin, _ := http.NewRequestWithContext(ctx, "GET", "https://s3.amazonaws.com/bucket/file?X-Amz-Algorithm=AWS4", http.NoBody)
+	resp, _ = transport.RoundTrip(crossOrigin)
+	if resp != nil && resp.Body != nil {
+		resp.Body.Close()
+	}
 }
 
 func TestTokenTransport_EmptyHost_AlwaysAddsAuth(t *testing.T) {
@@ -48,8 +57,11 @@ func TestTokenTransport_EmptyHost_AlwaysAddsAuth(t *testing.T) {
 		}),
 	}
 
-	req, _ := http.NewRequest("GET", "https://anywhere.example.com/path", nil)
-	transport.RoundTrip(req)
+	req, _ := http.NewRequestWithContext(context.Background(), "GET", "https://anywhere.example.com/path", http.NoBody)
+	resp, _ := transport.RoundTrip(req)
+	if resp != nil && resp.Body != nil {
+		resp.Body.Close()
+	}
 }
 
 // roundTripFunc adapts a function to http.RoundTripper.

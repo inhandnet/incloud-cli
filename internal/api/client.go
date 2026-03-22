@@ -40,9 +40,9 @@ func (t *TokenTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 		resp.Body.Close()
 		debug.Log("token expired, refreshing...")
 
-		newToken, err := RefreshAccessToken(t.Host, t.ClientID, t.ClientSecret, t.RefreshToken)
-		if err != nil {
-			debug.Log("token refresh failed: %v", err)
+		newToken, refreshErr := RefreshAccessToken(t.Host, t.ClientID, t.ClientSecret, t.RefreshToken)
+		if refreshErr != nil {
+			debug.Log("token refresh failed: %v", refreshErr)
 			return resp, nil // return original 401
 		}
 
