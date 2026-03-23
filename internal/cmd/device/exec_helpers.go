@@ -90,7 +90,7 @@ type diagnosisStream struct {
 // with a cancel function wired to Ctrl+C. Caller must defer ds.cancel().
 func startDiagnosisStream(f *factory.Factory, cmd *cobra.Command, deviceID, tool string, params map[string]any) (diagnosisStream, error) {
 	if output, _ := cmd.Flags().GetString("output"); output != "" {
-		return diagnosisStream{}, fmt.Errorf("--output is not supported for streaming commands; output format is controlled by the device")
+		fmt.Fprintf(f.IO.ErrOut, "Warning: --output=%s is ignored for streaming commands; output format is controlled by the device\n", output)
 	}
 	client, err := f.APIClient()
 	if err != nil {
