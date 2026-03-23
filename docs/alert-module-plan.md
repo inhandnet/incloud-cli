@@ -48,26 +48,30 @@
 
 ## 支持的告警规则类型
 
-供 `alert rule create` 的 `--type` 参数参考：
+使用 `incloud alert rule types` 查看完整类型列表及参数定义。
 
-| 类型 | 说明 |
+`--type` flag 支持三种格式：
+- 纯类型名：`--type reboot`
+- 逗号参数：`--type "disconnected,retention=600"`
+- JSON：`--type '{"type":"disconnected","param":{"retention":600}}'`
+
+### 需要参数的类型
+
+| 类型 | 参数 |
 |------|------|
-| `CONNECTED` / `DISCONNECTED` | 设备上线/离线 |
-| `CONFIG_SYNC_FAILED` | 配置同步失败 |
-| `SIM_SWITCH` | SIM 卡切换 |
-| `LOCAL_CONFIG_UPDATE` | 本地配置更新 |
-| `REBOOT` | 设备重启 |
-| `FIRMWARE_UPGRADE` | 固件升级 |
-| `LICENSE_EXPIRING` / `LICENSE_EXPIRED` | 许可证即将/已过期 |
-| `UPLINK_SWITCH` | Uplink 切换 |
-| `ETHERNET_WAN_CONNECTED` / `DISCONNECTED` | 以太网 WAN 连接/断开 |
-| `MODEM_WAN_CONNECTED` / `DISCONNECTED` | Modem WAN 连接/断开 |
-| `WWAN_CONNECTED` / `DISCONNECTED` | WWAN 连接/断开 |
-| `CLIENT_CONNECTED` / `DISCONNECTED` | 客户端连接/断开 |
-| `CELL_OPERATOR_SWITCH` | 运营商切换 |
-| `BRIDGE_LOOP_DETECT` | 网桥环路检测 |
-| `CELL_TRAFFIC_REACH_THRESHOLD` | 蜂窝流量达到阈值 |
-| `DEVICE_POWER_OFF` | 设备断电 |
+| `connected` / `disconnected` | `retention` (秒, 60-1800) |
+| `client_connected` / `client_disconnected` | `retention` (秒, 60-1800) |
+| `license_expiring` | `retention` (秒, 86400-2592000) |
+| `high_average_cpu_utilization` / `high_memory_utilization` | `retention` (秒, 300/600/900/1800), `threshold` (%, 70/80/90) |
+| `poor_cellular_signal_strength` | `retention` (秒), `rsrpThreshold` (dBm), `sinrThreshold` (dB) |
+| `uplink_status_change` | `retention` (秒, 60/300/900/1800), `interface` (接口名) |
+
+### 无参数类型
+
+`reboot`, `firmware_upgrade`, `device_power_off`, `config_sync_failed`, `local_config_update`,
+`license_expired`, `cell_traffic_reach_threshold`, `sim_switch`, `uplink_switch`,
+`ethernet_wan_connected/disconnected`, `modem_wan_connected/disconnected`,
+`wwan_connected/disconnected`, `bridge_loop_detect`, `cell_operator_switch`
 
 ## 支持的通知渠道
 

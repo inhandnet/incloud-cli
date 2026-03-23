@@ -18,6 +18,7 @@ func NewCmdRule(f *factory.Factory) *cobra.Command {
 	cmd.AddCommand(NewCmdRuleCreate(f))
 	cmd.AddCommand(NewCmdRuleUpdate(f))
 	cmd.AddCommand(NewCmdRuleDelete(f))
+	cmd.AddCommand(NewCmdRuleTypes(f))
 
 	return cmd
 }

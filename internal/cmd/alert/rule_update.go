@@ -11,13 +11,8 @@ import (
 )
 
 type RuleUpdateOptions struct {
-	Types     []string
-	Channels  []string
-	Users     []string
-	Webhooks  []string
-	Days      []string
-	StartTime string
-	EndTime   string
+	Types  []string
+	Notify NotifyOptions
 }
 
 func NewCmdRuleUpdate(f *factory.Factory) *cobra.Command {
@@ -29,21 +24,43 @@ func NewCmdRuleUpdate(f *factory.Factory) *cobra.Command {
 		Long: `Update an existing alert rule. This is a full replacement of rules and notification
 settings — all flags must be provided (use "alert rule get" to view current values).
 
-Target bindings (type and targetIds) are preserved from the existing rule.`,
+Target bindings (type and targetIds) are preserved from the existing rule.
+
+The --type flag accepts three formats:
+  - Type name only:       --type reboot
+  - With parameters:      --type "disconnected,retention=600"
+  - JSON object:          --type '{"type":"disconnected","param":{"retention":600}}'
+
+Use 'incloud alert rule types' to see all supported types and their parameters.`,
 		Example: `  # Update rule types and channels
   incloud alert rule update 507f1f77bcf86cd799439011 \
-    --type REBOOT --type FIRMWARE_UPGRADE \
+    --type reboot --type firmware_upgrade \
     --channel EMAIL --channel APP
+
+  # Update with type parameters
+  incloud alert rule update 507f1f77bcf86cd799439011 \
+    --type "disconnected,retention=600" \
+    --channel EMAIL
+
+  # Update with JSON format
+  incloud alert rule update 507f1f77bcf86cd799439011 \
+    --type '{"type":"high_average_cpu_utilization","param":{"retention":600,"threshold":80}}' \
+    --channel APP
 
   # Update with active time window
   incloud alert rule update 507f1f77bcf86cd799439011 \
-    --type DISCONNECTED \
+    --type disconnected \
     --channel EMAIL \
     --day MONDAY --day TUESDAY --day WEDNESDAY --day THURSDAY --day FRIDAY \
     --start-time 09:00 --end-time 18:00`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ruleID := args[0]
+
+			rules, err := ParseTypeFlags(opts.Types)
+			if err != nil {
+				return err
+			}
 
 			client, err := f.APIClient()
 			if err != nil {
@@ -66,39 +83,11 @@ Target bindings (type and targetIds) are preserved from the existing rule.`,
 				return fmt.Errorf("parsing existing rule: %w", err)
 			}
 
-			// Build update body
-			rules := make([]map[string]any, len(opts.Types))
-			for i, t := range opts.Types {
-				rules[i] = map[string]any{
-					"type":  t,
-					"param": map[string]any{},
-				}
-			}
-
-			notify := map[string]any{
-				"channels": opts.Channels,
-			}
-			if len(opts.Users) > 0 {
-				notify["users"] = opts.Users
-			}
-			if len(opts.Webhooks) > 0 {
-				notify["webhooks"] = opts.Webhooks
-			}
-			if len(opts.Days) > 0 {
-				notify["activeDayOfWeeks"] = opts.Days
-			}
-			if opts.StartTime != "" {
-				notify["startTime"] = opts.StartTime
-			}
-			if opts.EndTime != "" {
-				notify["endTime"] = opts.EndTime
-			}
-
 			reqBody := map[string]any{
 				"type":      existing.Result.Type,
 				"targetIds": existing.Result.TargetIDs,
-				"rules":     rules,
-				"notify":    notify,
+				"rules":     RulesToRequestBody(rules),
+				"notify":    opts.Notify.ToMap(),
 			}
 
 			body, err := client.Put("/api/v1/alerts/rules/"+ruleID, reqBody)
@@ -106,18 +95,15 @@ Target bindings (type and targetIds) are preserved from the existing rule.`,
 				return err
 			}
 
+			fmt.Fprintf(f.IO.ErrOut, "Alert rule (%s) updated.\n", ruleID)
+
 			output, _ := cmd.Flags().GetString("output")
 			return iostreams.FormatOutput(body, f.IO, output, nil)
 		},
 	}
 
-	cmd.Flags().StringArrayVar(&opts.Types, "type", nil, "Alert type (required, can be repeated)")
-	cmd.Flags().StringArrayVar(&opts.Channels, "channel", nil, "Notification channel (required, can be repeated: SMS/APP/EMAIL/WEBHOOK/SUBSCRIPTION)")
-	cmd.Flags().StringArrayVar(&opts.Users, "user", nil, "User ID to notify (can be repeated)")
-	cmd.Flags().StringArrayVar(&opts.Webhooks, "webhook", nil, "Webhook ID for notification (can be repeated)")
-	cmd.Flags().StringArrayVar(&opts.Days, "day", nil, "Active day of week (can be repeated: MONDAY..SUNDAY, default all)")
-	cmd.Flags().StringVar(&opts.StartTime, "start-time", "", "Active start time (HH:mm, default 00:00)")
-	cmd.Flags().StringVar(&opts.EndTime, "end-time", "", "Active end time (HH:mm, default 23:59)")
+	cmd.Flags().StringArrayVar(&opts.Types, "type", nil, `Alert type (required, can be repeated; use 'incloud alert rule types' to list all)`)
+	opts.Notify.RegisterFlags(cmd)
 
 	_ = cmd.MarkFlagRequired("type")
 	_ = cmd.MarkFlagRequired("channel")
