@@ -12,6 +12,16 @@ import (
 	"github.com/go-resty/resty/v2"
 )
 
+// HTTPError represents an HTTP response with a non-2xx status code.
+type HTTPError struct {
+	StatusCode int
+	Body       []byte
+}
+
+func (e *HTTPError) Error() string {
+	return fmt.Sprintf("HTTP %d: %s", e.StatusCode, string(e.Body))
+}
+
 // APIClient is a high-level HTTP client with base URL and auth pre-configured.
 // It wraps resty to provide a concise, consistent API for CLI commands.
 //
@@ -112,7 +122,7 @@ func (c *APIClient) execute(r *resty.Request, method, path string) ([]byte, erro
 	}
 	body := resp.Body()
 	if resp.IsError() {
-		return body, fmt.Errorf("HTTP %d: %s", resp.StatusCode(), string(body))
+		return body, &HTTPError{StatusCode: resp.StatusCode(), Body: body}
 	}
 	return body, nil
 }

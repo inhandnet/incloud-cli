@@ -33,7 +33,7 @@ func newCmdEndpointDelete(f *factory.Factory) *cobra.Command {
 			basePath := "/api/v1/connectors/" + networkID + "/endpoints"
 			bulkPath := basePath + "/bulk/delete"
 
-			return deleteConnectorResources(f, client, endpointIDs, yes, "Connector endpoint", basePath, bulkPath)
+			return deleteConnectorResources(f, client, endpointIDs, yes, "Connector endpoint", basePath, bulkPath, true)
 		},
 	}
 

@@ -32,7 +32,7 @@ func newCmdAccountDelete(f *factory.Factory) *cobra.Command {
 			}
 
 			basePath := "/api/v1/connectors/" + networkID + "/accounts"
-			return deleteConnectorResources(f, client, accountIDs, yes, "Connector account", basePath, basePath+"/bulk/delete")
+			return deleteConnectorResources(f, client, accountIDs, yes, "Connector account", basePath, basePath+"/bulk/delete", true)
 		},
 	}
 

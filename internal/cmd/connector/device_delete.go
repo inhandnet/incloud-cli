@@ -29,7 +29,7 @@ func newCmdDeviceDelete(f *factory.Factory) *cobra.Command {
 			}
 
 			basePath := "/api/v1/connectors/" + networkID + "/devices"
-			return deleteConnectorResources(f, client, deviceIDs, yes, "Connector device", basePath, basePath+"/bulk/delete")
+			return deleteConnectorResources(f, client, deviceIDs, yes, "Connector device", basePath, basePath+"/bulk/delete", true)
 		},
 	}
 

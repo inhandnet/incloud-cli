@@ -28,7 +28,7 @@ func newCmdNetworkDelete(f *factory.Factory) *cobra.Command {
 				return err
 			}
 
-			return deleteConnectorResources(f, client, args, yes, "Connector network", "/api/v1/connectors", "/api/v1/connectors/bulk/delete")
+			return deleteConnectorResources(f, client, args, yes, "Connector network", "/api/v1/connectors", "/api/v1/connectors/bulk/delete", false)
 		},
 	}
 

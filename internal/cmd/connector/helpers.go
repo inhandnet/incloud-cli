@@ -3,6 +3,7 @@ package connector
 import (
 	"encoding/json"
 	"fmt"
+	"net/url"
 
 	"github.com/spf13/cobra"
 
@@ -47,34 +48,79 @@ func writeDeleted(f *factory.Factory, resource, name, id string) {
 	fmt.Fprintf(f.IO.ErrOut, "%s %q (%s) deleted.\n", resource, name, id)
 }
 
-// deleteConnectorResources handles single and bulk delete for connector resources.
-// singleBasePath is the base for GET and DELETE (e.g. "/api/v1/connectors").
-// bulkPath is the POST endpoint for bulk delete (e.g. "/api/v1/connectors/bulk/delete").
-func deleteConnectorResources(f *factory.Factory, client *api.APIClient, ids []string, yes bool, resource, singleBasePath, bulkPath string) error {
-	// Collect names for confirmation
-	type entry struct {
-		id   string
-		name string
+// lookupNamesByList fetches the list endpoint with ids filter and builds an id→name map.
+func lookupNamesByList(client *api.APIClient, listPath string, ids []string) (map[string]string, error) {
+	body, err := client.Get(listPath, url.Values{
+		"fields": []string{"_id,name"},
+		"ids":    ids,
+	})
+	if err != nil {
+		return nil, err
 	}
-	entries := make([]entry, 0, len(ids))
+	var resp struct {
+		Result []struct {
+			ID   string `json:"_id"`
+			Name string `json:"name"`
+		} `json:"result"`
+	}
+	if err := json.Unmarshal(body, &resp); err != nil {
+		return nil, err
+	}
+	wanted := make(map[string]struct{}, len(ids))
 	for _, id := range ids {
-		body, err := client.Get(singleBasePath+"/"+id, nil)
+		wanted[id] = struct{}{}
+	}
+	nameMap := make(map[string]string, len(ids))
+	for _, r := range resp.Result {
+		if _, ok := wanted[r.ID]; ok {
+			nameMap[r.ID] = r.Name
+		}
+	}
+	return nameMap, nil
+}
+
+// deleteConnectorResources handles single and bulk delete for connector resources.
+// basePath is the base for list/GET/DELETE (e.g. "/api/v1/connectors").
+// bulkPath is the POST endpoint for bulk delete (e.g. "/api/v1/connectors/bulk/delete").
+// When useListLookup is true, names are resolved via the list endpoint instead of
+// GET single — use this for sub-resources that lack a GET-by-ID endpoint.
+func deleteConnectorResources(f *factory.Factory, client *api.APIClient, ids []string, yes bool, resource, basePath, bulkPath string, useListLookup bool) error {
+	nameMap := make(map[string]string, len(ids))
+
+	if useListLookup {
+		listNames, err := lookupNamesByList(client, basePath, ids)
 		if err != nil {
-			return fmt.Errorf("%s %s not found", resource, id)
+			return fmt.Errorf("failed to look up %s: %w", resource, err)
 		}
-		_, name := resultIDName(body)
-		if name == "" {
-			name = id
+		for _, id := range ids {
+			if name, ok := listNames[id]; ok {
+				nameMap[id] = name
+			} else {
+				return fmt.Errorf("%s %s not found", resource, id)
+			}
 		}
-		entries = append(entries, entry{id: id, name: name})
+	} else {
+		for _, id := range ids {
+			body, err := client.Get(basePath+"/"+id, nil)
+			if err != nil {
+				return fmt.Errorf("%s %s not found", resource, id)
+			}
+			if _, n := resultIDName(body); n != "" {
+				nameMap[id] = n
+			}
+		}
 	}
 
 	if !yes {
 		var prompt string
-		if len(entries) == 1 {
-			prompt = fmt.Sprintf("Delete %s %q (%s)?", resource, entries[0].name, entries[0].id)
+		if len(ids) == 1 {
+			name := nameMap[ids[0]]
+			if name == "" {
+				name = ids[0]
+			}
+			prompt = fmt.Sprintf("Delete %s %q (%s)?", resource, name, ids[0])
 		} else {
-			prompt = fmt.Sprintf("Delete %d resources (%s)?", len(entries), resource)
+			prompt = fmt.Sprintf("Delete %d resources (%s)?", len(ids), resource)
 		}
 		confirmed, err := ui.Confirm(f, prompt)
 		if err != nil {
@@ -86,7 +132,7 @@ func deleteConnectorResources(f *factory.Factory, client *api.APIClient, ids []s
 	}
 
 	if len(ids) == 1 {
-		_, err := client.Delete(singleBasePath + "/" + ids[0])
+		_, err := client.Delete(basePath + "/" + ids[0])
 		if err != nil {
 			return err
 		}
@@ -97,8 +143,12 @@ func deleteConnectorResources(f *factory.Factory, client *api.APIClient, ids []s
 		}
 	}
 
-	for _, e := range entries {
-		writeDeleted(f, resource, e.name, e.id)
+	for _, id := range ids {
+		name := nameMap[id]
+		if name == "" {
+			name = id
+		}
+		writeDeleted(f, resource, name, id)
 	}
 	return nil
 }
