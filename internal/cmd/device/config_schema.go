@@ -3,6 +3,7 @@ package device
 import (
 	"fmt"
 	"net/url"
+	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/tidwall/gjson"
@@ -60,6 +61,41 @@ func resolveProductVersion(client *api.APIClient, deviceID, product, version str
 	default:
 		return nil, fmt.Errorf("either --device or --product/--version is required")
 	}
+}
+
+// suggestAvailableVersions queries the API for other versions that have schema
+// data for the given product. Returns a hint string like "(schemas available for
+// versions: V1.0, V2.0)" or empty string if nothing found.
+func suggestAvailableVersions(client *api.APIClient, product string) string {
+	q := url.Values{}
+	q.Set("product", product)
+	q.Set("limit", "5")
+	q.Set("fields", "version")
+
+	body, err := client.Get("/api/v1/config-documents", q)
+	if err != nil {
+		return ""
+	}
+
+	result := gjson.GetBytes(body, "result")
+	if !result.Exists() || len(result.Array()) == 0 {
+		return ""
+	}
+
+	seen := make(map[string]bool)
+	var versions []string
+	for _, item := range result.Array() {
+		v := item.Get("version").String()
+		if v != "" && !seen[v] {
+			seen[v] = true
+			versions = append(versions, v)
+		}
+	}
+
+	if len(versions) == 0 {
+		return ""
+	}
+	return fmt.Sprintf("(schemas available for versions: %s)", strings.Join(versions, ", "))
 }
 
 // newCmdConfigSchema creates the `device config schema` parent command.

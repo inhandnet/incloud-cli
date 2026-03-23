@@ -16,6 +16,7 @@ func newCmdConfigHistory(f *factory.Factory) *cobra.Command {
 	cmd.AddCommand(newCmdConfigHistoryList(f))
 	cmd.AddCommand(newCmdConfigHistoryGet(f))
 	cmd.AddCommand(newCmdConfigHistoryRestore(f))
+	cmd.AddCommand(newCmdConfigHistoryDiff(f))
 
 	return cmd
 }

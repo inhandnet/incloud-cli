@@ -2,11 +2,13 @@ package device
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/spf13/cobra"
 
 	"github.com/inhandnet/incloud-cli/internal/factory"
 	"github.com/inhandnet/incloud-cli/internal/iostreams"
+	"github.com/inhandnet/incloud-cli/internal/ui"
 )
 
 func newCmdConfigCopy(f *factory.Factory) *cobra.Command {
@@ -16,6 +18,7 @@ func newCmdConfigCopy(f *factory.Factory) *cobra.Command {
 		sourceGroup string
 		target      []string
 		targetGroup []string
+		yes         bool
 	)
 
 	cmd := &cobra.Command{
@@ -47,7 +50,29 @@ func newCmdConfigCopy(f *factory.Factory) *cobra.Command {
 				return fmt.Errorf("at least one --target or --target-group is required")
 			}
 
-			body := map[string]interface{}{}
+			if !yes {
+				sourceDesc := source
+				if sourceDesc == "" {
+					sourceDesc = "group " + sourceGroup
+				}
+				var parts []string
+				if len(target) > 0 {
+					parts = append(parts, fmt.Sprintf("%d device(s)", len(target)))
+				}
+				if len(targetGroup) > 0 {
+					parts = append(parts, fmt.Sprintf("%d group(s)", len(targetGroup)))
+				}
+				msg := fmt.Sprintf("Copy config from %s to %s?", sourceDesc, strings.Join(parts, " and "))
+				confirmed, err := ui.Confirm(f, msg)
+				if err != nil {
+					return err
+				}
+				if !confirmed {
+					return nil
+				}
+			}
+
+			body := map[string]any{}
 			if source != "" {
 				body["sourceDeviceId"] = source
 			}
@@ -94,6 +119,7 @@ func newCmdConfigCopy(f *factory.Factory) *cobra.Command {
 	_ = cmd.Flags().MarkHidden("to")
 	_ = cmd.Flags().MarkHidden("to-group")
 	cmd.Flags().StringVar(&module, "module", "", "Module name (defaults to 'default' on the server)")
+	cmd.Flags().BoolVarP(&yes, "yes", "y", false, "Skip confirmation prompt")
 
 	return cmd
 }

@@ -1,6 +1,7 @@
 package device
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/spf13/cobra"
@@ -49,8 +50,11 @@ which config sections depend on each other.`,
 
 			result := gjson.GetBytes(body, "result")
 			if !result.Exists() || result.Type == gjson.Null {
-				fmt.Fprintf(f.IO.ErrOut, "No overview available for %s/%s.\n", pv.product, pv.version)
-				return nil
+				msg := fmt.Sprintf("no overview available for %s/%s", pv.product, pv.version)
+				if hint := suggestAvailableVersions(client, pv.product); hint != "" {
+					msg += " " + hint
+				}
+				return errors.New(msg)
 			}
 
 			output, _ := cmd.Flags().GetString("output")

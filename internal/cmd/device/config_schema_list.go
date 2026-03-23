@@ -3,6 +3,7 @@ package device
 import (
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -70,18 +71,33 @@ Use --device to auto-detect product/version, or --product/--version to specify d
 
 			q := pv.configDocumentQuery()
 			q.Set("limit", "200")
-			if name != "" {
-				q.Set("name", name)
-			}
 
 			body, err := client.Get("/api/v1/config-documents", q)
 			if err != nil {
 				return err
 			}
 
+			// Client-side case-insensitive name filter
+			if name != "" {
+				body, err = filterSchemasByName(body, name)
+				if err != nil {
+					return err
+				}
+			}
+
 			output, _ := cmd.Flags().GetString("output")
 			if output == "" {
 				output = "table"
+			}
+
+			// Show version hint on stderr when no results
+			if output == "table" {
+				result := gjson.GetBytes(body, "result")
+				if !result.Exists() || len(result.Array()) == 0 {
+					if hint := suggestAvailableVersions(client, pv.product); hint != "" {
+						fmt.Fprintf(f.IO.ErrOut, "No schemas found for %s/%s %s\n", pv.product, pv.version, hint)
+					}
+				}
 			}
 
 			return iostreams.FormatOutput(body, f.IO, output, defaultSchemaListFields,
@@ -91,7 +107,7 @@ Use --device to auto-detect product/version, or --product/--version to specify d
 	}
 
 	sf.register(cmd)
-	cmd.Flags().StringVar(&name, "name", "", "Filter by schema name (regex)")
+	cmd.Flags().StringVar(&name, "name", "", "Filter by schema name (case-insensitive regex)")
 
 	return cmd
 }
@@ -136,6 +152,33 @@ func transformSchemaList(body []byte) ([]byte, error) {
 	out, err := json.Marshal(map[string]interface{}{"result": items})
 	if err != nil {
 		return nil, fmt.Errorf("formatting schema list: %w", err)
+	}
+	return out, nil
+}
+
+// filterSchemasByName filters config-documents API response by name using
+// case-insensitive regex matching on the client side.
+func filterSchemasByName(body []byte, pattern string) ([]byte, error) {
+	re, err := regexp.Compile("(?i)" + pattern)
+	if err != nil {
+		return nil, fmt.Errorf("invalid name pattern: %w", err)
+	}
+
+	result := gjson.GetBytes(body, "result")
+	if !result.Exists() {
+		return body, nil
+	}
+
+	var filtered []json.RawMessage
+	for _, item := range result.Array() {
+		if re.MatchString(item.Get("name").String()) {
+			filtered = append(filtered, json.RawMessage(item.Raw))
+		}
+	}
+
+	out, err := json.Marshal(map[string]any{"result": filtered, "total": len(filtered)})
+	if err != nil {
+		return nil, err
 	}
 	return out, nil
 }

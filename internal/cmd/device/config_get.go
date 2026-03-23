@@ -1,10 +1,12 @@
 package device
 
 import (
+	"fmt"
 	"net/url"
 	"strings"
 
 	"github.com/spf13/cobra"
+	"github.com/tidwall/gjson"
 
 	"github.com/inhandnet/incloud-cli/internal/factory"
 	"github.com/inhandnet/incloud-cli/internal/iostreams"
@@ -14,6 +16,7 @@ func newCmdConfigGet(f *factory.Factory) *cobra.Command {
 	var (
 		module string
 		layers []string
+		key    string
 	)
 
 	cmd := &cobra.Command{
@@ -32,7 +35,10 @@ configuration layers instead (actual, target, pending, group, individual).`,
   incloud device config get 507f1f77bcf86cd799439011 --layer actual --layer pending
 
   # YAML output
-  incloud device config get 507f1f77bcf86cd799439011 -o yaml`,
+  incloud device config get 507f1f77bcf86cd799439011 -o yaml
+
+  # Get only the DNS config section
+  incloud device config get 507f1f77bcf86cd799439011 --key dns`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			deviceID := args[0]
@@ -61,6 +67,17 @@ configuration layers instead (actual, target, pending, group, individual).`,
 			}
 
 			output, _ := cmd.Flags().GetString("output")
+
+			if key != "" {
+				// Extract sub-tree for the given key
+				path := "result." + key
+				r := gjson.GetBytes(body, path)
+				if !r.Exists() {
+					return fmt.Errorf("config key %q not found in device configuration", key)
+				}
+				return iostreams.FormatOutput([]byte(r.Raw), f.IO, output, nil)
+			}
+
 			return iostreams.FormatOutput(body, f.IO, output, nil,
 				iostreams.WithTransform(extractResultArray),
 			)
@@ -69,6 +86,7 @@ configuration layers instead (actual, target, pending, group, individual).`,
 
 	cmd.Flags().StringVar(&module, "module", "", "Module name (defaults to 'default' on the server)")
 	cmd.Flags().StringArrayVar(&layers, "layer", nil, "Config layers to return: actual, target, pending, group, individual (can be repeated)")
+	cmd.Flags().StringVar(&key, "key", "", "Return only the specified config key (e.g. dns, wan, cellular)")
 
 	return cmd
 }

@@ -1,6 +1,7 @@
 package device
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/spf13/cobra"
@@ -49,7 +50,11 @@ The JSON key can be found from 'incloud device config schema list'.`,
 
 			result := gjson.GetBytes(body, "result")
 			if !result.Exists() || len(result.Array()) == 0 {
-				return fmt.Errorf("config schema %q not found for %s/%s", jsonKey, pv.product, pv.version)
+				msg := fmt.Sprintf("config schema %q not found for %s/%s", jsonKey, pv.product, pv.version)
+				if hint := suggestAvailableVersions(client, pv.product); hint != "" {
+					msg += " " + hint
+				}
+				return errors.New(msg)
 			}
 
 			// Extract the first matching document

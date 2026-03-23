@@ -200,19 +200,28 @@ func TestSchemaOverview(t *testing.T) {
 
 func TestSchemaOverview_NotAvailable(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_, _ = w.Write([]byte(`{"result":null}`))
+		switch r.URL.Path {
+		case "/api/v1/config-documents/overview":
+			_, _ = w.Write([]byte(`{"result":null}`))
+		case "/api/v1/config-documents":
+			// suggestAvailableVersions call — return empty
+			_, _ = w.Write([]byte(`{"result":[]}`))
+		default:
+			http.NotFound(w, r)
+		}
 	}))
 	defer server.Close()
 
-	f, errBuf := newTestFactory(t, server.URL)
+	f, _ := newTestFactory(t, server.URL)
 
 	root := newSchemaRoot(f)
 	root.SetArgs([]string{"schema", "overview", "--product", "MR805", "--version", "V2.0.15-111"})
-	if err := root.Execute(); err != nil {
-		t.Fatal(err)
+	err := root.Execute()
+	if err == nil {
+		t.Fatal("expected error for no overview available")
 	}
-	if !strings.Contains(errBuf.String(), "No overview available") {
-		t.Errorf("expected 'No overview available' in stderr, got: %s", errBuf.String())
+	if !strings.Contains(err.Error(), "no overview available") {
+		t.Errorf("expected 'no overview available' in error, got: %v", err)
 	}
 }
 
