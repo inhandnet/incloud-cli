@@ -35,12 +35,16 @@ func NewCmdRoot(f *factory.Factory) *cobra.Command {
 		}
 
 		// Default output format: table for TTY, json for pipes/redirects
-		if !cmd.Flags().Changed("output") {
+		outputExplicit := cmd.Flags().Changed("output")
+		if !outputExplicit {
 			if f.IO.IsStdoutTTY() {
 				_ = cmd.Flags().Set("output", "table")
 			} else {
 				_ = cmd.Flags().Set("output", "json")
 			}
+		}
+		if outputExplicit {
+			cmd.Flags().Lookup("output").Annotations = map[string][]string{"explicit": {"true"}}
 		}
 
 		if ctx, _ := cmd.Flags().GetString("context"); ctx != "" {
