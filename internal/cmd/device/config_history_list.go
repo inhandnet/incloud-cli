@@ -1,6 +1,7 @@
 package device
 
 import (
+	"encoding/json"
 	"net/url"
 	"strconv"
 
@@ -26,7 +27,10 @@ func newCmdConfigHistoryList(f *factory.Factory) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "list <device-id>",
 		Short: "List configuration change history",
-		Long:  "List configuration change history snapshots for a device, with pagination and time range filtering.",
+		Long: `List configuration change history snapshots for a device, with pagination and time range filtering.
+
+The mergedConfig field is omitted by default to keep output concise.
+Use 'incloud device config snapshots get' to view the full snapshot including merged configuration.`,
 		Example: `  # List recent config history
   incloud device config snapshots list 507f1f77bcf86cd799439011
 
@@ -66,14 +70,14 @@ func newCmdConfigHistoryList(f *factory.Factory) *cobra.Command {
 				return err
 			}
 
+			body = stripMergedConfig(body)
+
 			output, _ := cmd.Flags().GetString("output")
 			if output == "" {
 				output = "table"
 			}
 			displayFields := fields
-			if len(displayFields) == 0 {
-				// Always use default fields in table mode to avoid
-				// expanding the huge mergedConfig nested object.
+			if len(displayFields) == 0 && output == "table" {
 				displayFields = defaultConfigHistoryFields
 			}
 
@@ -90,4 +94,34 @@ func newCmdConfigHistoryList(f *factory.Factory) *cobra.Command {
 	cmd.Flags().StringSliceVarP(&fields, "fields", "f", nil, "Fields to display in table mode")
 
 	return cmd
+}
+
+// stripMergedConfig removes the mergedConfig field from each record in the
+// paginated response to reduce output size. Returns body unchanged on error.
+func stripMergedConfig(body []byte) []byte {
+	var envelope map[string]json.RawMessage
+	if err := json.Unmarshal(body, &envelope); err != nil {
+		return body
+	}
+	raw, ok := envelope["result"]
+	if !ok {
+		return body
+	}
+	var items []map[string]json.RawMessage
+	if err := json.Unmarshal(raw, &items); err != nil {
+		return body
+	}
+	for _, item := range items {
+		delete(item, "mergedConfig")
+	}
+	stripped, err := json.Marshal(items)
+	if err != nil {
+		return body
+	}
+	envelope["result"] = stripped
+	out, err := json.Marshal(envelope)
+	if err != nil {
+		return body
+	}
+	return out
 }
