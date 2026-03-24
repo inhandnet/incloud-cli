@@ -16,6 +16,10 @@ type IOStreams struct {
 
 	// termOut is the termenv output tied to Out for color rendering.
 	termOut *termenv.Output
+
+	// JQExpr holds the --jq expression set globally. When non-empty,
+	// FormatOutput applies it to JSON data instead of the normal output mode.
+	JQExpr string
 }
 
 func (s *IOStreams) IsStdoutTTY() bool {

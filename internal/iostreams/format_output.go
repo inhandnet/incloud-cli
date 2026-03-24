@@ -41,6 +41,18 @@ func FormatOutput(body []byte, io *IOStreams, output string, fields []string, op
 		opt(&o)
 	}
 
+	// --jq overrides output mode: apply expression on unwrapped data
+	if io.JQExpr != "" {
+		result, err := ApplyJQ(unwrapResult(body), io.JQExpr)
+		if err != nil {
+			return err
+		}
+		if result != "" {
+			fmt.Fprintln(io.Out, result)
+		}
+		return nil
+	}
+
 	switch output {
 	case "table":
 		data := body
@@ -56,19 +68,36 @@ func FormatOutput(body []byte, io *IOStreams, output string, fields []string, op
 		}
 		return FormatTable(data, io, fields)
 	case "yaml":
-		s, err := FormatYAML(body)
+		s, err := FormatYAML(unwrapResult(body))
 		if err != nil {
 			return err
 		}
 		fmt.Fprintln(io.Out, s)
 	default:
 		if json.Valid(body) {
-			fmt.Fprintln(io.Out, FormatJSON(body, io, output))
+			fmt.Fprintln(io.Out, FormatJSON(unwrapResult(body), io, output))
 		} else {
 			fmt.Fprintln(io.Out, string(body))
 		}
 	}
 	return nil
+}
+
+// unwrapResult strips the envelope when the JSON object has "result" as its
+// only key (e.g. {"result": {...}} or {"result": [...]}). Multi-key envelopes
+// like {"result": [...], "total": 44, "page": 0} are left as-is so callers
+// retain access to pagination metadata.
+func unwrapResult(data []byte) []byte {
+	var raw map[string]json.RawMessage
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return data
+	}
+	if len(raw) == 1 {
+		if inner, ok := raw["result"]; ok {
+			return inner
+		}
+	}
+	return data
 }
 
 // applyFormatters deserializes JSON, applies column formatters in memory,

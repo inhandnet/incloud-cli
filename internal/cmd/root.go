@@ -20,6 +20,7 @@ func NewCmdRoot(f *factory.Factory) *cobra.Command {
 	}
 
 	cmd.PersistentFlags().StringP("output", "o", "", "Output format: json, table, yaml (default: table for TTY, json otherwise)")
+	cmd.PersistentFlags().String("jq", "", `Filter JSON output using a jq expression (implies -o json)`)
 	cmd.PersistentFlags().String("context", "", "Override active context (env: INCLOUD_CONTEXT)")
 	cmd.PersistentFlags().String("sudo", "", "Impersonate a user (env: INCLOUD_SUDO)")
 	cmd.PersistentFlags().Lookup("sudo").Hidden = true
@@ -45,6 +46,14 @@ func NewCmdRoot(f *factory.Factory) *cobra.Command {
 		}
 		if outputExplicit {
 			cmd.Flags().Lookup("output").Annotations = map[string][]string{"explicit": {"true"}}
+		}
+
+		// --jq implies JSON output mode
+		if jqExpr, _ := cmd.Flags().GetString("jq"); jqExpr != "" {
+			f.IO.JQExpr = jqExpr
+			if !outputExplicit {
+				_ = cmd.Flags().Set("output", "json")
+			}
 		}
 
 		if ctx, _ := cmd.Flags().GetString("context"); ctx != "" {
