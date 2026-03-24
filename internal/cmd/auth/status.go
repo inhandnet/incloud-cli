@@ -36,7 +36,8 @@ func NewCmdStatus(f *factory.Factory) *cobra.Command {
 
 			out := f.IO.Out
 			fmt.Fprintf(out, "Context:  %s\n", iostreams.Bold(name))
-			fmt.Fprintf(out, "Host:     %s\n", ctx.Host)
+			fmt.Fprintf(out, "API:      %s\n", ctx.APIURL())
+			fmt.Fprintf(out, "Auth:     %s\n", ctx.AuthURL())
 
 			if ctx.User != "" {
 				fmt.Fprintf(out, "User:     %s\n", ctx.User)
@@ -49,7 +50,7 @@ func NewCmdStatus(f *factory.Factory) *cobra.Command {
 
 			// Try auto-refresh if token expired but refresh token is available
 			if tokenExpired && ctx.RefreshToken != "" && ctx.ClientID != "" {
-				newToken, err := api.RefreshAccessToken(ctx.Host, ctx.ClientID, ctx.ClientSecret, ctx.RefreshToken)
+				newToken, err := api.RefreshAccessToken(ctx.AuthURL(), ctx.ClientID, ctx.ClientSecret, ctx.RefreshToken)
 				if err == nil {
 					ctx.Token = newToken.AccessToken
 					if newToken.RefreshToken != "" {
