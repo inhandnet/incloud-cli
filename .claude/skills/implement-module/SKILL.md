@@ -87,11 +87,11 @@ Options struct + NewCmd 函数 + factory.Factory + iostreams.FormatOutput 模式
 Phase 3 集成验证通过后，自动触发场景测试（快速模式）：
 
 1. 提取本次实现的命令列表
-2. 调用 `/test-scenarios quick` — 推断最相关的 1-2 个场景，启动 network-engineer agent 跑验收
+2. 调用 `/dogfood quick` — 推断最相关的 1-2 个场景，启动 network-engineer agent 跑验收
 3. 根据验收结论决定下一步：
    - **PASS**：进入 Phase 4
    - **WARN**：展示问题和设计建议，由用户决定修复后复验还是直接继续
-   - **FAIL**：展示阻塞性问题，建议修复后重新验收（`/test-scenarios quick`）
+   - **FAIL**：展示阻塞性问题，建议修复后重新验收（`/dogfood quick`）
 
 > 如果待测命令没有对应的 incloud-skills reference 文档，agent 会自拟场景测试。
 

@@ -1,15 +1,15 @@
 ---
-name: test-scenarios
+name: dogfood
 description: |
-  Use after implementing CLI commands to run scenario-based acceptance testing.
+  Scenario-based usability testing (dogfooding) for CLI commands.
   Simulates a real network engineer using the CLI to solve operational problems,
   then reports usability issues and design suggestions. Trigger phrases include:
-  "测试场景", "跑场景测试", "test scenarios", "验收测试", "场景验收",
+  "dogfood", "dogfooding", "测试场景", "跑场景测试", "验收测试", "场景验收",
   "测一下新命令", "test the new commands in real scenarios".
   Also triggered automatically at the end of implement-module Phase 3.
 ---
 
-# 场景化验收测试
+# Dogfooding — 场景化可用性测试
 
 模拟真实网络工程师使用 CLI 完成运维任务，验证命令在实际场景中是否好用，发现问题后输出具体的改进建议。
 
@@ -20,7 +20,7 @@ description: |
 仅测试本次变更的命令，验证基本可用性。通常 1-2 个最相关的场景。
 
 触发方式：implement-module Phase 3 后自动调用，或手动指定 `quick`：
-- `/test-scenarios quick`
+- `/dogfood quick`
 - "快速验收一下新加的命令"
 
 ### 完整模式（默认）
@@ -28,8 +28,8 @@ description: |
 推断所有相关场景，完整验收。每个场景启动独立的 network-engineer agent 并行执行。
 
 触发方式：
-- `/test-scenarios`
-- `/test-scenarios diagnostics` （指定场景）
+- `/dogfood`
+- `/dogfood diagnostics` （指定场景）
 - "跑一下完整的场景测试"
 
 ---
@@ -82,30 +82,58 @@ ls /Users/j3r0lin/Workspace/ai/incloud-skills/skills/incloud/references/
 是否调整？
 ```
 
-### Step 3: 启动 network-engineer agent
+### Step 3: 构造场景 prompt 并启动 network-engineer agent
 
-为每个场景启动一个 network-engineer agent。prompt 模板：
+**关键原则：给业务目标，不给命令清单。**
+
+agent 应该像真实用户一样，带着业务需求去摸索 CLI，自己决定用什么命令、怎么组合。
+如果你把命令步骤都列好了，agent 只会验证"这些命令能不能跑通"，永远发现不了
+"用户根本想不到要用这个命令"或"这个流程需要 3 个命令才能完成但应该 1 个就够"。
+
+prompt 模板：
 
 ```
-你需要完成一个场景化验收测试。
+你是一个 MSP 网络运维工程师，管理着分布在各地的几百台路由器。
 
-## 场景
-<场景名称和描述>
+## 你的任务
+<用业务语言描述目标，不提任何 CLI 命令名>
 
-## 重点验收的命令
-<本次需要重点关注的新增/修改命令列表>
+例如：
+- "你刚接手一个新客户，需要为他们的 200 台设备建立告警体系。核心站点要求
+   离线 5 分钟内短信通知，普通站点 30 分钟邮件通知即可。蜂窝设备需要信号
+   质量监控。"
+- "昨晚客户投诉收到太多告警，你需要排查当前的告警规则配置，看看哪些规则
+   阈值不合理，调整后验证。"
 
-## 场景文档
-请先读取以下文件获取操作指南：
+## 背景约束
+<补充业务约束，让场景更真实>
+
+例如：
+- "客户有 3 个设备分组：headquarters（10 台）、branch（50 台）、remote-cellular（140 台）"
+- "你只有 EMAIL 和 APP 两种通知渠道可用"
+- "客户要求工作日 9:00-18:00 的告警才发短信，其余时间只发邮件"
+
+## 操作指南
+请先读取以下文件了解 CLI 用法：
 - /Users/j3r0lin/Workspace/ai/incloud-skills/skills/incloud/SKILL.md
-- /Users/j3r0lin/Workspace/ai/incloud-skills/skills/incloud/references/<scenario>.md
+- /Users/j3r0lin/Workspace/ai/incloud-skills/skills/incloud/references/<scenario>.md（如有）
+
+## 新增/变更的命令（供参考，不是操作清单）
+<列出本次变更的命令，让 agent 知道重点关注什么，但不要列步骤>
 
 ## 要求
-1. 按场景文档的思路完成完整的运维流程
-2. 重点关注上述待验收命令的使用体验
-3. 输出结构化验收报告（按 agent 定义中的报告格式）
-4. 如果某些命令不存在或报错，如实记录，不要跳过
+1. 像真实用户一样工作：先搞清楚有什么能力，再规划怎么配置，最后执行
+2. 遇到不顺的地方如实记录——你第一直觉想做什么、实际能做什么、差距在哪
+3. 关注流程断裂点：哪个环节需要的信息拿不到、哪个操作需要多步才能完成
+4. 输出结构化验收报告
+5. 清理测试数据
 ```
+
+**自拟场景的构造原则**：
+- 场景必须包含**决策点**（如"不同分组用不同阈值"），而非只有单一路径
+- 场景必须包含**信息查询需求**（如"查看当前规则覆盖了哪些设备"），测试 list/get 的实用性
+- 场景必须包含**修改需求**（如"调整阈值"），测试 update 流程是否顺畅
+- 不要给 agent 具体的 CLI 命令或参数值，让它自己从 help 和 types 等发现命令中获取
 
 **并行策略**：
 - 场景之间互相独立，可以并行启动多个 agent
@@ -147,7 +175,7 @@ ls /Users/j3r0lin/Workspace/ai/incloud-skills/skills/incloud/references/
 - **WARN**：展示问题和建议，由用户决定是否修复后再继续
 - **FAIL**：展示阻塞性问题，建议修复后重新验收
 
-如果用户决定修复，修复完成后可以用 `/test-scenarios quick` 快速复验。
+如果用户决定修复，修复完成后可以用 `/dogfood quick` 快速复验。
 
 ---
 
@@ -157,4 +185,5 @@ ls /Users/j3r0lin/Workspace/ai/incloud-skills/skills/incloud/references/
 - **不自动修复**：只报告问题和建议，修不修由开发者决定
 - **先确认 `make build` 通过**：确保测试的是最新构建
 - **测试数据清理**：如果场景中创建了资源（设备、告警规则等），测试后清理
-- **没有场景文档的命令**：如果待测命令不属于任何已有的 reference 场景，agent 应自行构造一个合理的使用场景进行测试，并在报告中标注"自拟场景"
+- **绝不给 agent 命令步骤清单**：prompt 中只描述业务目标和约束，让 agent 自己决定用什么命令。如果你把 `incloud alert rule create --type "disconnected,retention=600"` 这样的命令写进 prompt，agent 就只会机械执行而不会像真实用户一样思考"我该怎么做"
+- **自拟场景必须有决策复杂度**：不是"创建 3 条规则"，而是"不同设备组需要不同策略，你来规划"
