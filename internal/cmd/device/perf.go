@@ -18,11 +18,15 @@ type perfOptions struct {
 }
 
 var perfFormatters = iostreams.ColumnFormatters{
-	"memory.free":  iostreams.FormatBytes,
-	"memory.total": iostreams.FormatBytes,
-	"msata.free":   iostreams.FormatBytes,
-	"msata.total":  iostreams.FormatBytes,
-	"cpu.usage":    iostreams.FormatPercent,
+	"cpu.usage":      iostreams.FormatPercent,
+	"memory.free":    iostreams.FormatBytes,
+	"memory.total":   iostreams.FormatBytes,
+	"disk.free":      iostreams.FormatBytes,
+	"disk.total":     iostreams.FormatBytes,
+	"microSD.free":   iostreams.FormatBytes,
+	"microSD.total":  iostreams.FormatBytes,
+	"msata.free":     iostreams.FormatBytes,
+	"msata.total":    iostreams.FormatBytes,
 }
 
 func NewCmdPerf(f *factory.Factory) *cobra.Command {
