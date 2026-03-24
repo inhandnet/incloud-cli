@@ -37,7 +37,10 @@ func NewCmdMe(f *factory.Factory) *cobra.Command {
   incloud user me --expand roles
 
   # JSON output
-  incloud user me -o json`,
+  incloud user me -o json
+
+  # Extract email with jq
+  incloud user me --jq '.email'`,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := f.APIClient()

@@ -52,7 +52,13 @@ func NewCmdList(f *factory.Factory) *cobra.Command {
   incloud device list --sort "name,asc"
 
   # Table output with selected fields
-  incloud device list -o table -f name -f serialNumber -f online`,
+  incloud device list -o table -f name -f serialNumber -f online
+
+  # Extract names with jq
+  incloud device list --jq '.result[].name'
+
+  # Export offline devices as CSV
+  incloud device list --online false --jq '.result[] | [.name, .serialNumber] | @csv'`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := f.APIClient()
 			if err != nil {

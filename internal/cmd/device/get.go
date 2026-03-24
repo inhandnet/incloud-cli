@@ -31,7 +31,10 @@ func NewCmdGet(f *factory.Factory) *cobra.Command {
   incloud device get 507f1f77bcf86cd799439011 -o table
 
   # YAML output
-  incloud device get 507f1f77bcf86cd799439011 -o yaml`,
+  incloud device get 507f1f77bcf86cd799439011 -o yaml
+
+  # Extract specific fields with jq
+  incloud device get 507f1f77bcf86cd799439011 --jq '{name, sn: .serialNumber, online}'`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			deviceID := args[0]
