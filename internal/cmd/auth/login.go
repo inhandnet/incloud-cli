@@ -86,8 +86,7 @@ func runLogin(f *factory.Factory, opts *LoginOptions) error {
 	}
 
 	// Derive auth URL from host for OAuth endpoints
-	tmpCtx := &config.Context{Host: opts.Host}
-	authURL := tmpCtx.AuthURL()
+	authURL := config.ResolveAuthURL(opts.Host)
 
 	// 1. Resolve client credentials: from flag or auto-detect from host
 	clientID := opts.ClientID
@@ -162,6 +161,6 @@ func runLogin(f *factory.Factory, opts *LoginOptions) error {
 	}
 
 	fmt.Fprintf(out, "%s Logged in to %s (context: %s)\n",
-		iostreams.Green("✓"), tmpCtx.APIURL(), opts.ContextName)
+		iostreams.Green("✓"), config.ResolveAPIURL(opts.Host), opts.ContextName)
 	return nil
 }

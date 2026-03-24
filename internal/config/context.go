@@ -33,17 +33,19 @@ var knownServicePrefixes = map[string]bool{
 	"star":   true,
 }
 
+// stripScheme removes scheme and trailing slash from a host string.
+func stripScheme(h string) string {
+	h = strings.TrimPrefix(h, "https://")
+	h = strings.TrimPrefix(h, "http://")
+	return strings.TrimRight(h, "/")
+}
+
 // baseDomain extracts the base domain from the Host field by stripping
 // scheme, trailing slash, and known service subdomain prefixes.
 func (c *Context) baseDomain() string {
-	h := c.Host
-	h = strings.TrimPrefix(h, "https://")
-	h = strings.TrimPrefix(h, "http://")
-	h = strings.TrimRight(h, "/")
-
+	h := stripScheme(c.Host)
 	if dot := strings.IndexByte(h, '.'); dot > 0 {
-		prefix := h[:dot]
-		if knownServicePrefixes[prefix] {
+		if knownServicePrefixes[h[:dot]] {
 			return h[dot+1:]
 		}
 	}
@@ -68,13 +70,20 @@ func (c *Context) AuthURL() string {
 	return "https://portal." + c.baseDomain()
 }
 
+// ResolveAPIURL derives the API service URL from a host string.
+func ResolveAPIURL(host string) string {
+	return (&Context{Host: host}).APIURL()
+}
+
+// ResolveAuthURL derives the auth service URL from a host string.
+func ResolveAuthURL(host string) string {
+	return (&Context{Host: host}).AuthURL()
+}
+
 // isIPHost returns true if the Host field points to an IP address
 // rather than a domain name (e.g. http://127.0.0.1:8080).
 func (c *Context) isIPHost() bool {
-	h := c.Host
-	h = strings.TrimPrefix(h, "https://")
-	h = strings.TrimPrefix(h, "http://")
-	h = strings.TrimRight(h, "/")
+	h := stripScheme(c.Host)
 	host, _, err := net.SplitHostPort(h)
 	if err != nil {
 		host = h
