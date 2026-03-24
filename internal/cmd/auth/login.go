@@ -32,10 +32,13 @@ func NewCmdLogin(f *factory.Factory) *cobra.Command {
 		Use:   "login",
 		Short: "Login via browser OAuth flow",
 		Example: `  # Login to dev environment
+  incloud auth login --context dev --host nezha.inhand.dev
+
+  # Full URL also works
   incloud auth login --context dev --host https://portal.nezha.inhand.dev
 
   # Login with explicit client ID (skips auto-detection)
-  incloud auth login --context prod --host https://portal.nezha.inhand.cn --client-id my-client`,
+  incloud auth login --context prod --host nezha.inhand.cn --client-id my-client`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runLogin(f, opts)
 		},
@@ -54,9 +57,17 @@ func NewCmdLogin(f *factory.Factory) *cobra.Command {
 }
 
 func validateHost(host string) error {
+	if host == "" {
+		return fmt.Errorf("host is required")
+	}
+	// Bare domain (no scheme) — valid
+	if !strings.Contains(host, "://") {
+		return nil
+	}
+	// Full URL — validate scheme and no path
 	u, err := url.Parse(host)
-	if err != nil || u.Scheme == "" || u.Host == "" {
-		return fmt.Errorf("invalid host URL %q: must be a valid http/https URL (e.g. https://portal.example.com)", host)
+	if err != nil || u.Host == "" {
+		return fmt.Errorf("invalid host URL %q", host)
 	}
 	if u.Scheme != "http" && u.Scheme != "https" {
 		return fmt.Errorf("invalid host URL %q: scheme must be http or https", host)
@@ -74,14 +85,17 @@ func runLogin(f *factory.Factory, opts *LoginOptions) error {
 		return err
 	}
 
+	// Derive auth URL from host for OAuth endpoints
+	authURL := config.ResolveAuthURL(opts.Host)
+
 	// 1. Resolve client credentials: from flag or auto-detect from host
 	clientID := opts.ClientID
 	var clientSecret string
 	if clientID == "" {
 		fmt.Fprintln(out, "Fetching OAuth client configuration...")
-		client, err := oauthapi.FetchOAuthClient(context.Background(), opts.Host)
+		client, err := oauthapi.FetchOAuthClient(context.Background(), authURL)
 		if err != nil {
-			return fmt.Errorf("auto-detecting client from %s: %w\n  Hint: use --client-id to specify manually", opts.Host, err)
+			return fmt.Errorf("auto-detecting client from %s: %w\n  Hint: use --client-id to specify manually", authURL, err)
 		}
 		clientID = client.ClientID
 		clientSecret = client.ClientSecret
@@ -89,22 +103,22 @@ func runLogin(f *factory.Factory, opts *LoginOptions) error {
 	}
 
 	// 2. Build OAuth config and generate PKCE verifier
-	oauthCfg := oauthapi.NewOAuthConfig(opts.Host, clientID, clientSecret, opts.Port)
+	oauthCfg := oauthapi.NewOAuthConfig(authURL, clientID, clientSecret, opts.Port)
 	verifier := oauth2.GenerateVerifier()
 	state := "incloud-cli-login"
 
 	// 3. Build auth URL with PKCE and open browser
-	authURL := oauthCfg.AuthCodeURL(state,
+	authorizeURL := oauthCfg.AuthCodeURL(state,
 		oauth2.AccessTypeOffline,
 		oauth2.S256ChallengeOption(verifier),
 	)
 
 	fmt.Fprintln(out, "Opening browser for authentication...")
 	fmt.Fprintln(out, iostreams.Gray("If the browser doesn't open, visit:"))
-	fmt.Fprintln(out, iostreams.Gray(authURL))
+	fmt.Fprintln(out, iostreams.Gray(authorizeURL))
 	fmt.Fprintln(out)
 
-	if err := browser.OpenURL(authURL); err != nil {
+	if err := browser.OpenURL(authorizeURL); err != nil {
 		fmt.Fprintln(out, iostreams.Yellow("Failed to open browser automatically."))
 	}
 
@@ -147,6 +161,6 @@ func runLogin(f *factory.Factory, opts *LoginOptions) error {
 	}
 
 	fmt.Fprintf(out, "%s Logged in to %s (context: %s)\n",
-		iostreams.Green("✓"), opts.Host, opts.ContextName)
+		iostreams.Green("✓"), config.ResolveAPIURL(opts.Host), opts.ContextName)
 	return nil
 }

@@ -27,14 +27,14 @@ func NewCmdListContexts(f *factory.Factory) *cobra.Command {
 			sort.Strings(names)
 
 			tp := iostreams.NewTablePrinter(f.IO.Out, f.IO.IsStdoutTTY())
-			tp.AddRow("CURRENT", "NAME", "HOST", "USER")
+			tp.AddRow("CURRENT", "NAME", "API", "USER")
 			for _, name := range names {
 				ctx := cfg.Contexts[name]
 				current := ""
 				if name == cfg.ActiveContextName() {
 					current = "*"
 				}
-				tp.AddRow(current, name, ctx.Host, ctx.User)
+				tp.AddRow(current, name, ctx.APIURL(), ctx.User)
 			}
 			return tp.Render()
 		},
