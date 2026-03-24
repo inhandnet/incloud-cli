@@ -7,12 +7,13 @@ import (
 )
 
 func TestTokenTransport_StripsAuthOnCrossOriginRedirect(t *testing.T) {
-	// Simulate: API at portal.example.com redirects to s3.amazonaws.com
+	// Simulate: API at star.example.com redirects to s3.amazonaws.com
 	transport := &TokenTransport{
-		Token: "secret-token",
-		Host:  "https://portal.example.com",
+		Token:    "secret-token",
+		APIHost:  "https://star.example.com",
+		AuthHost: "https://portal.example.com",
 		Base: roundTripFunc(func(req *http.Request) (*http.Response, error) {
-			if req.URL.Host == "portal.example.com" {
+			if req.URL.Host == "star.example.com" {
 				// Expect auth header on same-host request
 				if req.Header.Get("Authorization") == "" {
 					t.Error("expected Authorization header for same-host request")
@@ -31,7 +32,7 @@ func TestTokenTransport_StripsAuthOnCrossOriginRedirect(t *testing.T) {
 	ctx := context.Background()
 
 	// Same-host request — should have auth
-	sameHost, _ := http.NewRequestWithContext(ctx, "GET", "https://portal.example.com/api/v1/files", http.NoBody)
+	sameHost, _ := http.NewRequestWithContext(ctx, "GET", "https://star.example.com/api/v1/files", http.NoBody)
 	resp, _ := transport.RoundTrip(sameHost)
 	if resp != nil && resp.Body != nil {
 		resp.Body.Close()
@@ -47,8 +48,8 @@ func TestTokenTransport_StripsAuthOnCrossOriginRedirect(t *testing.T) {
 
 func TestTokenTransport_EmptyHost_AlwaysAddsAuth(t *testing.T) {
 	transport := &TokenTransport{
-		Token: "secret-token",
-		Host:  "",
+		Token:   "secret-token",
+		APIHost: "",
 		Base: roundTripFunc(func(req *http.Request) (*http.Response, error) {
 			if req.Header.Get("Authorization") == "" {
 				t.Error("expected Authorization header when Host is empty")

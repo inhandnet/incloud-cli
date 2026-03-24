@@ -14,6 +14,9 @@ func TestContext_APIURL(t *testing.T) {
 		{"custom domain", "https://custom.company.com", "https://star.custom.company.com"},
 		{"bare custom", "company.com", "https://star.company.com"},
 		{"trailing slash", "https://portal.nezha.inhand.dev/", "https://star.nezha.inhand.dev"},
+		{"IP with port", "http://127.0.0.1:8080", "http://127.0.0.1:8080"},
+		{"IP without port", "http://192.168.1.1", "http://192.168.1.1"},
+		{"localhost IP https", "https://127.0.0.1:443", "https://127.0.0.1:443"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -37,6 +40,8 @@ func TestContext_AuthURL(t *testing.T) {
 		{"custom domain", "https://custom.company.com", "https://portal.custom.company.com"},
 		{"bare custom", "company.com", "https://portal.company.com"},
 		{"trailing slash", "https://portal.nezha.inhand.dev/", "https://portal.nezha.inhand.dev"},
+		{"IP with port", "http://127.0.0.1:8080", "http://127.0.0.1:8080"},
+		{"IP without port", "http://192.168.1.1", "http://192.168.1.1"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

@@ -13,7 +13,8 @@ import (
 type TokenTransport struct {
 	Token        string
 	RefreshToken string
-	Host         string
+	APIHost      string
+	AuthHost     string
 	ClientID     string
 	ClientSecret string
 	Sudo         string
@@ -40,7 +41,7 @@ func (t *TokenTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 		resp.Body.Close()
 		debug.Log("token expired, refreshing...")
 
-		newToken, refreshErr := RefreshAccessToken(t.Host, t.ClientID, t.ClientSecret, t.RefreshToken)
+		newToken, refreshErr := RefreshAccessToken(t.AuthHost, t.ClientID, t.ClientSecret, t.RefreshToken)
 		if refreshErr != nil {
 			debug.Log("token refresh failed: %v", refreshErr)
 			return resp, nil // return original 401
@@ -119,10 +120,10 @@ func (t *TokenTransport) debugResponse(resp *http.Response, elapsed time.Duratio
 // isSameHost returns true if the request target matches the configured API host,
 // preventing auth headers from leaking to third-party domains (e.g. S3 pre-signed URLs).
 func (t *TokenTransport) isSameHost(req *http.Request) bool {
-	if t.Host == "" {
+	if t.APIHost == "" {
 		return true
 	}
-	parsed, err := url.Parse(t.Host)
+	parsed, err := url.Parse(t.APIHost)
 	if err != nil {
 		return true
 	}

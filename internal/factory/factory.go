@@ -56,7 +56,7 @@ func (f *Factory) APIClient() (*api.APIClient, error) {
 		return nil, err
 	}
 	f.debugConfig(actx)
-	return api.NewAPIClient(actx.Host, f.newTransport(actx)), nil
+	return api.NewAPIClient(actx.APIURL(), f.newTransport(actx)), nil
 }
 
 func (f *Factory) activeContext() (*config.Context, error) {
@@ -81,12 +81,9 @@ func (f *Factory) debugConfig(ctx *config.Context) {
 		debug.Log("context: %s (from: config)", cfg.CurrentContext)
 	}
 
-	// Host source
-	if envHost := os.Getenv("INCLOUD_HOST"); envHost != "" {
-		debug.Log("host: %s (from: env INCLOUD_HOST)", envHost)
-	} else {
-		debug.Log("host: %s (from: config)", ctx.Host)
-	}
+	// URLs
+	debug.Log("api:  %s", ctx.APIURL())
+	debug.Log("auth: %s", ctx.AuthURL())
 
 	// Org
 	if ctx.Org != "" {
@@ -103,7 +100,8 @@ func (f *Factory) newTransport(ctx *config.Context) *api.TokenTransport {
 	return &api.TokenTransport{
 		Token:        ctx.EffectiveToken(),
 		RefreshToken: ctx.RefreshToken,
-		Host:         ctx.Host,
+		APIHost:      ctx.APIURL(),
+		AuthHost:     ctx.AuthURL(),
 		ClientID:     ctx.ClientID,
 		ClientSecret: ctx.ClientSecret,
 		Sudo:         os.Getenv("INCLOUD_SUDO"),

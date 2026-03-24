@@ -1,6 +1,7 @@
 package config
 
 import (
+	"net"
 	"os"
 	"strings"
 	"time"
@@ -50,13 +51,35 @@ func (c *Context) baseDomain() string {
 }
 
 // APIURL returns the URL for the API service (star).
+// For IP-based hosts (e.g. test servers), returns the original Host unchanged.
 func (c *Context) APIURL() string {
+	if c.isIPHost() {
+		return c.Host
+	}
 	return "https://star." + c.baseDomain()
 }
 
 // AuthURL returns the URL for the auth/portal service.
+// For IP-based hosts (e.g. test servers), returns the original Host unchanged.
 func (c *Context) AuthURL() string {
+	if c.isIPHost() {
+		return c.Host
+	}
 	return "https://portal." + c.baseDomain()
+}
+
+// isIPHost returns true if the Host field points to an IP address
+// rather than a domain name (e.g. http://127.0.0.1:8080).
+func (c *Context) isIPHost() bool {
+	h := c.Host
+	h = strings.TrimPrefix(h, "https://")
+	h = strings.TrimPrefix(h, "http://")
+	h = strings.TrimRight(h, "/")
+	host, _, err := net.SplitHostPort(h)
+	if err != nil {
+		host = h
+	}
+	return net.ParseIP(host) != nil
 }
 
 func (cfg *Config) SetContext(name string, ctx *Context) {
