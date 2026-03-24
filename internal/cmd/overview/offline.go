@@ -28,6 +28,8 @@ var (
 
 	offlineFormatters = iostreams.ColumnFormatters{
 		"totalOfflineDuration": iostreams.FormatDuration,
+		"avgOfflineDuration":   iostreams.FormatDuration,
+		"maxOfflineDuration":   iostreams.FormatDuration,
 	}
 )
 
