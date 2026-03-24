@@ -27,14 +27,14 @@ CI 会自动构建以下平台的二进制文件：
 ### 1. 配置 Context
 
 ```bash
-incloud config set-context dev --host https://portal.nezha.inhand.dev --org myorg
+incloud config set-context dev --host nezha.inhand.dev --org myorg
 incloud config use-context dev
 ```
 
 ### 2. 登录
 
 ```bash
-incloud auth login --context dev --host https://portal.nezha.inhand.dev
+incloud auth login --context dev --host nezha.inhand.dev
 ```
 
 登录使用 OAuth 2.0 Authorization Code + PKCE 流程，会自动打开浏览器完成授权。

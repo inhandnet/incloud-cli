@@ -28,7 +28,8 @@ Printed once at command startup, shows which context is active and where values 
 
 ```
 [debug] context: dev (from: config)
-[debug] host: https://portal.nezha.inhand.dev (from: env INCLOUD_HOST)
+[debug] api:  https://star.nezha.inhand.dev
+[debug] auth: https://portal.nezha.inhand.dev
 [debug] org: myorg
 ```
 
@@ -61,7 +62,7 @@ Printed for every HTTP call. Request body included, response body NOT included
 (use `-o json` to inspect response data).
 
 ```
-[debug] > POST https://portal.nezha.inhand.dev/api/v1/devices?page=0&limit=20
+[debug] > POST https://star.nezha.inhand.dev/api/v1/devices?page=0&limit=20
 [debug] > Content-Type: application/json
 [debug] > Authorization: Bearer ****
 [debug] > Body: {"name":"test-device","model":"IR915"}
