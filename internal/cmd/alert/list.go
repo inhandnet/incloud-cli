@@ -58,8 +58,8 @@ func NewCmdList(f *factory.Factory) *cobra.Command {
   # Filter by time range
   incloud alert list --after 2024-01-01T00:00:00 --before 2024-01-31T23:59:59
 
-  # Filter by alert type
-  incloud alert list --type offline --type reboot
+  # Filter by alert type (use 'incloud alert rule types' to list available types)
+  incloud alert list --type disconnected --type reboot
 
   # Filter by acknowledgement status
   incloud alert list --ack false
@@ -77,7 +77,10 @@ func NewCmdList(f *factory.Factory) *cobra.Command {
   incloud alert list --ack false --count
 
   # Count active alerts for a device
-  incloud alert list --status ACTIVE --device 507f1f77bcf86cd799439011 --count`,
+  incloud alert list --status ACTIVE --device 507f1f77bcf86cd799439011 --count
+
+  # Aggregate alert types with jq
+  incloud alert list --limit 100 --jq '[.result[].type] | group_by(.) | map({type: .[0], count: length})'`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := f.APIClient()
 			if err != nil {
@@ -139,7 +142,7 @@ func NewCmdList(f *factory.Factory) *cobra.Command {
 	cmd.Flags().IntVar(&opts.Priority, "priority", 0, "Filter by priority level")
 	cmd.Flags().StringVar(&opts.Device, "device", "", "Filter by device ID")
 	cmd.Flags().StringVar(&opts.Group, "group", "", "Filter by device group ID")
-	cmd.Flags().StringArrayVar(&opts.Type, "type", nil, "Filter by alert type (can be repeated)")
+	cmd.Flags().StringArrayVar(&opts.Type, "type", nil, "Filter by alert type (use 'incloud alert rule types' to list available types; can be repeated)")
 	cmd.Flags().StringVar(&opts.Ack, "ack", "", "Filter by acknowledgement status (true/false)")
 	cmd.Flags().StringVarP(&opts.Query, "query", "q", "", "Search by entity name (fuzzy match)")
 	cmd.Flags().StringSliceVarP(&opts.Fields, "fields", "f", nil, "Fields to return and display")
