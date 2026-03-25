@@ -42,10 +42,6 @@ func NewCmdStatus(f *factory.Factory) *cobra.Command {
 			if ctx.User != "" {
 				fmt.Fprintf(out, "User:     %s\n", ctx.User)
 			}
-			if ctx.Org != "" {
-				fmt.Fprintf(out, "Org:      %s\n", ctx.Org)
-			}
-
 			tokenExpired := !ctx.ExpiresAt.IsZero() && ctx.ExpiresAt.Before(time.Now())
 
 			// Try auto-refresh if token expired but refresh token is available

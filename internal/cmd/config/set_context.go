@@ -10,7 +10,7 @@ import (
 )
 
 func NewCmdSetContext(f *factory.Factory) *cobra.Command {
-	var host, org string
+	var host string
 
 	cmd := &cobra.Command{
 		Use:   "set-context <name>",
@@ -29,9 +29,6 @@ func NewCmdSetContext(f *factory.Factory) *cobra.Command {
 				ctx = &cfgpkg.Context{}
 			}
 			ctx.Host = host
-			if org != "" {
-				ctx.Org = org
-			}
 			cfg.SetContext(name, ctx)
 
 			if err := f.SaveConfig(); err != nil {
@@ -48,8 +45,6 @@ func NewCmdSetContext(f *factory.Factory) *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&host, "host", "", "Platform host URL (required)")
-	cmd.Flags().StringVar(&org, "org", "", "Organization ID")
-
 	_ = cmd.MarkFlagRequired("host")
 
 	return cmd

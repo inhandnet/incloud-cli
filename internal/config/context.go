@@ -13,7 +13,6 @@ type Context struct {
 	RefreshToken string    `yaml:"refresh_token,omitempty"`
 	ClientID     string    `yaml:"client_id,omitempty"`
 	ClientSecret string    `yaml:"client_secret,omitempty"`
-	Org          string    `yaml:"org,omitempty"`
 	User         string    `yaml:"user,omitempty"`
 	ExpiresAt    time.Time `yaml:"expires_at,omitempty"`
 }

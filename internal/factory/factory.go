@@ -85,9 +85,9 @@ func (f *Factory) debugConfig(ctx *config.Context) {
 	debug.Log("api:  %s", ctx.APIURL())
 	debug.Log("auth: %s", ctx.AuthURL())
 
-	// Org
-	if ctx.Org != "" {
-		debug.Log("org: %s", ctx.Org)
+	// Tenant
+	if tenant := os.Getenv("INCLOUD_TENANT"); tenant != "" {
+		debug.Log("tenant: %s", tenant)
 	}
 
 	// User
@@ -105,6 +105,7 @@ func (f *Factory) newTransport(ctx *config.Context) *api.TokenTransport {
 		ClientID:     ctx.ClientID,
 		ClientSecret: ctx.ClientSecret,
 		Sudo:         os.Getenv("INCLOUD_SUDO"),
+		Tenant:       os.Getenv("INCLOUD_TENANT"),
 		OnRefresh: func(accessToken, refreshToken string, expiry time.Time) {
 			ctx.Token = accessToken
 			if refreshToken != "" {

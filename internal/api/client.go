@@ -18,6 +18,7 @@ type TokenTransport struct {
 	ClientID     string
 	ClientSecret string
 	Sudo         string
+	Tenant       string
 	OnRefresh    func(accessToken, refreshToken string, expiry time.Time)
 	Base         http.RoundTripper
 }
@@ -28,6 +29,10 @@ func (t *TokenTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 		if t.Sudo != "" {
 			req.Header.Set("Sudo", t.Sudo)
 			debug.Log("sudo: %s", t.Sudo)
+		}
+		if t.Tenant != "" {
+			req.Header.Set("X-Api-Oid", t.Tenant)
+			debug.Log("tenant: %s", t.Tenant)
 		}
 	}
 
@@ -81,7 +86,7 @@ func (t *TokenTransport) debugRequest(req *http.Request) {
 		return
 	}
 	debug.Log("> %s %s", req.Method, req.URL.String())
-	for _, h := range []string{"Content-Type", "Authorization", "Sudo"} {
+	for _, h := range []string{"Content-Type", "Authorization", "Sudo", "X-Api-Oid"} {
 		if v := req.Header.Get(h); v != "" {
 			if h == "Authorization" {
 				v = "****"

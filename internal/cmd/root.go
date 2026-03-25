@@ -24,6 +24,7 @@ func NewCmdRoot(f *factory.Factory) *cobra.Command {
 	cmd.PersistentFlags().String("context", "", "Override active context (env: INCLOUD_CONTEXT)")
 	cmd.PersistentFlags().String("sudo", "", "Impersonate a user (env: INCLOUD_SUDO)")
 	cmd.PersistentFlags().Lookup("sudo").Hidden = true
+	cmd.PersistentFlags().String("tenant", "", "Switch organization context by ID (env: INCLOUD_TENANT)")
 	cmd.PersistentFlags().Bool("debug", false, "Enable debug output (env: INCLOUD_DEBUG)")
 
 	// Propagate flags to env and set output default based on TTY
@@ -63,6 +64,11 @@ func NewCmdRoot(f *factory.Factory) *cobra.Command {
 		}
 		if sudo, _ := cmd.Flags().GetString("sudo"); sudo != "" {
 			if err := os.Setenv("INCLOUD_SUDO", sudo); err != nil {
+				return err
+			}
+		}
+		if tenant, _ := cmd.Flags().GetString("tenant"); tenant != "" {
+			if err := os.Setenv("INCLOUD_TENANT", tenant); err != nil {
 				return err
 			}
 		}
