@@ -18,8 +18,9 @@ import (
 )
 
 type ImportOptions struct {
-	Yes    bool
-	NoWait bool
+	Yes     bool
+	NoWait  bool
+	GroupID string
 }
 
 func NewCmdImport(f *factory.Factory) *cobra.Command {
@@ -47,6 +48,9 @@ waits for the import to complete and displays the result.`,
   # Import from Excel
   incloud device import devices.xlsx
 
+  # Import and assign devices to a group
+  incloud device import devices.csv --group 507f1f77bcf86cd799439011
+
   # Skip confirmation prompt
   incloud device import devices.csv -y
 
@@ -61,6 +65,7 @@ waits for the import to complete and displays the result.`,
 
 	cmd.Flags().BoolVarP(&opts.Yes, "yes", "y", false, "Skip confirmation prompt")
 	cmd.Flags().BoolVar(&opts.NoWait, "no-wait", false, "Don't wait for import to complete")
+	cmd.Flags().StringVar(&opts.GroupID, "group", "", "Assign imported devices to a group (use 'incloud device group list' to find IDs)")
 
 	return cmd
 }
@@ -94,7 +99,7 @@ func runImport(f *factory.Factory, opts *ImportOptions, filePath string) error {
 
 	// Step 1: Upload file
 	fmt.Fprintf(f.IO.ErrOut, "Uploading %s...\n", filepath.Base(filePath))
-	jobID, err := uploadImportFile(client, uploadPath)
+	jobID, err := uploadImportFile(client, uploadPath, opts.GroupID)
 	if err != nil {
 		return err
 	}
@@ -207,14 +212,21 @@ func csvToXLSX(csvPath string) (string, error) {
 }
 
 // uploadImportFile uploads the file via multipart POST and returns the job ID.
-func uploadImportFile(client *api.APIClient, filePath string) (string, error) {
+// If groupID is non-empty, it is sent as the groupId form field so the backend
+// assigns all imported devices to that group automatically.
+func uploadImportFile(client *api.APIClient, filePath, groupID string) (string, error) {
 	file, err := os.Open(filePath)
 	if err != nil {
 		return "", fmt.Errorf("opening file: %w", err)
 	}
 	defer func() { _ = file.Close() }()
 
-	body, err := client.Upload("/api/v1/devices/imports", "file", filepath.Base(filePath), file)
+	var body []byte
+	if groupID != "" {
+		body, err = client.UploadWithFields("/api/v1/devices/imports", "file", filepath.Base(filePath), file, map[string]string{"groupId": groupID})
+	} else {
+		body, err = client.Upload("/api/v1/devices/imports", "file", filepath.Base(filePath), file)
+	}
 	if err != nil {
 		return "", fmt.Errorf("upload failed: %w", err)
 	}

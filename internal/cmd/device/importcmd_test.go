@@ -330,6 +330,44 @@ func TestImport_NoWait(t *testing.T) {
 	}
 }
 
+func TestImport_WithGroup(t *testing.T) {
+	var receivedGroupID string
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == http.MethodPost && r.URL.Path == "/api/v1/devices/imports":
+			if err := r.ParseMultipartForm(10 << 20); err == nil {
+				receivedGroupID = r.FormValue("groupId")
+			}
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`{"result":"jobgrp"}`))
+		case r.Method == http.MethodGet && r.URL.Path == "/api/v1/devices/imports/jobgrp/detail":
+			resp := `{"result":{"_id":"jobgrp","fileName":"test.xlsx","total":2,"successNo":2,"failNo":0,"status":"success","rate":1}}`
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(resp))
+		case r.Method == http.MethodPost && r.URL.Path == "/api/v1/devices/imports/jobgrp":
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`{"result":"jobgrp"}`))
+		default:
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}))
+	defer server.Close()
+
+	f, _ := newTestFactory(t, server.URL)
+	xlsxPath := createTestXLSX(t)
+
+	cmd := NewCmdImport(f)
+	cmd.SetArgs([]string{xlsxPath, "-y", "--group", "507f1f77bcf86cd799439011"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if receivedGroupID != "507f1f77bcf86cd799439011" {
+		t.Errorf("expected groupId=507f1f77bcf86cd799439011 in form, got %q", receivedGroupID)
+	}
+}
+
 func TestImport_CSVUpload(t *testing.T) {
 	var receivedFileName string
 
