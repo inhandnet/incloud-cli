@@ -17,6 +17,9 @@ require (
 )
 
 require (
+	code.gitea.io/sdk/gitea v0.22.1 // indirect
+	github.com/42wim/httpsig v1.2.3 // indirect
+	github.com/Masterminds/semver/v3 v3.4.0 // indirect
 	github.com/atotto/clipboard v0.1.4 // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
 	github.com/catppuccin/go v0.3.0 // indirect
@@ -31,8 +34,16 @@ require (
 	github.com/charmbracelet/x/term v0.2.1 // indirect
 	github.com/clipperhouse/stringish v0.1.1 // indirect
 	github.com/clipperhouse/uax29/v2 v2.3.0 // indirect
+	github.com/creativeprojects/go-selfupdate v1.5.2 // indirect
+	github.com/davidmz/go-pageant v1.0.2 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/erikgeiser/coninput v0.0.0-20211004153227-1c3628e74d0f // indirect
+	github.com/go-fed/httpsig v1.1.0 // indirect
+	github.com/google/go-github/v74 v74.0.0 // indirect
+	github.com/google/go-querystring v1.1.0 // indirect
+	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
+	github.com/hashicorp/go-retryablehttp v0.7.8 // indirect
+	github.com/hashicorp/go-version v1.8.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/itchyny/gojq v0.12.18 // indirect
 	github.com/itchyny/timefmt-go v0.1.7 // indirect
@@ -50,12 +61,15 @@ require (
 	github.com/spf13/pflag v1.0.9 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tiendc/go-deepcopy v1.7.2 // indirect
+	github.com/ulikunitz/xz v0.5.15 // indirect
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
 	github.com/xuri/efp v0.0.1 // indirect
 	github.com/xuri/nfp v0.0.2-0.20250530014748-2ddeb826f9a9 // indirect
+	gitlab.com/gitlab-org/api/client-go v1.9.1 // indirect
 	golang.org/x/crypto v0.48.0 // indirect
 	golang.org/x/net v0.50.0 // indirect
 	golang.org/x/sync v0.19.0 // indirect
 	golang.org/x/sys v0.41.0 // indirect
 	golang.org/x/text v0.34.0 // indirect
+	golang.org/x/time v0.14.0 // indirect
 )
