@@ -1,10 +1,12 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strings"
 
+	"github.com/inhandnet/incloud-cli/internal/api"
 	cmd "github.com/inhandnet/incloud-cli/internal/cmd"
 	activityCmd "github.com/inhandnet/incloud-cli/internal/cmd/activity"
 	alertCmd "github.com/inhandnet/incloud-cli/internal/cmd/alert"
@@ -45,6 +47,12 @@ func main() {
 	rootCmd.AddCommand(userCmd.NewCmdUser(f))
 	rootCmd.AddCommand(versionCmd.NewCmdVersion(f))
 
+	// Top-level shortcuts: `incloud login` → `incloud auth login`
+	loginAlias := authCmd.NewCmdLogin(f)
+	loginAlias.Use = "login"
+	loginAlias.Hidden = true
+	rootCmd.AddCommand(loginAlias)
+
 	executedCmd, err := rootCmd.ExecuteC()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
@@ -52,6 +60,11 @@ func main() {
 		if isFlagError(err) && executedCmd != nil {
 			fmt.Fprintln(os.Stderr)
 			fmt.Fprint(os.Stderr, executedCmd.UsageString())
+		}
+		// Hint re-authentication on 401 Unauthorized
+		var httpErr *api.HTTPError
+		if errors.As(err, &httpErr) && httpErr.StatusCode == 401 {
+			fmt.Fprintln(os.Stderr, "Hint: run 'incloud auth login' to re-authenticate")
 		}
 		os.Exit(1)
 	}
