@@ -10,7 +10,6 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/inhandnet/incloud-cli/internal/factory"
-	"github.com/inhandnet/incloud-cli/internal/iostreams"
 )
 
 type LogSyslogOptions struct {
@@ -105,22 +104,12 @@ start of today (UTC) and --before defaults to now if not specified.`,
 				return err
 			}
 
-			output, _ := cmd.Flags().GetString("output")
-			switch output {
-			case "json":
-				if json.Valid(body) {
-					fmt.Fprintln(f.IO.Out, iostreams.FormatJSON(body, f.IO, output))
-				} else {
-					fmt.Fprintln(f.IO.Out, string(body))
-				}
-			default:
-				var sr syslogResponse
-				if err := json.Unmarshal(body, &sr); err != nil {
-					return fmt.Errorf("parsing response: %w", err)
-				}
-				for _, line := range sr.Result {
-					fmt.Fprint(f.IO.Out, line)
-				}
+			var sr syslogResponse
+			if err := json.Unmarshal(body, &sr); err != nil {
+				return fmt.Errorf("parsing response: %w", err)
+			}
+			for _, line := range sr.Result {
+				fmt.Fprint(f.IO.Out, line)
 			}
 
 			return nil
