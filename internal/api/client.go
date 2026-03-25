@@ -15,8 +15,6 @@ type TokenTransport struct {
 	RefreshToken string
 	APIHost      string
 	AuthHost     string
-	ClientID     string
-	ClientSecret string
 	Sudo         string
 	Tenant       string
 	OnRefresh    func(accessToken, refreshToken string, expiry time.Time)
@@ -46,7 +44,13 @@ func (t *TokenTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 		resp.Body.Close()
 		debug.Log("token expired, refreshing...")
 
-		newToken, refreshErr := RefreshAccessToken(t.AuthHost, t.ClientID, t.ClientSecret, t.RefreshToken)
+		oauthClient, fetchErr := FetchOAuthClient(req.Context(), t.AuthHost)
+		if fetchErr != nil {
+			debug.Log("failed to fetch OAuth client: %v", fetchErr)
+			return resp, nil // return original 401
+		}
+
+		newToken, refreshErr := RefreshAccessToken(t.AuthHost, oauthClient.ClientID, oauthClient.ClientSecret, t.RefreshToken)
 		if refreshErr != nil {
 			debug.Log("token refresh failed: %v", refreshErr)
 			return resp, nil // return original 401

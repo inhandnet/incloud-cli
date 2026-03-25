@@ -45,8 +45,13 @@ func NewCmdStatus(f *factory.Factory) *cobra.Command {
 			tokenExpired := !ctx.ExpiresAt.IsZero() && ctx.ExpiresAt.Before(time.Now())
 
 			// Try auto-refresh if token expired but refresh token is available
-			if tokenExpired && ctx.RefreshToken != "" && ctx.ClientID != "" {
-				newToken, err := api.RefreshAccessToken(ctx.AuthURL(), ctx.ClientID, ctx.ClientSecret, ctx.RefreshToken)
+			if tokenExpired && ctx.RefreshToken != "" {
+				oauthClient, fetchErr := api.FetchOAuthClient(cmd.Context(), ctx.AuthURL())
+				if fetchErr != nil {
+					fmt.Fprintf(out, "Status:   %s\n", iostreams.Red("token expired, failed to fetch OAuth client — please login again"))
+					return nil
+				}
+				newToken, err := api.RefreshAccessToken(ctx.AuthURL(), oauthClient.ClientID, oauthClient.ClientSecret, ctx.RefreshToken)
 				if err == nil {
 					ctx.Token = newToken.AccessToken
 					if newToken.RefreshToken != "" {

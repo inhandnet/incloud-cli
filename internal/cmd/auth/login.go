@@ -2,7 +2,9 @@ package auth
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"net/http"
 	"net/url"
 	"strings"
 	"time"
@@ -31,26 +33,25 @@ func NewCmdLogin(f *factory.Factory) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "login",
 		Short: "Login via browser OAuth flow",
-		Example: `  # Login to dev environment
-  incloud auth login --context dev --host nezha.inhand.dev
+		Example: `  # Quick start — just provide the host
+  incloud login --host nezha.inhand.dev
+
+  # Name the context for multi-environment setups
+  incloud login --context prod --host nezha.inhand.cn
 
   # Full URL also works
-  incloud auth login --context dev --host https://portal.nezha.inhand.dev
-
-  # Login with explicit client ID (skips auto-detection)
-  incloud auth login --context prod --host nezha.inhand.cn --client-id my-client`,
+  incloud login --context dev --host https://portal.nezha.inhand.dev`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runLogin(f, opts)
 		},
 	}
 
-	cmd.Flags().StringVar(&opts.ContextName, "context", "", "Context name to create/update (required)")
+	cmd.Flags().StringVar(&opts.ContextName, "context", "default", "Context name to create/update")
 	cmd.Flags().StringVar(&opts.Host, "host", "", "Platform host URL (required)")
 	cmd.Flags().StringVar(&opts.ClientID, "client-id", "", "OAuth client ID (auto-detected from host if omitted)")
 	cmd.Flags().IntVar(&opts.Port, "port", oauthapi.DefaultPort, "Local callback server port")
 	cmd.Flags().DurationVar(&opts.Timeout, "timeout", 2*time.Minute, "Timeout waiting for browser callback")
 
-	_ = cmd.MarkFlagRequired("context")
 	_ = cmd.MarkFlagRequired("host")
 
 	return cmd
@@ -146,11 +147,14 @@ func runLogin(f *factory.Factory, opts *LoginOptions) error {
 		Host:         opts.Host,
 		Token:        token.AccessToken,
 		RefreshToken: token.RefreshToken,
-		ClientID:     clientID,
-		ClientSecret: clientSecret,
 	}
 	if !token.Expiry.IsZero() {
 		ctx.ExpiresAt = token.Expiry
+	}
+
+	// Fetch current user identity for display and config storage
+	if user := fetchCurrentUser(ctx); user != "" {
+		ctx.User = user
 	}
 
 	cfg.SetContext(opts.ContextName, ctx)
@@ -160,7 +164,44 @@ func runLogin(f *factory.Factory, opts *LoginOptions) error {
 		return fmt.Errorf("saving config: %w", err)
 	}
 
-	fmt.Fprintf(out, "%s Logged in to %s (context: %s)\n",
+	loginMsg := fmt.Sprintf("%s Logged in to %s (context: %s)",
 		iostreams.Green("✓"), config.ResolveAPIURL(opts.Host), opts.ContextName)
+	if ctx.User != "" {
+		loginMsg += fmt.Sprintf(" as %s", iostreams.Bold(ctx.User))
+	}
+	fmt.Fprintln(out, loginMsg)
 	return nil
+}
+
+// fetchCurrentUser calls /api/v1/users/me to get the logged-in user's display name.
+// Returns "username (email)" or just "username". On any error, returns "".
+func fetchCurrentUser(ctx *config.Context) string {
+	apiURL := ctx.APIURL()
+	transport := &oauthapi.TokenTransport{
+		Token: ctx.Token,
+		Base:  http.DefaultTransport,
+	}
+	client := oauthapi.NewAPIClient(apiURL, transport)
+	q := url.Values{}
+	q.Set("fields", "username,email")
+	body, err := client.Get("/api/v1/users/me", q)
+	if err != nil {
+		return ""
+	}
+	var resp struct {
+		Result struct {
+			Username string `json:"username"`
+			Email    string `json:"email"`
+		} `json:"result"`
+	}
+	if json.Unmarshal(body, &resp) != nil {
+		return ""
+	}
+	if resp.Result.Username == "" {
+		return ""
+	}
+	if resp.Result.Email != "" {
+		return fmt.Sprintf("%s (%s)", resp.Result.Username, resp.Result.Email)
+	}
+	return resp.Result.Username
 }

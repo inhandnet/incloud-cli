@@ -102,8 +102,6 @@ func (f *Factory) newTransport(ctx *config.Context) *api.TokenTransport {
 		RefreshToken: ctx.RefreshToken,
 		APIHost:      ctx.APIURL(),
 		AuthHost:     ctx.AuthURL(),
-		ClientID:     ctx.ClientID,
-		ClientSecret: ctx.ClientSecret,
 		Sudo:         os.Getenv("INCLOUD_SUDO"),
 		Tenant:       os.Getenv("INCLOUD_TENANT"),
 		OnRefresh: func(accessToken, refreshToken string, expiry time.Time) {

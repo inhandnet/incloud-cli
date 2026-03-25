@@ -11,8 +11,6 @@ type Context struct {
 	Host         string    `yaml:"host"`
 	Token        string    `yaml:"token,omitempty"`
 	RefreshToken string    `yaml:"refresh_token,omitempty"`
-	ClientID     string    `yaml:"client_id,omitempty"`
-	ClientSecret string    `yaml:"client_secret,omitempty"`
 	User         string    `yaml:"user,omitempty"`
 	ExpiresAt    time.Time `yaml:"expires_at,omitempty"`
 }
