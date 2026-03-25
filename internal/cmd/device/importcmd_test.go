@@ -368,6 +368,44 @@ func TestImport_WithGroup(t *testing.T) {
 	}
 }
 
+func TestImport_WithOrg(t *testing.T) {
+	var receivedOID string
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == http.MethodPost && r.URL.Path == "/api/v1/devices/imports":
+			if err := r.ParseMultipartForm(10 << 20); err == nil {
+				receivedOID = r.FormValue("oid")
+			}
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`{"result":"joborg"}`))
+		case r.Method == http.MethodGet && r.URL.Path == "/api/v1/devices/imports/joborg/detail":
+			resp := `{"result":{"_id":"joborg","fileName":"test.xlsx","total":1,"successNo":1,"failNo":0,"status":"success","rate":1}}`
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(resp))
+		case r.Method == http.MethodPost && r.URL.Path == "/api/v1/devices/imports/joborg":
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`{"result":"joborg"}`))
+		default:
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}))
+	defer server.Close()
+
+	f, _ := newTestFactory(t, server.URL)
+	xlsxPath := createTestXLSX(t)
+
+	cmd := NewCmdImport(f)
+	cmd.SetArgs([]string{xlsxPath, "-y", "--org", "507f1f77bcf86cd799439022"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if receivedOID != "507f1f77bcf86cd799439022" {
+		t.Errorf("expected oid=507f1f77bcf86cd799439022 in form, got %q", receivedOID)
+	}
+}
+
 func TestImport_CSVUpload(t *testing.T) {
 	var receivedFileName string
 

@@ -21,6 +21,7 @@ type ImportOptions struct {
 	Yes     bool
 	NoWait  bool
 	GroupID string
+	OrgID   string
 }
 
 func NewCmdImport(f *factory.Factory) *cobra.Command {
@@ -51,6 +52,9 @@ waits for the import to complete and displays the result.`,
   # Import and assign devices to a group
   incloud device import devices.csv --group 507f1f77bcf86cd799439011
 
+  # Import devices under a sub-organization
+  incloud device import devices.csv --org 507f1f77bcf86cd799439022
+
   # Skip confirmation prompt
   incloud device import devices.csv -y
 
@@ -66,6 +70,7 @@ waits for the import to complete and displays the result.`,
 	cmd.Flags().BoolVarP(&opts.Yes, "yes", "y", false, "Skip confirmation prompt")
 	cmd.Flags().BoolVar(&opts.NoWait, "no-wait", false, "Don't wait for import to complete")
 	cmd.Flags().StringVar(&opts.GroupID, "group", "", "Assign imported devices to a group (use 'incloud device group list' to find IDs)")
+	cmd.Flags().StringVar(&opts.OrgID, "org", "", "Create devices under a sub-organization (use 'incloud org list' to find IDs)")
 
 	return cmd
 }
@@ -99,7 +104,7 @@ func runImport(f *factory.Factory, opts *ImportOptions, filePath string) error {
 
 	// Step 1: Upload file
 	fmt.Fprintf(f.IO.ErrOut, "Uploading %s...\n", filepath.Base(filePath))
-	jobID, err := uploadImportFile(client, uploadPath, opts.GroupID)
+	jobID, err := uploadImportFile(client, uploadPath, opts.GroupID, opts.OrgID)
 	if err != nil {
 		return err
 	}
@@ -212,18 +217,26 @@ func csvToXLSX(csvPath string) (string, error) {
 }
 
 // uploadImportFile uploads the file via multipart POST and returns the job ID.
-// If groupID is non-empty, it is sent as the groupId form field so the backend
-// assigns all imported devices to that group automatically.
-func uploadImportFile(client *api.APIClient, filePath, groupID string) (string, error) {
+// groupID and orgID are optional; when non-empty they are sent as multipart form
+// fields so the backend assigns imported devices to the given group / sub-org.
+func uploadImportFile(client *api.APIClient, filePath, groupID, orgID string) (string, error) {
 	file, err := os.Open(filePath)
 	if err != nil {
 		return "", fmt.Errorf("opening file: %w", err)
 	}
 	defer func() { _ = file.Close() }()
 
-	var body []byte
+	fields := make(map[string]string)
 	if groupID != "" {
-		body, err = client.UploadWithFields("/api/v1/devices/imports", "file", filepath.Base(filePath), file, map[string]string{"groupId": groupID})
+		fields["groupId"] = groupID
+	}
+	if orgID != "" {
+		fields["oid"] = orgID
+	}
+
+	var body []byte
+	if len(fields) > 0 {
+		body, err = client.UploadWithFields("/api/v1/devices/imports", "file", filepath.Base(filePath), file, fields)
 	} else {
 		body, err = client.Upload("/api/v1/devices/imports", "file", filepath.Base(filePath), file)
 	}
