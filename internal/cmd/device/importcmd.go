@@ -352,18 +352,7 @@ func pollImportJob(f *factory.Factory, client *api.APIClient, jobID string) (*im
 }
 
 func showImportResult(f *factory.Factory, client *api.APIClient, job *importJob) error {
-	switch job.Status {
-	case "success":
-		fmt.Fprintf(f.IO.ErrOut, "Import completed: %d/%d device(s) imported successfully.\n", job.SuccessNo, job.Total)
-	case "failed":
-		fmt.Fprintf(f.IO.ErrOut, "Import finished with errors: %d succeeded, %d failed out of %d.\n", job.SuccessNo, job.FailNo, job.Total)
-	case "check_fail":
-		fmt.Fprintf(f.IO.ErrOut, "Import validation failed.\n")
-	case "cancel":
-		fmt.Fprintf(f.IO.ErrOut, "Import was cancelled.\n")
-	default:
-		fmt.Fprintf(f.IO.ErrOut, "Import ended with status: %s\n", job.Status)
-	}
+	showImportResultSummary(f, job)
 
 	// Show per-row failure details from the details API;
 	// fall back to the job-level error codes if unavailable.
@@ -383,6 +372,22 @@ func showImportResult(f *factory.Factory, client *api.APIClient, job *importJob)
 	}
 
 	return nil
+}
+
+// showImportResultSummary prints the one-line status summary to stderr.
+func showImportResultSummary(f *factory.Factory, job *importJob) {
+	switch job.Status {
+	case "success":
+		fmt.Fprintf(f.IO.ErrOut, "Import completed: %d/%d device(s) imported successfully.\n", job.SuccessNo, job.Total)
+	case "failed":
+		fmt.Fprintf(f.IO.ErrOut, "Import finished with errors: %d succeeded, %d failed out of %d.\n", job.SuccessNo, job.FailNo, job.Total)
+	case "check_fail":
+		fmt.Fprintf(f.IO.ErrOut, "Import validation failed.\n")
+	case "cancel":
+		fmt.Fprintf(f.IO.ErrOut, "Import was cancelled.\n")
+	default:
+		fmt.Fprintf(f.IO.ErrOut, "Import ended with status: %s\n", job.Status)
+	}
 }
 
 // importDetail represents a single row in the import detail list.
