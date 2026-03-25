@@ -13,6 +13,8 @@ func NewCmdFeedback(f *factory.Factory) *cobra.Command {
 	}
 
 	cmd.AddCommand(NewCmdFeedbackCreate(f))
+	cmd.AddCommand(NewCmdFeedbackDownload(f))
+	cmd.AddCommand(NewCmdFeedbackList(f))
 
 	return cmd
 }
