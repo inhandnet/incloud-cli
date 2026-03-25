@@ -4,6 +4,7 @@ import (
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -108,6 +109,7 @@ func runImport(f *factory.Factory, opts *ImportOptions, filePath string) error {
 	if err != nil {
 		return err
 	}
+	fmt.Fprintf(f.IO.ErrOut, "Import job: %s\n", jobID)
 
 	// Step 2: Wait for file validation to complete, then show parsed result
 	job, err := waitForValidation(client, jobID)
@@ -115,7 +117,7 @@ func runImport(f *factory.Factory, opts *ImportOptions, filePath string) error {
 		return err
 	}
 
-	fmt.Fprintf(f.IO.ErrOut, "Parsed %d device(s) from %s (job: %s)\n", job.Total, job.FileName, jobID)
+	fmt.Fprintf(f.IO.ErrOut, "Parsed %d device(s) from %s\n", job.Total, job.FileName)
 
 	// If validation failed, show errors and abort
 	if job.Status == "check_fail" {
@@ -153,7 +155,7 @@ func runImport(f *factory.Factory, opts *ImportOptions, filePath string) error {
 	}
 
 	if opts.NoWait {
-		fmt.Fprintf(f.IO.ErrOut, "Import job %s started. Use 'incloud api get /api/v1/devices/imports/%s/detail' to check status.\n", jobID, jobID)
+		fmt.Fprintf(f.IO.ErrOut, "Import started. Track progress with: incloud device import-status %s\n", jobID)
 		return nil
 	}
 
@@ -164,7 +166,7 @@ func runImport(f *factory.Factory, opts *ImportOptions, filePath string) error {
 	}
 
 	// Step 6: Show final result
-	return showImportResult(f, job)
+	return showImportResult(f, client, job)
 }
 
 // csvToXLSX converts a CSV file to an XLSX file and returns the temporary XLSX path.
@@ -349,7 +351,7 @@ func pollImportJob(f *factory.Factory, client *api.APIClient, jobID string) (*im
 	}
 }
 
-func showImportResult(f *factory.Factory, job *importJob) error {
+func showImportResult(f *factory.Factory, client *api.APIClient, job *importJob) error {
 	switch job.Status {
 	case "success":
 		fmt.Fprintf(f.IO.ErrOut, "Import completed: %d/%d device(s) imported successfully.\n", job.SuccessNo, job.Total)
@@ -363,11 +365,14 @@ func showImportResult(f *factory.Factory, job *importJob) error {
 		fmt.Fprintf(f.IO.ErrOut, "Import ended with status: %s\n", job.Status)
 	}
 
-	if len(job.Result) > 0 {
-		fmt.Fprintf(f.IO.ErrOut, "\nErrors:\n")
-		for errCode, rows := range job.Result {
-			fmt.Fprintf(f.IO.ErrOut, "  %s: rows %v\n", errCode, rows)
+	// Show per-row failure details from the details API;
+	// fall back to the job-level error codes if unavailable.
+	if client != nil && job.FailNo > 0 {
+		if !showFailedDetails(f, client, job.ID) {
+			showJobErrors(f, job)
 		}
+	} else {
+		showJobErrors(f, job)
 	}
 
 	if job.Status != "success" && job.FailNo > 0 {
@@ -378,4 +383,61 @@ func showImportResult(f *factory.Factory, job *importJob) error {
 	}
 
 	return nil
+}
+
+// importDetail represents a single row in the import detail list.
+type importDetail struct {
+	Row          int    `json:"row"`
+	DeviceName   string `json:"deviceName"`
+	SerialNumber string `json:"serialNumber"`
+	Status       string `json:"status"`
+	FailReason   string `json:"failReason"`
+}
+
+// getFailedDetails fetches import details with FAILED status for a given job.
+func getFailedDetails(client *api.APIClient, jobID string) ([]importDetail, error) {
+	q := make(url.Values)
+	q.Set("status", "FAILED")
+	q.Set("page", "0")
+	q.Set("size", "100")
+
+	body, err := client.Get("/api/v1/devices/imports/"+jobID+"/details", q)
+	if err != nil {
+		return nil, err
+	}
+
+	var result struct {
+		Result []importDetail `json:"result"`
+	}
+	if err := json.Unmarshal(body, &result); err != nil {
+		return nil, fmt.Errorf("parsing details response: %w", err)
+	}
+
+	return result.Result, nil
+}
+
+// showFailedDetails prints per-row failure reasons to stderr.
+// Returns true if details were successfully fetched and displayed.
+func showFailedDetails(f *factory.Factory, client *api.APIClient, jobID string) bool {
+	details, err := getFailedDetails(client, jobID)
+	if err != nil || len(details) == 0 {
+		return false
+	}
+
+	fmt.Fprintf(f.IO.ErrOut, "\nFailed rows:\n")
+	for _, d := range details {
+		fmt.Fprintf(f.IO.ErrOut, "  Row %d: %s (%s) — %s\n", d.Row, d.SerialNumber, d.DeviceName, d.FailReason)
+	}
+	return true
+}
+
+// showJobErrors prints job-level error codes (fallback when details API is unavailable).
+func showJobErrors(f *factory.Factory, job *importJob) {
+	if len(job.Result) == 0 {
+		return
+	}
+	fmt.Fprintf(f.IO.ErrOut, "\nErrors:\n")
+	for errCode, rows := range job.Result {
+		fmt.Fprintf(f.IO.ErrOut, "  %s: rows %v\n", errCode, rows)
+	}
 }

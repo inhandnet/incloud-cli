@@ -325,7 +325,7 @@ func TestImport_NoWait(t *testing.T) {
 	if !confirmReceived.Load() {
 		t.Error("confirm was not called")
 	}
-	if !strings.Contains(errBuf.String(), "Import job jobnw started") {
+	if !strings.Contains(errBuf.String(), "import-status jobnw") {
 		t.Errorf("expected no-wait message, got: %s", errBuf.String())
 	}
 }
@@ -548,7 +548,7 @@ func TestIsTerminalStatus(t *testing.T) {
 func TestShowImportResult_Success(t *testing.T) {
 	f, errBuf := newTestFactory(t, "https://example.com")
 	job := &importJob{Status: "success", SuccessNo: 5, Total: 5}
-	err := showImportResult(f, job)
+	err := showImportResult(f, nil, job)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -566,7 +566,7 @@ func TestShowImportResult_PartialFailure(t *testing.T) {
 		FailNo:    2,
 		Result:    map[string][]int{"SERIAL_ILLEGAL": {2, 4}},
 	}
-	err := showImportResult(f, job)
+	err := showImportResult(f, nil, job)
 	if err == nil {
 		t.Fatal("expected error for partial failure")
 	}
@@ -581,7 +581,7 @@ func TestShowImportResult_PartialFailure(t *testing.T) {
 func TestShowImportResult_Cancelled(t *testing.T) {
 	f, errBuf := newTestFactory(t, "https://example.com")
 	job := &importJob{Status: "cancel", Total: 5}
-	err := showImportResult(f, job)
+	err := showImportResult(f, nil, job)
 	if err == nil {
 		t.Fatal("expected error for cancelled import")
 	}
