@@ -28,6 +28,7 @@ func NewCmdUser(f *factory.Factory) *cobra.Command {
 	}
 
 	cmd.AddCommand(NewCmdMe(f))
+	cmd.AddCommand(NewCmdIdentity(f))
 	cmd.AddCommand(NewCmdList(f))
 	cmd.AddCommand(NewCmdGet(f))
 	cmd.AddCommand(NewCmdCreate(f))

@@ -41,7 +41,7 @@
 - [ ] `user me update` — 更新个人资料
 - [ ] `user me change-password` — 修改自己的密码
 - [ ] `user me locale <locale>` — 更新语言偏好
-- [ ] `user me identities` — 查看所有组织身份（跨组织角色）
+- [x] `user identity list` — 查看所有组织身份（跨组织角色）
 - [ ] `user me preferences` — 查看/更新 UI 偏好
 - [ ] `user me settings` — 查看/更新用户设置
 
