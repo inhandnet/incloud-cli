@@ -82,6 +82,15 @@ func (c *APIClient) Upload(path, fieldName, fileName string, reader io.Reader) (
 	return c.execute(r, resty.MethodPost, path)
 }
 
+// UploadWithFields performs a multipart file upload via POST with additional form fields.
+func (c *APIClient) UploadWithFields(path, fieldName, fileName string, reader io.Reader, fields map[string]string) ([]byte, error) {
+	r := c.inner.R().SetFileReader(fieldName, fileName, reader)
+	if len(fields) > 0 {
+		r.SetFormData(fields)
+	}
+	return c.execute(r, resty.MethodPost, path)
+}
+
 // RequestOptions configures a generic request via Do.
 type RequestOptions struct {
 	Query       url.Values

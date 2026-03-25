@@ -325,8 +325,84 @@ func TestImport_NoWait(t *testing.T) {
 	if !confirmReceived.Load() {
 		t.Error("confirm was not called")
 	}
-	if !strings.Contains(errBuf.String(), "Import job jobnw started") {
+	if !strings.Contains(errBuf.String(), "import-status jobnw") {
 		t.Errorf("expected no-wait message, got: %s", errBuf.String())
+	}
+}
+
+func TestImport_WithGroup(t *testing.T) {
+	var receivedGroupID string
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == http.MethodPost && r.URL.Path == "/api/v1/devices/imports":
+			if err := r.ParseMultipartForm(10 << 20); err == nil {
+				receivedGroupID = r.FormValue("groupId")
+			}
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`{"result":"jobgrp"}`))
+		case r.Method == http.MethodGet && r.URL.Path == "/api/v1/devices/imports/jobgrp/detail":
+			resp := `{"result":{"_id":"jobgrp","fileName":"test.xlsx","total":2,"successNo":2,"failNo":0,"status":"success","rate":1}}`
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(resp))
+		case r.Method == http.MethodPost && r.URL.Path == "/api/v1/devices/imports/jobgrp":
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`{"result":"jobgrp"}`))
+		default:
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}))
+	defer server.Close()
+
+	f, _ := newTestFactory(t, server.URL)
+	xlsxPath := createTestXLSX(t)
+
+	cmd := NewCmdImport(f)
+	cmd.SetArgs([]string{xlsxPath, "-y", "--group", "507f1f77bcf86cd799439011"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if receivedGroupID != "507f1f77bcf86cd799439011" {
+		t.Errorf("expected groupId=507f1f77bcf86cd799439011 in form, got %q", receivedGroupID)
+	}
+}
+
+func TestImport_WithOrg(t *testing.T) {
+	var receivedOID string
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == http.MethodPost && r.URL.Path == "/api/v1/devices/imports":
+			if err := r.ParseMultipartForm(10 << 20); err == nil {
+				receivedOID = r.FormValue("oid")
+			}
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`{"result":"joborg"}`))
+		case r.Method == http.MethodGet && r.URL.Path == "/api/v1/devices/imports/joborg/detail":
+			resp := `{"result":{"_id":"joborg","fileName":"test.xlsx","total":1,"successNo":1,"failNo":0,"status":"success","rate":1}}`
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(resp))
+		case r.Method == http.MethodPost && r.URL.Path == "/api/v1/devices/imports/joborg":
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`{"result":"joborg"}`))
+		default:
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}))
+	defer server.Close()
+
+	f, _ := newTestFactory(t, server.URL)
+	xlsxPath := createTestXLSX(t)
+
+	cmd := NewCmdImport(f)
+	cmd.SetArgs([]string{xlsxPath, "-y", "--org", "507f1f77bcf86cd799439022"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if receivedOID != "507f1f77bcf86cd799439022" {
+		t.Errorf("expected oid=507f1f77bcf86cd799439022 in form, got %q", receivedOID)
 	}
 }
 
@@ -472,7 +548,7 @@ func TestIsTerminalStatus(t *testing.T) {
 func TestShowImportResult_Success(t *testing.T) {
 	f, errBuf := newTestFactory(t, "https://example.com")
 	job := &importJob{Status: "success", SuccessNo: 5, Total: 5}
-	err := showImportResult(f, job)
+	err := showImportResult(f, nil, job)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -490,7 +566,7 @@ func TestShowImportResult_PartialFailure(t *testing.T) {
 		FailNo:    2,
 		Result:    map[string][]int{"SERIAL_ILLEGAL": {2, 4}},
 	}
-	err := showImportResult(f, job)
+	err := showImportResult(f, nil, job)
 	if err == nil {
 		t.Fatal("expected error for partial failure")
 	}
@@ -505,7 +581,7 @@ func TestShowImportResult_PartialFailure(t *testing.T) {
 func TestShowImportResult_Cancelled(t *testing.T) {
 	f, errBuf := newTestFactory(t, "https://example.com")
 	job := &importJob{Status: "cancel", Total: 5}
-	err := showImportResult(f, job)
+	err := showImportResult(f, nil, job)
 	if err == nil {
 		t.Fatal("expected error for cancelled import")
 	}
