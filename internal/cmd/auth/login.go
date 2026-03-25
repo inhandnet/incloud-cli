@@ -33,34 +33,53 @@ func NewCmdLogin(f *factory.Factory) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "login",
 		Short: "Login via browser OAuth flow",
-		Example: `  # Quick start — just provide the host
-  incloud login --host nezha.inhand.dev
+		Example: `  # Quick start — zero config, logs into global region
+  incloud login
 
-  # Name the context for multi-environment setups
-  incloud login --context prod --host nezha.inhand.cn
+  # Login to China region
+  incloud login --host cn
 
-  # Full URL also works
-  incloud login --context dev --host https://portal.nezha.inhand.dev`,
+  # Use a named context for multi-environment setups
+  incloud login --context prod --host global
+  incloud login --context cn --host cn
+
+  # Custom domain also works
+  incloud login --host inhandcloud.com`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runLogin(f, opts)
 		},
 	}
 
 	cmd.Flags().StringVar(&opts.ContextName, "context", "default", "Context name to create/update")
-	cmd.Flags().StringVar(&opts.Host, "host", "", "Platform host URL (required)")
+	cmd.Flags().StringVar(&opts.Host, "host", "global", `Platform host or region: "global", "cn", or a custom domain`)
 	cmd.Flags().StringVar(&opts.ClientID, "client-id", "", "OAuth client ID (auto-detected from host if omitted)")
 	cmd.Flags().IntVar(&opts.Port, "port", oauthapi.DefaultPort, "Local callback server port")
 	cmd.Flags().DurationVar(&opts.Timeout, "timeout", 2*time.Minute, "Timeout waiting for browser callback")
 
-	_ = cmd.MarkFlagRequired("host")
-
 	return cmd
 }
 
-func validateHost(host string) error {
+// regionHosts maps short region names to platform domains.
+var regionHosts = map[string]string{
+	"global": "inhandcloud.com",
+	"cn":     "inhandcloud.cn",
+	"dev":    "nezha.inhand.dev",
+	"beta":   "nezha.inhand.design",
+}
+
+// resolveHost expands region short names (e.g. "cn" → "inhandcloud.cn")
+// and validates the result.
+func resolveHost(host string) (string, error) {
 	if host == "" {
-		return fmt.Errorf("host is required")
+		return "", fmt.Errorf("host is required")
 	}
+	if domain, ok := regionHosts[strings.ToLower(host)]; ok {
+		return domain, nil
+	}
+	return host, validateHost(host)
+}
+
+func validateHost(host string) error {
 	// Bare domain (no scheme) — valid
 	if !strings.Contains(host, "://") {
 		return nil
@@ -82,9 +101,11 @@ func validateHost(host string) error {
 func runLogin(f *factory.Factory, opts *LoginOptions) error {
 	out := f.IO.Out
 
-	if err := validateHost(opts.Host); err != nil {
+	host, err := resolveHost(opts.Host)
+	if err != nil {
 		return err
 	}
+	opts.Host = host
 
 	// Derive auth URL from host for OAuth endpoints
 	authURL := config.ResolveAuthURL(opts.Host)
