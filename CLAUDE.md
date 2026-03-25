@@ -103,3 +103,4 @@ delete 前先 GET 拿到名称用于确认提示；create/update 从响应体解
 
 - 实现了功能模块（或其中的子命令）后，必须同步更新 `docs/` 下对应的计划文档，将已完成的 TODO 项勾选（`- [ ]` → `- [x]`）。
 - Worktree 分支合并回 main 后，必须在 main 上跑一次 `make build && make test` 确认构建和测试通过。
+- CLI 命令变更后需同步更新 **incloud-skills**（`/Users/j3r0lin/Workspace/ai/incloud-skills`）。这是 AI 工具（如 incloud-copilot）使用 incloud-cli 的技能文档，AI 通过读取这些文档来了解 CLI 有哪些命令、怎么用、排查流程是什么。主文件 `skills/incloud/SKILL.md`（命令速查 + 工作原则），场景参考文档在 `skills/incloud/references/`（诊断、信号分析、日志分析等）。用 `/sync-skills` 触发同步流程。
