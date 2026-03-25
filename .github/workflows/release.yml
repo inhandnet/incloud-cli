@@ -1,0 +1,59 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+env:
+  GOPROXY: https://goproxy.cn,direct
+  GONOSUMDB: "*"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.25"
+      - run: CGO_ENABLED=0 go test ./... -count=1
+
+  release:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.25"
+
+      - name: Build all platforms
+        run: make build-all VERSION=${{ github.ref_name }} COMMIT=${{ github.sha }}
+
+      - name: Generate checksums
+        run: |
+          cd bin
+          sha256sum incloud-* > checksums.txt
+          cat checksums.txt
+
+      - name: Extract release notes
+        id: notes
+        run: |
+          TAG=${{ github.ref_name }}
+          if [ -f CHANGELOG.md ]; then
+            sed -n "/^# ${TAG}/,/^# v/{/^# v/!p}" CHANGELOG.md | sed '1d' > /tmp/release_notes.md
+          fi
+          if [ ! -s /tmp/release_notes.md ]; then
+            echo "Release ${TAG}" > /tmp/release_notes.md
+          fi
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          body_path: /tmp/release_notes.md
+          files: |
+            bin/incloud-*
+            bin/checksums.txt
