@@ -82,6 +82,12 @@ func (c *APIClient) Upload(path, fieldName, fileName string, reader io.Reader) (
 	return c.execute(r, resty.MethodPost, path)
 }
 
+// UploadPut performs a multipart file upload via PUT.
+func (c *APIClient) UploadPut(path, fieldName, fileName string, reader io.Reader) ([]byte, error) {
+	r := c.inner.R().SetFileReader(fieldName, fileName, reader)
+	return c.execute(r, resty.MethodPut, path)
+}
+
 // UploadWithFields performs a multipart file upload via POST with additional form fields.
 func (c *APIClient) UploadWithFields(path, fieldName, fileName string, reader io.Reader, fields map[string]string) ([]byte, error) {
 	r := c.inner.R().SetFileReader(fieldName, fileName, reader)
