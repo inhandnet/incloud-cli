@@ -2,13 +2,39 @@ package update
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"io"
 	"strings"
 	"testing"
+	"time"
 
+	"github.com/creativeprojects/go-selfupdate"
 	"github.com/inhandnet/incloud-cli/internal/factory"
 	"github.com/inhandnet/incloud-cli/internal/iostreams"
 )
+
+// mockSource implements selfupdate.Source for testing fallback behavior.
+type mockSource struct {
+	releases    []selfupdate.SourceRelease
+	listErr     error
+	downloadRC  io.ReadCloser
+	downloadErr error
+}
+
+func (m *mockSource) ListReleases(_ context.Context, _ selfupdate.Repository) ([]selfupdate.SourceRelease, error) {
+	if m.listErr != nil {
+		return nil, m.listErr
+	}
+	return m.releases, nil
+}
+
+func (m *mockSource) DownloadReleaseAsset(_ context.Context, _ *selfupdate.Release, _ int64) (io.ReadCloser, error) {
+	if m.downloadErr != nil {
+		return nil, m.downloadErr
+	}
+	return m.downloadRC, nil
+}
 
 func newTestIO() (*iostreams.IOStreams, *bytes.Buffer, *bytes.Buffer) {
 	out := &bytes.Buffer{}
@@ -152,5 +178,68 @@ func TestUpdateCommand_Flags(t *testing.T) {
 	}
 	if cmd.Flags().ShorthandLookup("o") == nil {
 		t.Error("expected short flag -o")
+	}
+}
+
+func TestFallbackSource_UsesPrimary(t *testing.T) {
+	errOut := &bytes.Buffer{}
+	primary := &mockSource{releases: []selfupdate.SourceRelease{}}
+
+	src := &fallbackSource{
+		primary:        primary,
+		fallback:       &mockSource{},
+		primaryTimeout: 5 * time.Second,
+		errOut:         errOut,
+	}
+
+	_, err := src.ListReleases(context.Background(), selfupdate.ParseSlug("owner/repo"))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if errOut.Len() > 0 {
+		t.Errorf("expected no output when primary works, got: %s", errOut.String())
+	}
+}
+
+func TestFallbackSource_FallsBack(t *testing.T) {
+	errOut := &bytes.Buffer{}
+
+	src := &fallbackSource{
+		primary:        &mockSource{listErr: io.ErrUnexpectedEOF},
+		fallback:       &mockSource{releases: []selfupdate.SourceRelease{}},
+		primaryTimeout: 5 * time.Second,
+		errOut:         errOut,
+	}
+
+	_, err := src.ListReleases(context.Background(), selfupdate.ParseSlug("owner/repo"))
+	if err != nil {
+		t.Fatalf("expected fallback to succeed, got: %v", err)
+	}
+	if !strings.Contains(errOut.String(), "alternate") {
+		t.Errorf("expected alternate source message, got: %s", errOut.String())
+	}
+}
+
+func TestFallbackSource_BothFail(t *testing.T) {
+	src := &fallbackSource{
+		primary:        &mockSource{listErr: io.ErrUnexpectedEOF},
+		fallback:       &mockSource{listErr: io.EOF},
+		primaryTimeout: 5 * time.Second,
+		errOut:         &bytes.Buffer{},
+	}
+
+	_, err := src.ListReleases(context.Background(), selfupdate.ParseSlug("owner/repo"))
+	if err == nil {
+		t.Fatal("expected error when both sources fail")
+	}
+}
+
+func TestNewSource_ReturnsFallbackSource(t *testing.T) {
+	src, err := newSource(&bytes.Buffer{})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if _, ok := src.(*fallbackSource); !ok {
+		t.Fatal("expected fallbackSource")
 	}
 }

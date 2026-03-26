@@ -57,3 +57,32 @@ jobs:
           files: |
             bin/incloud-*
             bin/checksums.txt
+
+      - name: Sync to S3 mirror (China)
+        continue-on-error: true
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_CN_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_CN_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: cn-north-1
+        run: |
+          TAG=${{ github.ref_name }}
+          BUCKET=incloud-cli-releases
+          PREFIX=inhandnet/incloud-cli
+
+          # Upload binaries and checksums
+          aws s3 cp bin/ "s3://${BUCKET}/${PREFIX}/${TAG}/" \
+            --recursive --exclude "*" --include "incloud-*" --include "checksums.txt"
+
+          # Download existing manifest or start fresh
+          aws s3 cp "s3://${BUCKET}/${PREFIX}/manifest.yaml" manifest.yaml 2>/dev/null || true
+
+          # Update manifest with new release
+          pip install pyyaml -q
+          python3 scripts/update-s3-manifest.py \
+            --tag "${TAG}" \
+            --bin-dir bin \
+            --notes-file /tmp/release_notes.md \
+            --manifest manifest.yaml
+
+          # Upload updated manifest
+          aws s3 cp manifest.yaml "s3://${BUCKET}/${PREFIX}/manifest.yaml"

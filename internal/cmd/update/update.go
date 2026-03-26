@@ -32,7 +32,7 @@ func NewCmdUpdate(f *factory.Factory) *cobra.Command {
 		Short: "Update incloud CLI to the latest version",
 		Long: `Check for and install newer versions of the incloud CLI.
 
-By default, downloads and installs the latest release from GitHub.
+By default, downloads and installs the latest release.
 Use --check to only check without installing.`,
 		Example: `  # Update to latest version
   incloud update
@@ -89,7 +89,13 @@ func runUpdate(ctx context.Context, f *factory.Factory, opts updateOptions) erro
 
 	fmt.Fprintf(io.ErrOut, "Checking for updates... current: %s\n", currentVer)
 
+	source, err := newSource(io.ErrOut)
+	if err != nil {
+		return fmt.Errorf("initializing update source: %w", err)
+	}
+
 	updater, err := selfupdate.NewUpdater(selfupdate.Config{
+		Source:    source,
 		Validator: &selfupdate.ChecksumValidator{UniqueFilename: "checksums.txt"},
 	})
 	if err != nil {
