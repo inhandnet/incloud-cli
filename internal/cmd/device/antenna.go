@@ -25,10 +25,10 @@ func NewCmdAntenna(f *factory.Factory) *cobra.Command {
 		Short: "Antenna signal data",
 		Long:  "Display per-antenna signal metrics (RSRP, RSRQ, SINR, ssRsrp, ssRsrq, ssSinr) with GPS correlation.",
 		Example: `  # Show antenna signal data for a device
-  incloud device antenna 507f1f77bcf86cd799439011 --after 2024-01-01T00:00:00 --before 2024-01-02T00:00:00
+  incloud device antenna 507f1f77bcf86cd799439011 --after 2024-01-01T00:00:00Z --before 2024-01-02T00:00:00Z
 
   # Table output with selected fields
-  incloud device antenna 507f1f77bcf86cd799439011 --after 2024-01-01T00:00:00 --before 2024-01-02T00:00:00 -o table -f time -f antenna -f rsrp`,
+  incloud device antenna 507f1f77bcf86cd799439011 --after 2024-01-01T00:00:00Z --before 2024-01-02T00:00:00Z -o table -f time -f antenna -f rsrp`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			deviceID := args[0]
@@ -52,8 +52,8 @@ func NewCmdAntenna(f *factory.Factory) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&opts.After, "after", "", "Start time (ISO 8601, e.g. 2024-01-01T00:00:00) [required]")
-	cmd.Flags().StringVar(&opts.Before, "before", "", "End time (ISO 8601, e.g. 2024-01-02T00:00:00) [required]")
+	cmd.Flags().StringVar(&opts.After, "after", "", "Start time (ISO 8601, e.g. 2024-01-01T00:00:00Z) [required]")
+	cmd.Flags().StringVar(&opts.Before, "before", "", "End time (ISO 8601, e.g. 2024-01-02T00:00:00Z) [required]")
 	cmd.Flags().StringSliceVarP(&opts.Fields, "fields", "f", nil, "Fields to display in table mode")
 	_ = cmd.MarkFlagRequired("after")
 	_ = cmd.MarkFlagRequired("before")

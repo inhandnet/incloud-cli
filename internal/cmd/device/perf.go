@@ -47,7 +47,7 @@ With --refresh, triggers a real-time collection from the device (online only).`,
   incloud device perf 507f1f77bcf86cd799439011 --refresh
 
   # Historical time series
-  incloud device perf 507f1f77bcf86cd799439011 --after 2024-01-01T00:00:00 --before 2024-01-02T00:00:00
+  incloud device perf 507f1f77bcf86cd799439011 --after 2024-01-01T00:00:00Z --before 2024-01-02T00:00:00Z
 
   # Select specific fields
   incloud device perf 507f1f77bcf86cd799439011 -f cpu.usage -f memory.free -f memory.total
@@ -65,8 +65,8 @@ With --refresh, triggers a real-time collection from the device (online only).`,
 		},
 	}
 
-	cmd.Flags().StringVar(&opts.After, "after", "", "Start time (ISO 8601, e.g. 2024-01-01T00:00:00)")
-	cmd.Flags().StringVar(&opts.Before, "before", "", "End time (ISO 8601, e.g. 2024-01-02T00:00:00)")
+	cmd.Flags().StringVar(&opts.After, "after", "", "Start time (ISO 8601, e.g. 2024-01-01T00:00:00Z)")
+	cmd.Flags().StringVar(&opts.Before, "before", "", "End time (ISO 8601, e.g. 2024-01-02T00:00:00Z)")
 	cmd.Flags().BoolVar(&opts.Refresh, "refresh", false, "Trigger real-time collection (device must be online)")
 	cmd.Flags().StringSliceVarP(&opts.Fields, "fields", "f", nil, "Fields to display in table mode")
 

@@ -17,7 +17,7 @@ func newCmdDatausageHourly(f *factory.Factory) *cobra.Command {
   incloud device datausage hourly 507f1f77bcf86cd799439011
 
   # Filter by time range
-  incloud device datausage hourly 507f1f77bcf86cd799439011 --after 2024-03-01T00:00:00 --before 2024-03-02T00:00:00
+  incloud device datausage hourly 507f1f77bcf86cd799439011 --after 2024-03-01T00:00:00Z --before 2024-03-02T00:00:00Z
 
   # Filter by traffic type
   incloud device datausage hourly 507f1f77bcf86cd799439011 --type all
@@ -31,8 +31,8 @@ func newCmdDatausageHourly(f *factory.Factory) *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&opts.Type, "type", "", "Traffic type: cellular (default), wired, wireless, sim, esim, all, etc.")
-	cmd.Flags().StringVar(&opts.After, "after", "", "Start time (ISO 8601, e.g. 2024-01-01T00:00:00)")
-	cmd.Flags().StringVar(&opts.Before, "before", "", "End time (ISO 8601, e.g. 2024-01-02T00:00:00)")
+	cmd.Flags().StringVar(&opts.After, "after", "", "Start time (ISO 8601, e.g. 2024-01-01T00:00:00Z)")
+	cmd.Flags().StringVar(&opts.Before, "before", "", "End time (ISO 8601, e.g. 2024-01-02T00:00:00Z)")
 	cmd.Flags().StringSliceVarP(&opts.Fields, "fields", "f", nil, "Fields to display in table mode")
 
 	return cmd

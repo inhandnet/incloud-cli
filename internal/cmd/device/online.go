@@ -36,13 +36,13 @@ Use --daily to show daily offline statistics instead (last 30 days).`,
   incloud device online 507f1f77bcf86cd799439011
 
   # Filter by time range
-  incloud device online 507f1f77bcf86cd799439011 --after 2025-01-01T00:00:00 --before 2025-01-31T23:59:59
+  incloud device online 507f1f77bcf86cd799439011 --after 2025-01-01T00:00:00Z --before 2025-01-31T23:59:59Z
 
   # Daily offline statistics
   incloud device online 507f1f77bcf86cd799439011 --daily
 
   # Daily stats for a specific month
-  incloud device online 507f1f77bcf86cd799439011 --daily --after 2025-03-01T00:00:00 --before 2025-03-31T00:00:00`,
+  incloud device online 507f1f77bcf86cd799439011 --daily --after 2025-03-01T00:00:00Z --before 2025-03-31T00:00:00Z`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if opts.Daily {
@@ -55,8 +55,8 @@ Use --daily to show daily offline statistics instead (last 30 days).`,
 	cmd.Flags().BoolVar(&opts.Daily, "daily", false, "Show daily offline statistics instead of individual events")
 	cmd.Flags().IntVar(&opts.Page, "page", 1, "Page number, starting from 1 (events mode only)")
 	cmd.Flags().IntVar(&opts.Limit, "limit", 20, "Number of items per page (events mode only)")
-	cmd.Flags().StringVar(&opts.After, "after", "", "Start time (ISO 8601, e.g. 2025-01-01T00:00:00)")
-	cmd.Flags().StringVar(&opts.Before, "before", "", "End time (ISO 8601, e.g. 2025-01-31T23:59:59)")
+	cmd.Flags().StringVar(&opts.After, "after", "", "Start time (ISO 8601, e.g. 2025-01-01T00:00:00Z)")
+	cmd.Flags().StringVar(&opts.Before, "before", "", "End time (ISO 8601, e.g. 2025-01-31T23:59:59Z)")
 	cmd.Flags().StringSliceVarP(&opts.Fields, "fields", "f", nil, "Fields to display in table mode")
 
 	return cmd

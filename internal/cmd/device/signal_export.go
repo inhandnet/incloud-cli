@@ -27,7 +27,7 @@ func newCmdSignalExport(f *factory.Factory) *cobra.Command {
   incloud device signal export 507f1f77bcf86cd799439011 --file signal.xlsx
 
   # Export with time range
-  incloud device signal export 507f1f77bcf86cd799439011 --after 2024-01-01T00:00:00 --before 2024-01-07T00:00:00 --file signal.xlsx
+  incloud device signal export 507f1f77bcf86cd799439011 --after 2024-01-01T00:00:00Z --before 2024-01-07T00:00:00Z --file signal.xlsx
 
   # Export to stdout (pipe to file)
   incloud device signal export 507f1f77bcf86cd799439011 > signal.xlsx`,
@@ -66,8 +66,8 @@ func newCmdSignalExport(f *factory.Factory) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&opts.After, "after", "", "Start time (ISO 8601, e.g. 2024-01-01T00:00:00)")
-	cmd.Flags().StringVar(&opts.Before, "before", "", "End time (ISO 8601, e.g. 2024-01-02T00:00:00)")
+	cmd.Flags().StringVar(&opts.After, "after", "", "Start time (ISO 8601, e.g. 2024-01-01T00:00:00Z)")
+	cmd.Flags().StringVar(&opts.Before, "before", "", "End time (ISO 8601, e.g. 2024-01-02T00:00:00Z)")
 	cmd.Flags().StringVar(&opts.File, "file", "", "Write output to file instead of stdout")
 
 	return cmd

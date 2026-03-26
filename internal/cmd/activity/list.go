@@ -48,7 +48,7 @@ func NewCmdList(f *factory.Factory) *cobra.Command {
   incloud activity list --actor 5f1e5605cf562757b857a7b9
 
   # Filter by time range
-  incloud activity list --after 2024-01-01T00:00:00 --before 2024-01-31T23:59:59
+  incloud activity list --after 2024-01-01T00:00:00Z --before 2024-01-31T23:59:59Z
 
   # Filter by application
   incloud activity list --app nezha
@@ -60,7 +60,7 @@ func NewCmdList(f *factory.Factory) *cobra.Command {
   incloud activity list -o table -f action -f actor.name -f entity.name
 
   # Count activity logs in a time range
-  incloud activity list --after 2024-01-01T00:00:00 --count`,
+  incloud activity list --after 2024-01-01T00:00:00Z --count`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := f.APIClient()
 			if err != nil {
@@ -123,8 +123,8 @@ func NewCmdList(f *factory.Factory) *cobra.Command {
 	cmd.Flags().IntVar(&opts.Page, "page", 1, "Page number (starting from 1)")
 	cmd.Flags().IntVar(&opts.Limit, "limit", 20, "Number of items per page")
 	cmd.Flags().StringVar(&opts.Sort, "sort", "", `Sort order (e.g. "timestamp,desc")`)
-	cmd.Flags().StringVar(&opts.After, "after", "", "Filter logs after this time (e.g. 2024-01-01T00:00:00)")
-	cmd.Flags().StringVar(&opts.Before, "before", "", "Filter logs before this time (e.g. 2024-01-31T23:59:59)")
+	cmd.Flags().StringVar(&opts.After, "after", "", "Filter logs after this time (e.g. 2024-01-01T00:00:00Z)")
+	cmd.Flags().StringVar(&opts.Before, "before", "", "Filter logs before this time (e.g. 2024-01-31T23:59:59Z)")
 	cmd.Flags().StringVar(&opts.App, "app", "", "Filter by application name")
 	cmd.Flags().StringVar(&opts.Action, "action", "", "Filter by action type (e.g. device_created, device_deleted)")
 	cmd.Flags().StringVar(&opts.Actor, "actor", "", "Filter by actor ID")

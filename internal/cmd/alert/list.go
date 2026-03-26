@@ -56,7 +56,7 @@ func NewCmdList(f *factory.Factory) *cobra.Command {
   incloud alert list --device 507f1f77bcf86cd799439011
 
   # Filter by time range
-  incloud alert list --after 2024-01-01T00:00:00 --before 2024-01-31T23:59:59
+  incloud alert list --after 2024-01-01T00:00:00Z --before 2024-01-31T23:59:59Z
 
   # Filter by alert type (use 'incloud alert rule types' to list available types)
   incloud alert list --type disconnected --type reboot
@@ -136,8 +136,8 @@ func NewCmdList(f *factory.Factory) *cobra.Command {
 	cmd.Flags().IntVar(&opts.Page, "page", 1, "Page number (starting from 1)")
 	cmd.Flags().IntVar(&opts.Limit, "limit", 20, "Number of items per page")
 	cmd.Flags().StringVar(&opts.Sort, "sort", "", `Sort order (e.g. "createdAt,desc")`)
-	cmd.Flags().StringVar(&opts.After, "after", "", "Filter alerts after this time (e.g. 2024-01-01T00:00:00)")
-	cmd.Flags().StringVar(&opts.Before, "before", "", "Filter alerts before this time (e.g. 2024-01-31T23:59:59)")
+	cmd.Flags().StringVar(&opts.After, "after", "", "Filter alerts after this time (e.g. 2024-01-01T00:00:00Z)")
+	cmd.Flags().StringVar(&opts.Before, "before", "", "Filter alerts before this time (e.g. 2024-01-31T23:59:59Z)")
 	cmd.Flags().StringVar(&opts.Status, "status", "", "Filter by status (ACTIVE/CLOSED)")
 	cmd.Flags().IntVar(&opts.Priority, "priority", 0, "Filter by priority level")
 	cmd.Flags().StringVar(&opts.Device, "device", "", "Filter by device ID")

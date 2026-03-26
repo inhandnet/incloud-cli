@@ -23,7 +23,7 @@ func newCmdAccountLogs(f *factory.Factory) *cobra.Command {
 		Use:   "logs <network-id> <account-id>",
 		Short: "Show account connection logs",
 		Example: `  # Show connection logs
-  incloud connector account logs <network-id> <account-id> --after 2025-01-01T00:00:00 --before 2025-01-31T23:59:59`,
+  incloud connector account logs <network-id> <account-id> --after 2025-01-01T00:00:00Z --before 2025-01-31T23:59:59Z`,
 		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			networkID, accountID := args[0], args[1]

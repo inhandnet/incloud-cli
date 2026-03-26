@@ -20,7 +20,7 @@ func newCmdAccountEvents(f *factory.Factory) *cobra.Command {
 		Use:   "events <network-id> <account-id>",
 		Short: "Show account online/offline events",
 		Example: `  # Show events in a time range
-  incloud connector account events <network-id> <account-id> --after 2025-01-01T00:00:00 --before 2025-01-31T23:59:59`,
+  incloud connector account events <network-id> <account-id> --after 2025-01-01T00:00:00Z --before 2025-01-31T23:59:59Z`,
 		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			networkID, accountID := args[0], args[1]

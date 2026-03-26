@@ -36,7 +36,7 @@ func NewCmdLogMqtt(f *factory.Factory) *cobra.Command {
   incloud device log mqtt 507f1f77bcf86cd799439011
 
   # Filter by time range
-  incloud device log mqtt 507f1f77bcf86cd799439011 --after 2024-01-01T00:00:00 --before 2024-01-02T00:00:00
+  incloud device log mqtt 507f1f77bcf86cd799439011 --after 2024-01-01T00:00:00Z --before 2024-01-02T00:00:00Z
 
   # Filter by message type
   incloud device log mqtt 507f1f77bcf86cd799439011 --type publish
@@ -99,8 +99,8 @@ func NewCmdLogMqtt(f *factory.Factory) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&opts.After, "after", "", "Start time (ISO 8601, e.g. 2024-01-01T00:00:00)")
-	cmd.Flags().StringVar(&opts.Before, "before", "", "End time (ISO 8601, e.g. 2024-01-02T00:00:00)")
+	cmd.Flags().StringVar(&opts.After, "after", "", "Start time (ISO 8601, e.g. 2024-01-01T00:00:00Z)")
+	cmd.Flags().StringVar(&opts.Before, "before", "", "End time (ISO 8601, e.g. 2024-01-02T00:00:00Z)")
 	cmd.Flags().StringVar(&opts.Type, "type", "", "Filter by log type: publish, connected, disconnected")
 	cmd.Flags().StringVar(&opts.Topic, "topic", "", "Filter by MQTT topic (regex)")
 	cmd.Flags().IntVar(&opts.Limit, "limit", 20, "Number of results per page")

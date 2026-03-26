@@ -29,7 +29,7 @@ func newCmdUplinkPerf(f *factory.Factory) *cobra.Command {
   incloud device uplink perf 507f1f77bcf86cd799439011 --name wan1
 
   # Filter by time range
-  incloud device uplink perf 507f1f77bcf86cd799439011 --name cellular1 --after 2024-01-01T00:00:00 --before 2024-01-02T00:00:00
+  incloud device uplink perf 507f1f77bcf86cd799439011 --name cellular1 --after 2024-01-01T00:00:00Z --before 2024-01-02T00:00:00Z
 
   # JSON output
   incloud device uplink perf 507f1f77bcf86cd799439011 --name wan1 -o json`,
@@ -77,8 +77,8 @@ func newCmdUplinkPerf(f *factory.Factory) *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&opts.Name, "name", "", "Uplink name (required, e.g. wan1, cellular1)")
-	cmd.Flags().StringVar(&opts.After, "after", "", "Start time (ISO 8601, e.g. 2024-01-01T00:00:00)")
-	cmd.Flags().StringVar(&opts.Before, "before", "", "End time (ISO 8601, e.g. 2024-01-02T00:00:00)")
+	cmd.Flags().StringVar(&opts.After, "after", "", "Start time (ISO 8601, e.g. 2024-01-01T00:00:00Z)")
+	cmd.Flags().StringVar(&opts.Before, "before", "", "End time (ISO 8601, e.g. 2024-01-02T00:00:00Z)")
 	cmd.Flags().StringSliceVarP(&opts.Fields, "fields", "f", nil, "Fields to display in table mode")
 	_ = cmd.MarkFlagRequired("name")
 

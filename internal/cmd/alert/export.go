@@ -40,7 +40,7 @@ func NewCmdExport(f *factory.Factory) *cobra.Command {
   incloud alert export --ack false -f unacked.csv
 
   # Export alerts within a time range
-  incloud alert export --after 2024-01-01T00:00:00 --before 2024-01-31T23:59:59
+  incloud alert export --after 2024-01-01T00:00:00Z --before 2024-01-31T23:59:59Z
 
   # Pipe to other commands
   incloud alert export | head -20`,
@@ -75,8 +75,8 @@ func NewCmdExport(f *factory.Factory) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&opts.After, "after", "", "Filter alerts after this time (e.g. 2024-01-01T00:00:00)")
-	cmd.Flags().StringVar(&opts.Before, "before", "", "Filter alerts before this time (e.g. 2024-01-31T23:59:59)")
+	cmd.Flags().StringVar(&opts.After, "after", "", "Filter alerts after this time (e.g. 2024-01-01T00:00:00Z)")
+	cmd.Flags().StringVar(&opts.Before, "before", "", "Filter alerts before this time (e.g. 2024-01-31T23:59:59Z)")
 	cmd.Flags().StringVar(&opts.Status, "status", "", "Filter by status (ACTIVE/CLOSED)")
 	cmd.Flags().IntVar(&opts.Priority, "priority", 0, "Filter by priority level")
 	cmd.Flags().StringVar(&opts.Device, "device", "", "Filter by device ID")
