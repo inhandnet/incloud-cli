@@ -512,6 +512,7 @@ func TestClientSubcommands(t *testing.T) {
 		"throughput": false, "rssi": false, "sinr": false,
 		"datausage-hourly": false, "datausage-daily": false,
 		"online-events": false, "online-stats": false,
+		"mark-asset": false, "set-pos-ready": false,
 	}
 
 	for _, sub := range cmd.Commands() {
@@ -524,5 +525,111 @@ func TestClientSubcommands(t *testing.T) {
 		if !found {
 			t.Errorf("missing subcommand: %s", name)
 		}
+	}
+}
+
+// --- set-pos-ready ---
+
+func TestClientSetPosReady_Basic(t *testing.T) {
+	var gotPath, gotMethod string
+	var gotBody map[string]interface{}
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotPath = r.URL.Path
+		gotMethod = r.Method
+		json.NewDecoder(r.Body).Decode(&gotBody)
+		json.NewEncoder(w).Encode(map[string]interface{}{"code": 200})
+	}))
+	defer srv.Close()
+
+	f, errBuf := newTestFactory(t, srv.URL)
+	root := newClientRoot(f)
+	root.SetArgs([]string{"client", "set-pos-ready", "dev123", "--mac", "FC:5C:EE:8C:90:93", "--enabled"})
+	if err := root.Execute(); err != nil {
+		t.Fatalf("set-pos-ready: %v", err)
+	}
+
+	if gotPath != "/api/v1/network/devices/dev123/clients/pos-ready" {
+		t.Errorf("path = %q, want /api/v1/network/devices/dev123/clients/pos-ready", gotPath)
+	}
+	if gotMethod != "POST" {
+		t.Errorf("method = %q, want POST", gotMethod)
+	}
+	if gotBody["mac"] != "FC:5C:EE:8C:90:93" {
+		t.Errorf("body.mac = %v, want FC:5C:EE:8C:90:93", gotBody["mac"])
+	}
+	if gotBody["enabled"] != true {
+		t.Errorf("body.enabled = %v, want true", gotBody["enabled"])
+	}
+	if !strings.Contains(errBuf.String(), "POS Ready enabled") {
+		t.Errorf("unexpected stderr: %s", errBuf.String())
+	}
+}
+
+func TestClientSetPosReady_Disable(t *testing.T) {
+	var gotBody map[string]interface{}
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		json.NewDecoder(r.Body).Decode(&gotBody)
+		json.NewEncoder(w).Encode(map[string]interface{}{"code": 200})
+	}))
+	defer srv.Close()
+
+	f, errBuf := newTestFactory(t, srv.URL)
+	root := newClientRoot(f)
+	root.SetArgs([]string{"client", "set-pos-ready", "dev123", "--mac", "AA:BB:CC:DD:EE:FF", "--enabled=false"})
+	if err := root.Execute(); err != nil {
+		t.Fatalf("set-pos-ready disable: %v", err)
+	}
+
+	if gotBody["enabled"] != false {
+		t.Errorf("body.enabled = %v, want false", gotBody["enabled"])
+	}
+	if !strings.Contains(errBuf.String(), "POS Ready disabled") {
+		t.Errorf("unexpected stderr: %s", errBuf.String())
+	}
+}
+
+func TestClientSetPosReady_RequiresMac(t *testing.T) {
+	f, _ := newTestFactory(t, "https://example.com")
+	root := newClientRoot(f)
+	root.SetArgs([]string{"client", "set-pos-ready", "dev123", "--enabled"})
+	if err := root.Execute(); err == nil {
+		t.Fatal("expected error for missing --mac")
+	}
+}
+
+func TestClientSetPosReady_RequiresEnabled(t *testing.T) {
+	f, _ := newTestFactory(t, "https://example.com")
+	root := newClientRoot(f)
+	root.SetArgs([]string{"client", "set-pos-ready", "dev123", "--mac", "AA:BB:CC:DD:EE:FF"})
+	if err := root.Execute(); err == nil {
+		t.Fatal("expected error for missing --enabled")
+	}
+}
+
+func TestClientSetPosReady_RequiresDeviceID(t *testing.T) {
+	f, _ := newTestFactory(t, "https://example.com")
+	root := newClientRoot(f)
+	root.SetArgs([]string{"client", "set-pos-ready"})
+	if err := root.Execute(); err == nil {
+		t.Fatal("expected error for missing device-id")
+	}
+}
+
+func TestClientSetPosReady_HTTPError(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte(`{"error":"device does not support star_pos_ready"}`))
+	}))
+	defer srv.Close()
+
+	f, _ := newTestFactory(t, srv.URL)
+	root := newClientRoot(f)
+	root.SetArgs([]string{"client", "set-pos-ready", "dev123", "--mac", "AA:BB:CC:DD:EE:FF", "--enabled"})
+	err := root.Execute()
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	if !strings.Contains(err.Error(), "400") {
+		t.Errorf("expected 400 in error, got: %v", err)
 	}
 }

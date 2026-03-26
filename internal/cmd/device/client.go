@@ -27,6 +27,7 @@ func NewCmdClient(f *factory.Factory) *cobra.Command {
 	cmd.AddCommand(newCmdClientOnlineEvents(f))
 	cmd.AddCommand(newCmdClientOnlineStats(f))
 	cmd.AddCommand(newCmdClientMarkAsset(f))
+	cmd.AddCommand(newCmdClientSetPosReady(f))
 
 	return cmd
 }
