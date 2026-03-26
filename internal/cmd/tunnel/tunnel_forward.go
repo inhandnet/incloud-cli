@@ -39,7 +39,9 @@ func NewCmdTunnelForward(f *factory.Factory) *cobra.Command {
 		Long: `Forward an existing tunnel to a local TCP port.
 
 Connects to the tunnel via TLS and starts a local TCP listener.
-Connect to the local port with ssh, telnet, or any TCP client.
+Connect to the local port with ssh, telnet, curl, or any TCP client.
+
+Works with tunnels created by any command: open-cli, open-web, oobm connect, etc.
 
 Press Ctrl+C to stop.`,
 		Example: `  # Forward a tunnel to a random local port
@@ -49,7 +51,12 @@ Press Ctrl+C to stop.`,
   incloud tunnel forward nhcqr3rzpxqfiviqdu3c7x4o --port 2222
 
   # Forward with token (required when server has JWT enabled)
-  incloud tunnel forward nhcqr3rzpxqfiviqdu3c7x4o --token <jwt>`,
+  incloud tunnel forward nhcqr3rzpxqfiviqdu3c7x4o --token <jwt>
+
+  # Use with OOBM: connect a resource, then forward its tunnel
+  incloud oobm connect <resource-id> --service ssh:22:cli -o json
+  incloud tunnel forward <tunnelId-from-output> --token <token-from-output> --port 2222
+  ssh root@localhost -p 2222`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, err := f.Config()

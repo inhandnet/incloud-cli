@@ -23,12 +23,20 @@ func NewCmdOobmConnect(f *factory.Factory) *cobra.Command {
 		Long: `Connect an Out-of-Band Management resource to establish remote access tunnels.
 
 Without --service, all services defined on the resource are connected.
-Use --service to connect only specific services (protocol:port[:usage] format).`,
+Use --service to connect only specific services (protocol:port[:usage] format).
+
+The response includes tunnelId and token. Use 'incloud tunnel forward' to
+forward the tunnel to a local port for direct ssh/telnet/curl access.`,
 		Example: `  # Connect all services on the resource
   incloud oobm connect 507f1f77bcf86cd799439011
 
   # Connect only SSH service
-  incloud oobm connect 507f1f77bcf86cd799439011 --service ssh:22:cli`,
+  incloud oobm connect 507f1f77bcf86cd799439011 --service ssh:22:cli
+
+  # Forward to local port for direct access
+  incloud oobm connect 507f1f77bcf86cd799439011 --service ssh:22:cli -o json
+  incloud tunnel forward <tunnelId> --token <token> --port 2222
+  ssh root@localhost -p 2222`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			id := args[0]
