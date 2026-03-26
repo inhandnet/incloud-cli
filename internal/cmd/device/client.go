@@ -26,6 +26,7 @@ func NewCmdClient(f *factory.Factory) *cobra.Command {
 	cmd.AddCommand(newCmdClientDatausageDaily(f))
 	cmd.AddCommand(newCmdClientOnlineEvents(f))
 	cmd.AddCommand(newCmdClientOnlineStats(f))
+	cmd.AddCommand(newCmdClientMarkAsset(f))
 
 	return cmd
 }

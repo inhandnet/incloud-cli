@@ -36,6 +36,36 @@ var sampleClient = map[string]interface{}{
 	"createdAt": "2026-03-17T03:06:30Z",
 }
 
+func TestClientMarkAsset(t *testing.T) {
+	var gotPath, gotMethod string
+	var gotBody map[string]interface{}
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotPath = r.URL.Path
+		gotMethod = r.Method
+		json.NewDecoder(r.Body).Decode(&gotBody)
+		json.NewEncoder(w).Encode(map[string]interface{}{"code": 200})
+	}))
+	defer srv.Close()
+
+	f, _ := newTestFactory(t, srv.URL)
+	root := newClientRoot(f)
+	root.SetArgs([]string{"client", "mark-asset", "c1", "c2"})
+	if err := root.Execute(); err != nil {
+		t.Fatalf("client mark-asset: %v", err)
+	}
+
+	if gotPath != "/api/v1/network/clients/mark-assets" {
+		t.Errorf("path = %q, want /api/v1/network/clients/mark-assets", gotPath)
+	}
+	if gotMethod != "PUT" {
+		t.Errorf("method = %q, want PUT", gotMethod)
+	}
+	ids, ok := gotBody["ids"].([]interface{})
+	if !ok || len(ids) != 2 {
+		t.Errorf("body.ids = %v, want [c1 c2]", gotBody["ids"])
+	}
+}
+
 var seriesResponse = map[string]interface{}{
 	"result": map[string]interface{}{
 		"series": []interface{}{
