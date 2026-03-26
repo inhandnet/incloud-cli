@@ -35,18 +35,24 @@ func NewCmdLogSyslog(f *factory.Factory) *cobra.Command {
 
 By default, queries syslog already uploaded to the platform (requires --after and --before).
 With --fetch, actively requests the device to upload its current syslog; --after defaults to
-start of today (UTC) and --before defaults to now if not specified.`,
-		Example: `  # Query stored syslog for a time range
-  incloud device log syslog 60af...id --after 2024-01-01T00:00:00 --before 2024-01-01T01:00:00
+start of today (UTC) and --before defaults to now if not specified.
 
-  # Actively fetch latest syslog from device (last 15 minutes)
+Time values without timezone suffix are treated as local time and converted to UTC.
+You can also use explicit UTC ("Z") or timezone offsets ("+08:00").`,
+		Example: `  # Query with local time (converted to UTC automatically)
+  incloud device log syslog 60af...id --after 2024-01-01T08:00:00 --before 2024-01-01T09:00:00
+
+  # Query with explicit UTC time
+  incloud device log syslog 60af...id --after 2024-01-01T00:00:00Z --before 2024-01-01T01:00:00Z
+
+  # Actively fetch latest syslog from device
   incloud device log syslog 60af...id --fetch
 
   # Fetch syslog for a specific time range from device
-  incloud device log syslog 60af...id --fetch --after 2024-01-01T00:00:00 --before 2024-01-01T01:00:00
+  incloud device log syslog 60af...id --fetch --after 2024-01-01T08:00:00 --before 2024-01-01T09:00:00
 
   # Filter by keywords
-  incloud device log syslog 60af...id --after 2024-01-01T00:00:00 --before 2024-01-01T01:00:00 --keywords error --keywords warning`,
+  incloud device log syslog 60af...id --after 2024-01-01T08:00:00 --before 2024-01-01T09:00:00 --keywords error --keywords warning`,
 		Args: cobra.ExactArgs(1),
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			if !opts.Fetch {
@@ -116,8 +122,8 @@ start of today (UTC) and --before defaults to now if not specified.`,
 		},
 	}
 
-	cmd.Flags().StringVar(&opts.After, "after", "", "Start time in ISO 8601 format (required without --fetch)")
-	cmd.Flags().StringVar(&opts.Before, "before", "", "End time in ISO 8601 format (required without --fetch)")
+	cmd.Flags().StringVar(&opts.After, "after", "", "Start time, e.g. 2024-01-01T08:00:00 (local) or 2024-01-01T00:00:00Z (UTC)")
+	cmd.Flags().StringVar(&opts.Before, "before", "", "End time, e.g. 2024-01-01T09:00:00 (local) or 2024-01-01T01:00:00Z (UTC)")
 	cmd.Flags().StringSliceVar(&opts.Keywords, "keywords", nil, "Filter by keywords")
 	cmd.Flags().IntVar(&opts.Limit, "limit", 10000, "Maximum number of log lines")
 	cmd.Flags().BoolVar(&opts.Fetch, "fetch", false, "Actively request syslog from device (--after defaults to start of today)")
