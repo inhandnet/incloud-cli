@@ -15,6 +15,7 @@ func NewCmdTunnel(f *factory.Factory) *cobra.Command {
 
 	cmd.AddCommand(NewCmdTunnelOpenWeb(f))
 	cmd.AddCommand(NewCmdTunnelOpenCli(f))
+	cmd.AddCommand(NewCmdTunnelForward(f))
 	cmd.AddCommand(NewCmdTunnelClose(f))
 	cmd.AddCommand(NewCmdTunnelLogs(f))
 

@@ -49,6 +49,15 @@ func (c *Context) baseDomain() string {
 	return h
 }
 
+// NgrokHost returns the hostname for the ngrok tunnel service.
+// For IP-based hosts, returns the host part without scheme.
+func (c *Context) NgrokHost() string {
+	if c.isIPHost() {
+		return stripScheme(c.Host)
+	}
+	return "ngrok." + c.baseDomain()
+}
+
 // APIURL returns the URL for the API service (star).
 // For IP-based hosts (e.g. test servers), returns the original Host unchanged.
 func (c *Context) APIURL() string {
