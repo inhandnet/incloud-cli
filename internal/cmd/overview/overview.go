@@ -23,6 +23,7 @@ func NewCmdOverview(f *factory.Factory) *cobra.Command {
 	cmd.AddCommand(NewCmdAlerts(f))
 	cmd.AddCommand(NewCmdTraffic(f))
 	cmd.AddCommand(NewCmdOffline(f))
+	cmd.AddCommand(NewCmdTrend(f))
 
 	return cmd
 }
