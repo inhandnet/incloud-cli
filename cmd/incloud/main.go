@@ -26,6 +26,7 @@ import (
 	updateCmd "github.com/inhandnet/incloud-cli/internal/cmd/update"
 	userCmd "github.com/inhandnet/incloud-cli/internal/cmd/user"
 	versionCmd "github.com/inhandnet/incloud-cli/internal/cmd/version"
+	webhookCmd "github.com/inhandnet/incloud-cli/internal/cmd/webhook"
 	"github.com/inhandnet/incloud-cli/internal/factory"
 )
 
@@ -50,6 +51,7 @@ func main() {
 	rootCmd.AddCommand(updateCmd.NewCmdUpdate(f))
 	rootCmd.AddCommand(userCmd.NewCmdUser(f))
 	rootCmd.AddCommand(versionCmd.NewCmdVersion(f))
+	rootCmd.AddCommand(webhookCmd.NewCmdWebhook(f))
 
 	// Top-level shortcuts: `incloud login` → `incloud auth login`
 	loginAlias := authCmd.NewCmdLogin(f)
