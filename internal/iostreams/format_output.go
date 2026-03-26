@@ -43,7 +43,7 @@ func FormatOutput(body []byte, io *IOStreams, output string, fields []string, op
 
 	// --jq overrides output mode: apply expression on unwrapped data
 	if io.JQExpr != "" {
-		result, err := ApplyJQ(unwrapResult(body), io.JQExpr)
+		result, err := ApplyJQ(unwrapResult(normalizePage(body)), io.JQExpr)
 		if err != nil {
 			return err
 		}
@@ -68,19 +68,42 @@ func FormatOutput(body []byte, io *IOStreams, output string, fields []string, op
 		}
 		return FormatTable(data, io, fields)
 	case "yaml":
-		s, err := FormatYAML(unwrapResult(body))
+		s, err := FormatYAML(unwrapResult(normalizePage(body)))
 		if err != nil {
 			return err
 		}
 		fmt.Fprintln(io.Out, s)
 	default:
 		if json.Valid(body) {
-			fmt.Fprintln(io.Out, FormatJSON(unwrapResult(body), io, output))
+			fmt.Fprintln(io.Out, FormatJSON(unwrapResult(normalizePage(body)), io, output))
 		} else {
 			fmt.Fprintln(io.Out, string(body))
 		}
 	}
 	return nil
+}
+
+// normalizePage converts the 0-based "page" field in pagination envelopes
+// to 1-based, matching the CLI's --page flag convention.
+func normalizePage(data []byte) []byte {
+	var raw map[string]json.RawMessage
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return data
+	}
+	pageRaw, ok := raw["page"]
+	if !ok {
+		return data
+	}
+	var page int
+	if err := json.Unmarshal(pageRaw, &page); err != nil {
+		return data
+	}
+	raw["page"], _ = json.Marshal(page + 1)
+	out, err := json.Marshal(raw)
+	if err != nil {
+		return data
+	}
+	return out
 }
 
 // unwrapResult strips the envelope when the JSON object has "result" as its
