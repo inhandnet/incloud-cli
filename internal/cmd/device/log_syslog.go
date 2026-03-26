@@ -18,6 +18,7 @@ type LogSyslogOptions struct {
 	Keywords []string
 	Limit    int
 	Fetch    bool
+	Timeout  int
 }
 
 type syslogResponse struct {
@@ -44,6 +45,9 @@ start of today (UTC) and --before defaults to now if not specified.`,
 
   # Fetch syslog for a specific time range from device
   incloud device log syslog 60af...id --fetch --after 2024-01-01T00:00:00Z --before 2024-01-01T01:00:00Z
+
+  # Fetch with a longer timeout (default 40s)
+  incloud device log syslog 60af...id --fetch --timeout 120
 
   # Filter by keywords
   incloud device log syslog 60af...id --after 2024-01-01T00:00:00Z --before 2024-01-01T01:00:00Z --keywords error --keywords warning`,
@@ -81,7 +85,7 @@ start of today (UTC) and --before defaults to now if not specified.`,
 					after = time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC).
 						Format(time.RFC3339)
 				}
-				fmt.Fprintln(f.IO.ErrOut, "Requesting syslog from device (waits up to 40s for device to upload)...")
+				fmt.Fprintf(f.IO.ErrOut, "Requesting syslog from device (waits up to %ds for device to upload)...\n", opts.Timeout)
 			}
 
 			q := url.Values{}
@@ -95,6 +99,7 @@ start of today (UTC) and --before defaults to now if not specified.`,
 
 			if opts.Fetch {
 				q.Set("fetchRealtime", "true")
+				q.Set("timeout", strconv.Itoa(opts.Timeout))
 			} else {
 				q.Set("fetchRealtime", "false")
 			}
@@ -121,6 +126,7 @@ start of today (UTC) and --before defaults to now if not specified.`,
 	cmd.Flags().StringSliceVar(&opts.Keywords, "keywords", nil, "Filter by keywords")
 	cmd.Flags().IntVar(&opts.Limit, "limit", 10000, "Maximum number of log lines")
 	cmd.Flags().BoolVar(&opts.Fetch, "fetch", false, "Actively request syslog from device (--after defaults to start of today)")
+	cmd.Flags().IntVar(&opts.Timeout, "timeout", 40, "Timeout in seconds for device to upload syslog (only with --fetch)")
 
 	return cmd
 }
