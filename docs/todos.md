@@ -360,7 +360,7 @@
 
 > 隧道创建由 Go 微服务 `ngrok` 负责，日志查询由 Java 微服务 `nezha-network` 负责
 
-### POST /api/v1/ngrok/devices/{id}/local-web — 创建 Web 访问隧道
+### POST /api/v1/ngrok/devices/{id}/local-web — 创建 Web 访问隧道 ✅ `incloud tunnel open-web`
 
 - **作用**: 为设备创建 Web UI 访问隧道
 - **使用背景**: 设备列表/详情页"远程访问" → "Device Web UI"
@@ -368,7 +368,7 @@
 - **后端实现**: `ngrok`(Go) → `localTunnel()`，protocol="local_web"，选择最优节点 → 调用设备 `nezha_ngrok` 方法 → 返回 HTTPS URL + token
 - **备注**: 关闭时调用 DELETE tunnels/{id}
 
-### POST /api/v1/ngrok/devices/{id}/local-cli — 创建 CLI 会话
+### POST /api/v1/ngrok/devices/{id}/local-cli — 创建 CLI 会话 ✅ `incloud tunnel open-cli`
 
 - **作用**: 为设备创建远程命令行访问隧道
 - **使用背景**: 设备列表/详情页"远程访问" → "Device CLI"，支持最多 3 个并发会话
@@ -376,7 +376,7 @@
 - **后端实现**: `ngrok`(Go) → `localTunnel()`，protocol="local_cli"
 - **事件**: 创建时通过 RabbitMQ 发布 `TunnelCreatedEvent`，`nezha-network` 记录到 `ngrok.tunnel.logs`
 
-### DELETE /api/v1/ngrok/tunnels/{id} — 关闭隧道
+### DELETE /api/v1/ngrok/tunnels/{id} — 关闭隧道 ✅ `incloud tunnel close`
 
 - **作用**: 关闭指定隧道，释放资源
 - **使用背景**: 用户关闭 Web/CLI 会话或隧道超时/失败时
