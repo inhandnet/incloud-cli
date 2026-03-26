@@ -47,9 +47,9 @@ func newTestIO() (*iostreams.IOStreams, *bytes.Buffer, *bytes.Buffer) {
 }
 
 func TestPrintCheckResult_JSON_UpdateAvailable(t *testing.T) {
-	io, out, _ := newTestIO()
+	ios, out, _ := newTestIO()
 
-	err := printCheckResult(io, "json", "v0.1.0", "v0.2.0", true)
+	err := printCheckResult(ios, "json", "v0.1.0", "v0.2.0", true)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -70,9 +70,9 @@ func TestPrintCheckResult_JSON_UpdateAvailable(t *testing.T) {
 }
 
 func TestPrintCheckResult_JSON_AlreadyUpToDate(t *testing.T) {
-	io, out, _ := newTestIO()
+	ios, out, _ := newTestIO()
 
-	err := printCheckResult(io, "json", "v0.2.0", "v0.2.0", false)
+	err := printCheckResult(ios, "json", "v0.2.0", "v0.2.0", false)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -87,9 +87,9 @@ func TestPrintCheckResult_JSON_AlreadyUpToDate(t *testing.T) {
 }
 
 func TestPrintCheckResult_Text_UpdateAvailable(t *testing.T) {
-	io, _, errOut := newTestIO()
+	ios, _, errOut := newTestIO()
 
-	err := printCheckResult(io, "", "v0.1.0", "v0.2.0", true)
+	err := printCheckResult(ios, "", "v0.1.0", "v0.2.0", true)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -104,9 +104,9 @@ func TestPrintCheckResult_Text_UpdateAvailable(t *testing.T) {
 }
 
 func TestPrintCheckResult_Text_AlreadyUpToDate(t *testing.T) {
-	io, _, errOut := newTestIO()
+	ios, _, errOut := newTestIO()
 
-	err := printCheckResult(io, "", "v0.2.0", "v0.2.0", false)
+	err := printCheckResult(ios, "", "v0.2.0", "v0.2.0", false)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -117,8 +117,8 @@ func TestPrintCheckResult_Text_AlreadyUpToDate(t *testing.T) {
 }
 
 func TestConfirmUpdate_SkipConfirm(t *testing.T) {
-	io, _, _ := newTestIO()
-	cancelled := confirmUpdate(io, true)
+	ios, _, _ := newTestIO()
+	cancelled := confirmUpdate(ios, true)
 	if cancelled {
 		t.Error("expected not cancelled when skipConfirm=true")
 	}
@@ -126,8 +126,8 @@ func TestConfirmUpdate_SkipConfirm(t *testing.T) {
 
 func TestConfirmUpdate_NonTTY(t *testing.T) {
 	// Non-TTY IOStreams (default from newTestIO) should skip confirmation
-	io, _, _ := newTestIO()
-	cancelled := confirmUpdate(io, false)
+	ios, _, _ := newTestIO()
+	cancelled := confirmUpdate(ios, false)
 	if cancelled {
 		t.Error("expected not cancelled for non-TTY")
 	}
