@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/creativeprojects/go-selfupdate"
+
 	"github.com/inhandnet/incloud-cli/internal/factory"
 	"github.com/inhandnet/incloud-cli/internal/iostreams"
 )
@@ -36,14 +37,15 @@ func (m *mockSource) DownloadReleaseAsset(_ context.Context, _ *selfupdate.Relea
 	return m.downloadRC, nil
 }
 
-func newTestIO() (*iostreams.IOStreams, *bytes.Buffer, *bytes.Buffer) {
-	out := &bytes.Buffer{}
-	errOut := &bytes.Buffer{}
-	return &iostreams.IOStreams{
+func newTestIO() (streams *iostreams.IOStreams, stdout *bytes.Buffer, stderr *bytes.Buffer) {
+	stdout = &bytes.Buffer{}
+	stderr = &bytes.Buffer{}
+	streams = &iostreams.IOStreams{
 		In:     strings.NewReader(""),
-		Out:    out,
-		ErrOut: errOut,
-	}, out, errOut
+		Out:    stdout,
+		ErrOut: stderr,
+	}
+	return
 }
 
 func TestPrintCheckResult_JSON_UpdateAvailable(t *testing.T) {
