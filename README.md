@@ -1,64 +1,69 @@
-# incloud CLI
+# InCloud CLI
 
-InCloud IoT 设备管理平台的命令行工具，支持认证、多环境 context 切换、API 调用及多种输出格式。
+Command-line tool for [InCloud Manager](https://www.inhandnetworks.com/products/incloud-manager.html) IoT device management platform. Supports authentication, multi-environment context switching, API calls, and multiple output formats.
 
-## 安装
+## Installation
 
-### 从源码构建
+### Install via Claude Code
 
-```bash
-# 需要 Go 1.25+
-make build    # 输出到 bin/incloud
-make install  # 安装到 $GOPATH/bin
+Paste the following into [Claude Code](https://claude.ai/code):
+
+```
+Read https://raw.githubusercontent.com/inhandnet/incloud-cli/main/INSTALL.md and follow the instructions to install incloud CLI.
 ```
 
-> macOS 下必须 `CGO_ENABLED=0` 构建（Makefile 已默认设置），否则可能遇到 dyld LC_UUID 错误。
+### Download Binary
 
-### 跨平台构建
+Download pre-built binaries from the [Releases](https://github.com/inhandnet/incloud-cli/releases) page.
 
-CI 会自动构建以下平台的二进制文件：
+### Build from Source
 
-- `linux/amd64`、`linux/arm64`
-- `darwin/amd64`、`darwin/arm64`
-- `windows/amd64`
+```bash
+# Requires Go 1.25+
+make build    # Output to bin/incloud
+make install  # Install to $GOPATH/bin
+```
 
-## 快速开始
+> On macOS, `CGO_ENABLED=0` is required (already set in Makefile) to avoid dyld LC_UUID errors.
 
-### 1. 配置 Context
+## Quick Start
+
+### 1. Configure Context
 
 ```bash
 incloud config set-context dev --host nezha.inhand.dev --org myorg
 incloud config use-context dev
 ```
 
-### 2. 登录
+### 2. Login
 
 ```bash
-incloud auth login --context dev --host nezha.inhand.dev
+incloud auth login              # Global region (default)
+incloud auth login --host cn    # China region
 ```
 
-登录使用 OAuth 2.0 Authorization Code + PKCE 流程，会自动打开浏览器完成授权。
+Login uses OAuth 2.0 Authorization Code + PKCE flow and automatically opens a browser for authorization.
 
-CLI 复用平台前端的 SPA OAuth client，登录时自动从平台 API 获取 `client_id` 和 `client_secret`，通过 `client_secret_post` 方式发送凭证（与前端行为一致）。也可通过 `--client-id` 手动指定。
+The CLI reuses the platform frontend's SPA OAuth client, automatically fetching `client_id` and `client_secret` from the platform API at login time, sending credentials via `client_secret_post` (consistent with frontend behavior). You can also specify `--client-id` manually.
 
-### 3. 验证
+### 3. Verify
 
 ```bash
 incloud auth status
 incloud api /api/v1/users/me
 ```
 
-## 命令速查
+## Command Reference
 
-### 认证
+### Authentication
 
 ```bash
-incloud auth login                    # 浏览器 OAuth 登录
-incloud auth status                   # 查看当前认证状态
-incloud auth logout                   # 登出
+incloud auth login                    # Browser-based OAuth login
+incloud auth status                   # View current auth status
+incloud auth logout                   # Log out
 ```
 
-### Context 管理
+### Context Management
 
 ```bash
 incloud config set-context <name> --host <url> --org <org>
@@ -68,132 +73,212 @@ incloud config list-contexts
 incloud config delete-context <name>
 ```
 
-### API 调用
+### Device Management
 
 ```bash
-incloud api /api/v1/users/me                            # GET 请求，彩色 JSON
-incloud api /api/v1/devices -q page=0 -q limit=10       # 带 query params
-incloud api /api/v1/devices -X POST -f name=test         # POST body fields
-echo '{}' | incloud api /api/v1/devices -X POST --input - # 从 stdin 读取 JSON body
-incloud api /api/v1/users/me -H "Sudo: user@example.com" # 自定义 header
+incloud device list                                  # List devices
+incloud device get <id>                              # Get device details
+incloud device create --name test --sn SN123         # Create device
+incloud device update <id> --name new-name           # Update device
+incloud device delete <id>                           # Delete device
+incloud device group list                            # List device groups
+incloud device signal <id>                           # View signal quality
+incloud device perf <id>                             # View performance metrics
+incloud device exec ping <id> --target 8.8.8.8       # Remote ping
+incloud device exec traceroute <id> --target 8.8.8.8 # Remote traceroute
+incloud device exec capture <id> --download out.pcap # Packet capture with download
+incloud device exec speedtest <id>                   # Interactive speed test
+incloud device log syslog <id> --fetch               # Fetch live syslog
+incloud device config schema list --device <id>      # List config schemas
+incloud device config schema validate --device <id> --file config.json  # Validate config
 ```
 
-### 调试
+### Alerts
 
 ```bash
-incloud device list --debug                              # 输出 config/auth/HTTP 调试信息到 stderr
-INCLOUD_DEBUG=1 incloud device list                      # 通过环境变量开启
-incloud device list --debug -o json 2>/tmp/debug.log     # 调试信息写文件，不影响 stdout
+incloud alert list                                   # List alerts
+incloud alert get <id>                               # Get alert details
+incloud alert ack <id>                               # Acknowledge alert
+incloud alert rule list                              # List alert rules
+incloud alert rule create --name test --type disconnected,retention=600
+incloud alert rule types                             # List all alert types
 ```
 
-### 全局 Flag
+### Firmware
 
 ```bash
-incloud --context prod api /api/v1/users/me              # 临时切换 context
-incloud --debug device list                              # 开启调试输出
-incloud version                                          # 查看版本
+incloud firmware list                                # List firmware
+incloud firmware get <id>                            # Get firmware details
+incloud firmware upgrade create --firmware <id> --device <id>  # Create upgrade task
+incloud firmware upgrade list                        # List upgrade tasks
 ```
 
-## 输出格式
+### Overview Dashboard
 
-通过 `-o` 指定输出格式：
+```bash
+incloud overview dashboard                           # Dashboard summary
+incloud overview device                              # Device statistics
+incloud overview alert                               # Alert statistics
+incloud overview traffic                             # Traffic summary
+```
 
-| 格式 | TTY 行为 | 管道行为 |
-|------|---------|---------|
-| `json`（默认） | 彩色 pretty JSON | 紧凑 JSON |
-| `table` | 对齐表格 + 分页摘要 | TSV |
+### Network & Connectivity
+
+```bash
+incloud sdwan network list                           # SD-WAN networks
+incloud oobm list                                    # OOBM sessions
+incloud connector list                               # List connectors
+```
+
+### Organization
+
+```bash
+incloud org get                                      # View organization info
+incloud user list                                    # List users
+incloud role list                                    # List roles
+incloud activity list                                # Audit log
+```
+
+### Generic API Call
+
+```bash
+incloud api /api/v1/users/me                            # GET request
+incloud api /api/v1/devices -q page=0 -q limit=10       # With query params
+incloud api /api/v1/devices -X POST -f name=test         # POST with body fields
+echo '{}' | incloud api /api/v1/devices -X POST --input - # Read JSON body from stdin
+incloud api /api/v1/users/me -H "Sudo: user@example.com" # Custom header
+```
+
+### Self-Update
+
+```bash
+incloud update                                       # Update to latest version
+incloud update --version v0.2.0                      # Update to specific version
+```
+
+### Debugging
+
+```bash
+incloud device list --debug                              # Output debug info to stderr
+INCLOUD_DEBUG=1 incloud device list                      # Enable via env var
+incloud device list --debug -o json 2>/tmp/debug.log     # Debug to file, keep stdout clean
+```
+
+### Global Flags
+
+```bash
+incloud --context prod api /api/v1/users/me              # Temporarily switch context
+incloud --debug device list                              # Enable debug output
+incloud version                                          # Show version
+```
+
+## Output Formats
+
+Specify output format with `-o`:
+
+| Format | TTY Behavior | Pipe Behavior |
+|--------|-------------|---------------|
+| `table` (default in TTY) | Aligned table + pagination summary | TSV |
+| `json` (default in pipe) | Colorized pretty JSON | Compact JSON |
 | `yaml` | YAML | YAML |
 
 ```bash
-incloud api /api/v1/devices -o table                     # 表格输出
-incloud api /api/v1/devices -o table -c name -c status   # 选定列
-incloud api /api/v1/devices -o yaml                      # YAML 输出
+incloud device list -o table                         # Table output
+incloud device list -o json                          # JSON output
+incloud device list -o yaml                          # YAML output
 ```
 
-### 字段选择（`--fields`）
+### JQ Filter
 
-领域命令（`device list`、`alert list` 等）支持 `--fields`/`-f` 控制返回和显示的字段：
+Apply jq expressions to filter output from any command:
 
 ```bash
-incloud device list -o table -f name -f serialNumber -f online   # table 只显示指定字段
-incloud device list -o json -f name -f status                    # JSON 也只返回指定字段
-incloud device list -o table                                     # 不指定则使用默认字段集
+incloud device list --jq '.[].name'                  # Extract device names
+incloud device list --jq '.[] | select(.online)'     # Filter online devices
 ```
 
-`--fields` 会传给 API 的 `fields` 参数，减少数据传输量。
+### Field Selection (`--fields`)
 
-### 分页
+Domain commands (`device list`, `alert list`, etc.) support `--fields`/`-f` to control returned and displayed fields:
 
 ```bash
-incloud device list --page 1 --limit 20          # 第一页（默认），每页 20 条
-incloud device list --page 2 --limit 50           # 第二页，每页 50 条
+incloud device list -o table -f name -f serialNumber -f online   # Show specific fields
+incloud device list -o json -f name -f status                    # JSON with specific fields
 ```
 
-`--page` 从 1 开始。table 模式下会显示分页摘要：`Showing 20 of 96 results (Page 1 of 5)`。
+`--fields` is passed to the API's `fields` parameter, reducing data transfer.
 
-> 注意：通用 `api` 命令使用 `--column`/`-c` 做纯客户端列过滤，不传给 API。
+### Column Selection (`--column`)
 
-## 环境变量
+The generic `api` command uses `--column`/`-c` for client-side column filtering (not sent to API):
 
-| 变量 | 作用 |
-|------|------|
-| `INCLOUD_CONTEXT` | 覆盖当前 context |
-| `INCLOUD_HOST` | 覆盖 context 中的 host |
-| `INCLOUD_TOKEN` | 覆盖 context 中的 token |
-| `INCLOUD_DEBUG` | 设为任意非空值开启调试输出 |
+```bash
+incloud api /api/v1/devices -o table -c name -c status
+```
 
-## 配置文件
+### Pagination
 
-路径：`~/.config/incloud/config.yaml`（权限 `0600`）
+```bash
+incloud device list --page 1 --limit 20              # First page (default), 20 per page
+incloud device list --page 2 --limit 50              # Second page, 50 per page
+```
 
-配置文件存储所有 context 信息（host、org、token 等），通过 `incloud config` 子命令管理。
+`--page` starts from 1. Table mode shows pagination summary: `Showing 20 of 96 results (Page 1 of 5)`.
 
-## 开发指南
+## Environment Variables
 
-### 前置依赖
+| Variable | Description |
+|----------|-------------|
+| `INCLOUD_CONTEXT` | Override current context |
+| `INCLOUD_HOST` | Override host in context |
+| `INCLOUD_TOKEN` | Override token in context |
+| `INCLOUD_DEBUG` | Set to any non-empty value to enable debug output |
+| `INCLOUD_SUDO` | Impersonate a user (super admin only) |
+
+## Configuration
+
+Path: `~/.config/incloud/config.yaml` (permissions `0600`)
+
+The config file stores all context information (host, org, token, etc.), managed via `incloud config` subcommands.
+
+## Development
+
+### Prerequisites
 
 - Go 1.25+
 - [golangci-lint](https://golangci-lint.run/)
-- [lefthook](https://github.com/evilmartians/lefthook) — Git hooks 管理
 - [goimports](https://pkg.go.dev/golang.org/x/tools/cmd/goimports)
 
-### 安装 Git Hooks
-
-首次 clone 项目后，需要安装 lefthook：
+### Build & Test
 
 ```bash
-lefthook install
+make build    # Build to bin/incloud
+make test     # Run tests
+make lint     # Run golangci-lint
+make clean    # Clean build artifacts
 ```
 
-这会注册 `pre-commit` hook，每次提交时自动执行：
-
-1. **goimports** — 对暂存的 `.go` 文件执行 import 排序和格式化（本地包前缀 `github.com/inhandnet/incloud-cli`），并自动 re-stage 修复后的文件
-2. **golangci-lint** — 对整个项目运行 lint 检查，不通过则阻止提交
-
-### 构建 & 测试
-
-```bash
-make build    # 构建到 bin/incloud
-make test     # 运行测试
-make lint     # 运行 golangci-lint
-make clean    # 清理构建产物
-```
-
-### Lint 规则
-
-项目使用 golangci-lint v2，启用的 linter 包括：bodyclose、errcheck、gocritic、gosec、govet、ineffassign、misspell、noctx、staticcheck、unconvert、unused 等。格式化使用 gofmt + goimports。
-
-详见 `.golangci.yml`。
-
-### 项目结构
+### Project Structure
 
 ```
-cmd/incloud/        # CLI 入口
+cmd/incloud/        # CLI entrypoint
 internal/
-  api/              # OAuth 认证、Token 传输
-  cmd/              # 各子命令实现（api、auth、config、version）
-  config/           # 配置文件读写、Context 模型
-  debug/            # 调试输出（--debug / INCLOUD_DEBUG）
-  factory/          # 依赖注入工厂
-  iostreams/        # 终端输出、格式化（JSON/Table/YAML）
+  api/              # OAuth authentication, token transport
+  build/            # Build-time version info
+  cmd/              # Subcommand implementations
+    device/         #   Device management
+    alert/          #   Alert management
+    firmware/       #   Firmware management
+    config/         #   Config context management
+    auth/           #   Authentication
+    ...             #   (and more)
+  config/           # Config file I/O, context model
+  debug/            # Debug output (--debug / INCLOUD_DEBUG)
+  factory/          # Dependency injection factory
+  iostreams/        # Terminal output, formatting (JSON/Table/YAML)
+  ui/               # Interactive UI components
 ```
+
+## License
+
+Proprietary — InHand Networks
