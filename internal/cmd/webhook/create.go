@@ -26,7 +26,12 @@ func NewCmdCreate(f *factory.Factory) *cobra.Command {
 		Example: `  # Create a WeChat webhook
   incloud webhook create --name "WeChat Alert" \
     --url https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=xxx \
-    --provider wechat`,
+    --provider wechat
+
+  # Create a generic webhook (receives JSON payload)
+  incloud webhook create --name "Custom Alert" \
+    --url https://example.com/webhook \
+    --provider generic`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := f.APIClient()
 			if err != nil {
@@ -60,7 +65,7 @@ func NewCmdCreate(f *factory.Factory) *cobra.Command {
 
 	cmd.Flags().StringVar(&opts.Name, "name", "", "Webhook name (required)")
 	cmd.Flags().StringVar(&opts.Webhook, "url", "", "Webhook URL (required)")
-	cmd.Flags().StringVar(&opts.Provider, "provider", "", "Webhook provider (required; supported: wechat)")
+	cmd.Flags().StringVar(&opts.Provider, "provider", "", "Webhook provider (required; supported: wechat, generic)")
 
 	_ = cmd.MarkFlagRequired("name")
 	_ = cmd.MarkFlagRequired("url")
