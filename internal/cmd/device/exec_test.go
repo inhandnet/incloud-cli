@@ -338,12 +338,12 @@ func TestExecCancel_HTTPError(t *testing.T) {
 }
 
 func TestExecSpeedtestHistory(t *testing.T) {
-	var gotPath, gotPage, gotSize, gotFrom string
+	var gotPath, gotPage, gotLimit, gotFrom string
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gotPath = r.URL.Path
 		gotPage = r.URL.Query().Get("page")
-		gotSize = r.URL.Query().Get("size")
+		gotLimit = r.URL.Query().Get("limit")
 		gotFrom = r.URL.Query().Get("from")
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(`{"result":[],"total":0,"page":0,"limit":10}`))
@@ -364,8 +364,8 @@ func TestExecSpeedtestHistory(t *testing.T) {
 	if gotPage != "1" { // page 2 (1-based) → API page 1 (0-based)
 		t.Errorf("expected page=1, got %s", gotPage)
 	}
-	if gotSize != "5" {
-		t.Errorf("expected size=5, got %s", gotSize)
+	if gotLimit != "5" {
+		t.Errorf("expected limit=5, got %s", gotLimit)
 	}
 	if gotFrom != "2024-01-01" {
 		t.Errorf("expected from=2024-01-01, got %s", gotFrom)

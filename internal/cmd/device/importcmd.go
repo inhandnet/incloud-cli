@@ -404,7 +404,7 @@ func getFailedDetails(client *api.APIClient, jobID string) ([]importDetail, erro
 	q := make(url.Values)
 	q.Set("status", "FAILED")
 	q.Set("page", "0")
-	q.Set("size", "100")
+	q.Set("limit", "100")
 
 	body, err := client.Get("/api/v1/devices/imports/"+jobID+"/details", q)
 	if err != nil {

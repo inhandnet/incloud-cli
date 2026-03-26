@@ -39,7 +39,7 @@ type oobmResource struct {
 func getOobmResource(client *api.APIClient, id string) (*oobmResource, error) {
 	q := make(url.Values)
 	q.Set("page", "0")
-	q.Set("size", "100")
+	q.Set("limit", "100")
 
 	for {
 		body, err := client.Get("/api/v1/oobm/resources", q)
