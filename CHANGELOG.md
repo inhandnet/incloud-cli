@@ -1,3 +1,40 @@
+# v0.3.0 (2026-03-26)
+
+## 新功能
+
+### 自更新
+- **`incloud update` 命令** — 从 GitHub Releases 检查并安装新版本，支持 `--check` 仅检查、`--version` 指定版本、`--yes` 跳过确认。GitHub 不可达时自动回退到 S3 国内镜像源
+
+### 反馈管理
+- **`feedback create`** — 提交反馈工单，支持 `--file` 上传附件
+- **`feedback list`** — 查看反馈列表，显示附件信息
+- **`feedback download`** — 下载反馈附件
+
+### 认证优化
+- **零配置登录** — `incloud login` 无需任何参数即可登录（默认 global 区域、default context）
+- **区域简写** — `--host` 支持 `global`、`cn`、`dev`、`beta` 等区域名称，无需输入完整域名
+- **顶层 login 别名** — `incloud login` 作为 `incloud auth login` 的快捷方式
+- **401 自动提示** — 收到 401 错误时提示重新登录
+- **移除本地存储凭证** — OAuth client credentials 不再保存到配置文件，改为动态获取，减少磁盘上的敏感数据
+
+### 设备管理
+- **批量导入增强** — `device import` 新增 `--group` 和 `--org` 参数，导入时直接指定分组和子组织
+- **`device import-status` 命令** — 查询导入任务状态，失败时显示逐行错误详情（序列号、失败原因）
+- **诊断日志自动解密** — `device log diagnostic` 下载时自动检测 AES 加密并解密，直接输出 .tar.gz 文件
+
+### 用户与组织
+- **`user identity list`** — 查看当前用户在所有可访问组织中的身份角色，支持按组织名筛选
+- **`--tenant` 全局参数** — 按请求切换组织上下文，多组织用户无需管理员权限即可操作外部组织
+
+### 架构改进
+- **API/Auth URL 分离** — 主机配置拆分为 API 地址（star.*）和认证地址（portal.*），支持 IP 地址直连
+
+## 修复
+- `alert rule delete` 和 `user unlock` 增加 `--yes` 确认提示，防止误操作
+- `device log syslog` 始终输出纯文本行，忽略 `-o json` 参数，保持 grep 友好
+
+---
+
 # v0.2.0 (2026-03-24)
 
 ## Features
