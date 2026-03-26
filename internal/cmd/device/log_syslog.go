@@ -73,20 +73,20 @@ start of today (UTC) and --before defaults to now if not specified.`,
 			if opts.Fetch {
 				now := time.Now().UTC()
 				if before == "" {
-					before = now.Format("2006-01-02T15:04:05")
+					before = now.Format(time.RFC3339)
 				}
 				if after == "" {
 					// Default to start of today — device uploads its full buffer whose
 					// timestamps can span the whole day, not just the last few minutes.
 					after = time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC).
-						Format("2006-01-02T15:04:05")
+						Format(time.RFC3339)
 				}
 				fmt.Fprintln(f.IO.ErrOut, "Requesting syslog from device (waits up to 40s for device to upload)...")
 			}
 
 			q := url.Values{}
-			q.Set("startTimestamp", after+"Z")
-			q.Set("endTimestamp", before+"Z")
+			q.Set("startTimestamp", normalizeTimestamp(after))
+			q.Set("endTimestamp", normalizeTimestamp(before))
 			q.Set("limit", strconv.Itoa(opts.Limit))
 			q.Set("index", "0")
 			for _, kw := range opts.Keywords {
@@ -123,4 +123,17 @@ start of today (UTC) and --before defaults to now if not specified.`,
 	cmd.Flags().BoolVar(&opts.Fetch, "fetch", false, "Actively request syslog from device (--after defaults to start of today)")
 
 	return cmd
+}
+
+// normalizeTimestamp tries to parse a time string and convert to UTC RFC3339.
+// Bare datetime (without timezone) is treated as local time.
+// If parsing fails, returns the original string as-is.
+func normalizeTimestamp(s string) string {
+	if t, err := time.Parse(time.RFC3339, s); err == nil {
+		return t.UTC().Format(time.RFC3339)
+	}
+	if t, err := time.ParseInLocation("2006-01-02T15:04:05", s, time.Local); err == nil {
+		return t.UTC().Format(time.RFC3339)
+	}
+	return s
 }
