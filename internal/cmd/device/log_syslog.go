@@ -37,16 +37,16 @@ By default, queries syslog already uploaded to the platform (requires --after an
 With --fetch, actively requests the device to upload its current syslog; --after defaults to
 start of today (UTC) and --before defaults to now if not specified.`,
 		Example: `  # Query stored syslog for a time range
-  incloud device log syslog 60af...id --after 2024-01-01T00:00:00 --before 2024-01-01T01:00:00
+  incloud device log syslog 60af...id --after 2024-01-01T00:00:00Z --before 2024-01-01T01:00:00Z
 
   # Actively fetch latest syslog from device (last 15 minutes)
   incloud device log syslog 60af...id --fetch
 
   # Fetch syslog for a specific time range from device
-  incloud device log syslog 60af...id --fetch --after 2024-01-01T00:00:00 --before 2024-01-01T01:00:00
+  incloud device log syslog 60af...id --fetch --after 2024-01-01T00:00:00Z --before 2024-01-01T01:00:00Z
 
   # Filter by keywords
-  incloud device log syslog 60af...id --after 2024-01-01T00:00:00 --before 2024-01-01T01:00:00 --keywords error --keywords warning`,
+  incloud device log syslog 60af...id --after 2024-01-01T00:00:00Z --before 2024-01-01T01:00:00Z --keywords error --keywords warning`,
 		Args: cobra.ExactArgs(1),
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			if !opts.Fetch {
@@ -85,8 +85,8 @@ start of today (UTC) and --before defaults to now if not specified.`,
 			}
 
 			q := url.Values{}
-			q.Set("startTimestamp", normalizeTimestamp(after))
-			q.Set("endTimestamp", normalizeTimestamp(before))
+			q.Set("startTimestamp", after)
+			q.Set("endTimestamp", before)
 			q.Set("limit", strconv.Itoa(opts.Limit))
 			q.Set("index", "0")
 			for _, kw := range opts.Keywords {
@@ -123,17 +123,4 @@ start of today (UTC) and --before defaults to now if not specified.`,
 	cmd.Flags().BoolVar(&opts.Fetch, "fetch", false, "Actively request syslog from device (--after defaults to start of today)")
 
 	return cmd
-}
-
-// normalizeTimestamp tries to parse a time string and convert to UTC RFC3339.
-// Bare datetime (without timezone) is treated as local time.
-// If parsing fails, returns the original string as-is.
-func normalizeTimestamp(s string) string {
-	if t, err := time.Parse(time.RFC3339, s); err == nil {
-		return t.UTC().Format(time.RFC3339)
-	}
-	if t, err := time.ParseInLocation("2006-01-02T15:04:05", s, time.Local); err == nil {
-		return t.UTC().Format(time.RFC3339)
-	}
-	return s
 }
