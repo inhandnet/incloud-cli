@@ -40,7 +40,7 @@ func NewCmdExecSpeedtestHistory(f *factory.Factory) *cobra.Command {
 
 			q := url.Values{}
 			q.Set("page", strconv.Itoa(page-1))
-			q.Set("size", strconv.Itoa(limit))
+			q.Set("limit", strconv.Itoa(limit))
 			if after != "" {
 				q.Set("from", after)
 			}

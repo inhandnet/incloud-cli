@@ -51,7 +51,7 @@ func NewCmdOobmList(f *factory.Factory) *cobra.Command {
 
 			q := make(url.Values)
 			q.Set("page", strconv.Itoa(opts.Page-1))
-			q.Set("size", strconv.Itoa(opts.Limit))
+			q.Set("limit", strconv.Itoa(opts.Limit))
 			if opts.Sort != "" {
 				q.Set("sort", opts.Sort)
 			}
