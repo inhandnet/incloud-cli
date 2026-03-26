@@ -37,7 +37,7 @@ func (m *mockSource) DownloadReleaseAsset(_ context.Context, _ *selfupdate.Relea
 	return m.downloadRC, nil
 }
 
-func newTestIO() (streams *iostreams.IOStreams, stdout *bytes.Buffer, stderr *bytes.Buffer) {
+func newTestIO() (streams *iostreams.IOStreams, stdout, stderr *bytes.Buffer) {
 	stdout = &bytes.Buffer{}
 	stderr = &bytes.Buffer{}
 	streams = &iostreams.IOStreams{
