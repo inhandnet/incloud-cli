@@ -24,7 +24,7 @@ func newCmdDeviceSubnets(f *factory.Factory) *cobra.Command {
 				return err
 			}
 
-			return formatOutput(cmd, f.IO, body, nil)
+			return formatOutput(cmd, f.IO, body)
 		},
 	}
 

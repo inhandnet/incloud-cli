@@ -101,7 +101,7 @@ Supported notification channels:
 			}
 
 			output, _ := cmd.Flags().GetString("output")
-			return iostreams.FormatOutput(body, f.IO, output, nil)
+			return iostreams.FormatOutput(body, f.IO, output)
 		},
 	}
 

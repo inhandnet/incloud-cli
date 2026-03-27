@@ -78,7 +78,7 @@ func newCmdCandidates(f *factory.Factory) *cobra.Command {
 				return err
 			}
 
-			return iostreams.FormatOutput(respBody, f.IO, output, fields)
+			return iostreams.FormatOutput(respBody, f.IO, output)
 		},
 	}
 

@@ -43,13 +43,13 @@ func newCmdDeviceAdd(f *factory.Factory) *cobra.Command {
 			if err != nil {
 				output, _ := cmd.Flags().GetString("output")
 				if respBody != nil {
-					_ = iostreams.FormatOutput(respBody, f.IO, output, nil)
+					_ = iostreams.FormatOutput(respBody, f.IO, output)
 				}
 				return err
 			}
 
 			writeCreated(f, "Connector device", respBody)
-			return formatOutput(cmd, f.IO, respBody, nil)
+			return formatOutput(cmd, f.IO, respBody)
 		},
 	}
 

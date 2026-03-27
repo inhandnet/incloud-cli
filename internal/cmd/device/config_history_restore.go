@@ -71,7 +71,7 @@ func newCmdConfigHistoryRestore(f *factory.Factory) *cobra.Command {
 				fmt.Fprintf(f.IO.ErrOut, "Configuration restored from snapshot %s.\n", snapshotID)
 				return nil
 			}
-			return iostreams.FormatOutput(body, f.IO, output, nil)
+			return iostreams.FormatOutput(body, f.IO, output)
 		},
 	}
 

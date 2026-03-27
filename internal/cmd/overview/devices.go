@@ -58,7 +58,7 @@ func NewCmdDevices(f *factory.Factory) *cobra.Command {
 			if len(fields) == 0 {
 				fields = defaultDevicesFields
 			}
-			return iostreams.FormatOutput(data, f.IO, output, fields)
+			return iostreams.FormatOutput(data, f.IO, output)
 		},
 	}
 

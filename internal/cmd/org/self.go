@@ -40,7 +40,7 @@ func NewCmdSelf(f *factory.Factory) *cobra.Command {
 			if len(fs) == 0 && output == "table" {
 				fs = defaultListFields
 			}
-			return iostreams.FormatOutput(body, f.IO, output, fs)
+			return iostreams.FormatOutput(body, f.IO, output)
 		},
 	}
 

@@ -75,7 +75,7 @@ func NewCmdUpdate(f *factory.Factory) *cobra.Command {
 				return err
 			}
 
-			return formatOutput(cmd, f.IO, respBody, nil)
+			return formatOutput(cmd, f.IO, respBody)
 		},
 	}
 

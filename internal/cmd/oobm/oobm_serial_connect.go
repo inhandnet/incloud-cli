@@ -50,7 +50,7 @@ the URL is an SSH command you can run directly.`,
 			}
 
 			output, _ := cmd.Flags().GetString("output")
-			return iostreams.FormatOutput(respBody, f.IO, output, nil)
+			return iostreams.FormatOutput(respBody, f.IO, output)
 		},
 	}
 

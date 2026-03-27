@@ -93,7 +93,7 @@ func runPerfCurrent(f *factory.Factory, cmd *cobra.Command, deviceID string, opt
 	}
 
 	output, _ := cmd.Flags().GetString("output")
-	return iostreams.FormatOutput(body, f.IO, output, opts.Fields,
+	return iostreams.FormatOutput(body, f.IO, output,
 		iostreams.WithFormatters(perfFormatters),
 	)
 }
@@ -118,7 +118,7 @@ func runPerfSeries(f *factory.Factory, cmd *cobra.Command, deviceID string, opts
 	}
 
 	output, _ := cmd.Flags().GetString("output")
-	return iostreams.FormatOutput(body, f.IO, output, opts.Fields,
+	return iostreams.FormatOutput(body, f.IO, output,
 		iostreams.WithTransform(iostreams.FlattenSeries),
 		iostreams.WithFormatters(perfFormatters),
 	)

@@ -44,7 +44,7 @@ func newCmdGroupCreate(f *factory.Factory) *cobra.Command {
 			if err != nil {
 				output, _ := cmd.Flags().GetString("output")
 				if respBody != nil {
-					_ = iostreams.FormatOutput(respBody, f.IO, output, nil)
+					_ = iostreams.FormatOutput(respBody, f.IO, output)
 				}
 				return err
 			}
@@ -59,7 +59,7 @@ func newCmdGroupCreate(f *factory.Factory) *cobra.Command {
 			fmt.Fprintf(f.IO.ErrOut, "Device group %q created. (id: %s)\n", resp.Result.Name, resp.Result.ID)
 
 			output, _ := cmd.Flags().GetString("output")
-			return iostreams.FormatOutput(respBody, f.IO, output, nil)
+			return iostreams.FormatOutput(respBody, f.IO, output)
 		},
 	}
 

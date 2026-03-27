@@ -49,7 +49,7 @@ func newCmdConfigError(f *factory.Factory) *cobra.Command {
 				return formatConfigErrors(body, f)
 			}
 
-			return iostreams.FormatOutput(body, f.IO, output, nil,
+			return iostreams.FormatOutput(body, f.IO, output,
 				iostreams.WithTransform(extractResultArray),
 			)
 		},

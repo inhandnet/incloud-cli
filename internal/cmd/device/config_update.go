@@ -75,7 +75,7 @@ func newCmdConfigUpdate(f *factory.Factory) *cobra.Command {
 				fmt.Fprintf(f.IO.ErrOut, "Configuration updated for device %s.\n", deviceID)
 				return nil
 			}
-			return iostreams.FormatOutput(resp, f.IO, output, nil)
+			return iostreams.FormatOutput(resp, f.IO, output)
 		},
 	}
 

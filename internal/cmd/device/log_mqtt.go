@@ -97,7 +97,7 @@ func NewCmdLogMqtt(f *factory.Factory) *cobra.Command {
 			if opts.Order == "desc" {
 				transform = iostreams.ChainTransforms(extractResultArray, iostreams.ReverseJSONArray)
 			}
-			if err := iostreams.FormatOutput(body, f.IO, output, fields, iostreams.WithTransform(transform)); err != nil {
+			if err := iostreams.FormatOutput(body, f.IO, output, iostreams.WithTransform(transform)); err != nil {
 				return err
 			}
 			if output == "table" {

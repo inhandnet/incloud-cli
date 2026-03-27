@@ -68,7 +68,7 @@ func newCmdShadowUpdate(f *factory.Factory) *cobra.Command {
 			}
 
 			output, _ := cmd.Flags().GetString("output")
-			return iostreams.FormatOutput(resp, f.IO, output, nil,
+			return iostreams.FormatOutput(resp, f.IO, output,
 				iostreams.WithTransform(extractResultArray),
 			)
 		},

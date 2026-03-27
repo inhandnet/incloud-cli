@@ -129,7 +129,7 @@ func NewCmdList(f *factory.Factory) *cobra.Command {
 				return nil
 			}
 
-			return iostreams.FormatOutput(body, f.IO, output, fields)
+			return iostreams.FormatOutput(body, f.IO, output)
 		},
 	}
 

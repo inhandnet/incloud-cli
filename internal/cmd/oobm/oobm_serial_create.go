@@ -67,7 +67,7 @@ Usage types: web (browser-based terminal), cli (SSH tunnel)`,
 			if err != nil {
 				output, _ := cmd.Flags().GetString("output")
 				if respBody != nil {
-					_ = iostreams.FormatOutput(respBody, f.IO, output, nil)
+					_ = iostreams.FormatOutput(respBody, f.IO, output)
 				}
 				return err
 			}
@@ -80,7 +80,7 @@ Usage types: web (browser-based terminal), cli (SSH tunnel)`,
 			fmt.Fprintf(f.IO.ErrOut, "OOBM serial %q created. (id: %s)\n", resp.Name, resp.ID)
 
 			output, _ := cmd.Flags().GetString("output")
-			return iostreams.FormatOutput(respBody, f.IO, output, nil)
+			return iostreams.FormatOutput(respBody, f.IO, output)
 		},
 	}
 

@@ -142,7 +142,7 @@ func runTraffic(cmd *cobra.Command, f *factory.Factory, opts *TrafficOptions) er
 			"topDevices": results["topk"],
 		}
 		b, _ := json.Marshal(merged)
-		return iostreams.FormatOutput(b, f.IO, output, nil)
+		return iostreams.FormatOutput(b, f.IO, output)
 
 	case "table":
 		fields := opts.Fields
@@ -150,7 +150,7 @@ func runTraffic(cmd *cobra.Command, f *factory.Factory, opts *TrafficOptions) er
 			fields = defaultTrafficFields
 		}
 		wrapped := []byte(`{"result":` + string(results["topk"]) + `}`)
-		if err := iostreams.FormatOutput(wrapped, f.IO, "table", fields, iostreams.WithFormatters(trafficFormatters)); err != nil {
+		if err := iostreams.FormatOutput(wrapped, f.IO, "table", iostreams.WithFormatters(trafficFormatters)); err != nil {
 			return err
 		}
 
@@ -210,7 +210,7 @@ func printTrafficDashboard(io *iostreams.IOStreams, data map[string]json.RawMess
 		topFields = defaultTrafficFields
 	}
 	wrapped := []byte(`{"result":` + string(data["topk"]) + `}`)
-	if err := iostreams.FormatOutput(wrapped, io, "table", topFields,
+	if err := iostreams.FormatOutput(wrapped, io, "table",
 		iostreams.WithFormatters(trafficFormatters),
 	); err != nil {
 		fmt.Fprintln(out, c.Gray("  No top device data"))

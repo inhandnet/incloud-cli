@@ -162,7 +162,7 @@ func runCreate(cmd *cobra.Command, f *factory.Factory, opts *CreateOptions) erro
 	id := gjson.GetBytes(respBody, "result._id").String()
 	fmt.Fprintf(f.IO.ErrOut, "Device %q created. (id: %s)\n", name, id)
 
-	return formatOutput(cmd, f.IO, respBody, nil)
+	return formatOutput(cmd, f.IO, respBody)
 }
 
 // snValidation holds the result of serial number validation.
@@ -275,7 +275,7 @@ func parseKeyValues(pairs []string) (map[string]string, error) {
 }
 
 // formatOutput handles -o flag output formatting, shared by create/update.
-func formatOutput(cmd *cobra.Command, streams *iostreams.IOStreams, body []byte, columns []string) error {
+func formatOutput(cmd *cobra.Command, streams *iostreams.IOStreams, body []byte) error {
 	output, _ := cmd.Flags().GetString("output")
-	return iostreams.FormatOutput(body, streams, output, columns)
+	return iostreams.FormatOutput(body, streams, output)
 }

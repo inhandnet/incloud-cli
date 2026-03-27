@@ -10,8 +10,6 @@ import (
 	"github.com/inhandnet/incloud-cli/internal/iostreams"
 )
 
-var defaultMeFields = []string{"_id", "username", "name", "email", "oid", "locale", "blocked"}
-
 type MeOptions struct {
 	Fields []string
 	Expand string
@@ -65,11 +63,7 @@ func NewCmdMe(f *factory.Factory) *cobra.Command {
 			}
 
 			output, _ := cmd.Flags().GetString("output")
-			fields := opts.Fields
-			if len(fields) == 0 && output == "table" {
-				fields = defaultMeFields
-			}
-			return iostreams.FormatOutput(body, f.IO, output, fields)
+			return iostreams.FormatOutput(body, f.IO, output)
 		},
 	}
 

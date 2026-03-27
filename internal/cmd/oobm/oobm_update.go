@@ -71,7 +71,7 @@ Service format: protocol:port[:usage]`,
 			if err != nil {
 				output, _ := cmd.Flags().GetString("output")
 				if respBody != nil {
-					_ = iostreams.FormatOutput(respBody, f.IO, output, nil)
+					_ = iostreams.FormatOutput(respBody, f.IO, output)
 				}
 				return err
 			}
@@ -84,7 +84,7 @@ Service format: protocol:port[:usage]`,
 			fmt.Fprintf(f.IO.ErrOut, "OOBM resource %q (%s) updated.\n", resp.Name, resp.ID)
 
 			output, _ := cmd.Flags().GetString("output")
-			return iostreams.FormatOutput(respBody, f.IO, output, nil)
+			return iostreams.FormatOutput(respBody, f.IO, output)
 		},
 	}
 

@@ -103,7 +103,7 @@ func runImportStatus(cmd *cobra.Command, f *factory.Factory, opts *ImportStatusO
 	if marshalErr != nil {
 		return marshalErr
 	}
-	if err := iostreams.FormatOutput(body, f.IO, output, nil); err != nil {
+	if err := iostreams.FormatOutput(body, f.IO, output); err != nil {
 		return err
 	}
 

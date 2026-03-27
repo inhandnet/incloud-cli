@@ -18,8 +18,6 @@ type clientOnlineEventsOptions struct {
 	Fields []string
 }
 
-var defaultClientOnlineEventsFields = []string{"eventType", "ssid", "mode", "connectedAt", "disconnectedAt", "timestamp"}
-
 func newCmdClientOnlineEvents(f *factory.Factory) *cobra.Command {
 	opts := &clientOnlineEventsOptions{}
 
@@ -50,11 +48,7 @@ func newCmdClientOnlineEvents(f *factory.Factory) *cobra.Command {
 			}
 
 			output, _ := cmd.Flags().GetString("output")
-			fields := opts.Fields
-			if len(fields) == 0 && output == "table" {
-				fields = defaultClientOnlineEventsFields
-			}
-			return iostreams.FormatOutput(body, f.IO, output, fields)
+			return iostreams.FormatOutput(body, f.IO, output)
 		},
 	}
 

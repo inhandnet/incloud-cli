@@ -27,7 +27,7 @@ func newCmdClientGet(f *factory.Factory) *cobra.Command {
 			}
 
 			output, _ := cmd.Flags().GetString("output")
-			return iostreams.FormatOutput(body, f.IO, output, fields)
+			return iostreams.FormatOutput(body, f.IO, output)
 		},
 	}
 

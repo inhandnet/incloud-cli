@@ -12,8 +12,6 @@ import (
 	"github.com/inhandnet/incloud-cli/internal/iostreams"
 )
 
-var defaultIdentityListFields = []string{"oid", "orgName", "type", "roles", "expiresAt"}
-
 func NewCmdIdentityList(f *factory.Factory) *cobra.Command {
 	var (
 		page    int
@@ -61,12 +59,7 @@ the assigned roles and optional expiration date for external organizations.`,
 			}
 
 			output, _ := cmd.Flags().GetString("output")
-			cols := fields
-			if len(cols) == 0 && output == "table" {
-				cols = defaultIdentityListFields
-			}
-
-			return iostreams.FormatOutput(body, f.IO, output, cols,
+			return iostreams.FormatOutput(body, f.IO, output,
 				iostreams.WithTransform(flattenIdentities))
 		},
 	}

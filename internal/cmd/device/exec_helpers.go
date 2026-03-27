@@ -55,7 +55,7 @@ func runDiagnosis(f *factory.Factory, cmd *cobra.Command, deviceID, tool string,
 		return err
 	}
 
-	return formatOutput(cmd, f.IO, respBody, nil)
+	return formatOutput(cmd, f.IO, respBody)
 }
 
 // setupTaskCancellation wires Ctrl+C to cancel a diagnosis task.
@@ -218,5 +218,5 @@ func getDiagnosisStatus(f *factory.Factory, cmd *cobra.Command, deviceID, tool s
 		return err
 	}
 
-	return formatOutput(cmd, f.IO, respBody, nil)
+	return formatOutput(cmd, f.IO, respBody)
 }

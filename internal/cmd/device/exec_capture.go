@@ -126,7 +126,7 @@ func captureFinish(f *factory.Factory, cmd *cobra.Command, client *api.APIClient
 		fmt.Fprintf(f.IO.ErrOut, "Capture finished. Download:\n  incloud api %s --output-file capture.pcap\n", fileURL)
 	}
 
-	return formatOutput(cmd, f.IO, respBody, nil)
+	return formatOutput(cmd, f.IO, respBody)
 }
 
 func isCaptureTerminalStatus(status string) bool {

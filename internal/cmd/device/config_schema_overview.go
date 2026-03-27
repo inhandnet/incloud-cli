@@ -65,7 +65,7 @@ which config sections depend on each other.`,
 				return nil
 			}
 
-			return iostreams.FormatOutput([]byte(result.Raw), f.IO, output, nil)
+			return iostreams.FormatOutput([]byte(result.Raw), f.IO, output)
 		},
 	}
 

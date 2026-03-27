@@ -55,7 +55,7 @@ func NewCmdUpdate(f *factory.Factory) *cobra.Command {
 			fmt.Fprintf(f.IO.ErrOut, "Webhook (%s) updated.\n", webhookID)
 
 			output, _ := cmd.Flags().GetString("output")
-			return iostreams.FormatOutput(body, f.IO, output, nil)
+			return iostreams.FormatOutput(body, f.IO, output)
 		},
 	}
 

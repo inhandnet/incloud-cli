@@ -40,7 +40,7 @@ func NewCmdTunnelGet(f *factory.Factory) *cobra.Command {
 				return err
 			}
 
-			return iostreams.FormatOutput(body, f.IO, output, fields)
+			return iostreams.FormatOutput(body, f.IO, output)
 		},
 	}
 

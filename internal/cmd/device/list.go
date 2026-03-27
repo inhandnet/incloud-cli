@@ -21,6 +21,7 @@ type ListOptions struct {
 	Product []string
 	Group   []string
 	Fields  []string
+	Expand  []string
 }
 
 var defaultListFields = []string{"_id", "name", "serialNumber", "online", "product", "firmware"}
@@ -50,6 +51,9 @@ func NewCmdList(f *factory.Factory) *cobra.Command {
 
   # Sort results
   incloud device list --sort "name,asc"
+
+  # Expand related resources (e.g. org info, firmware upgrade status)
+  incloud device list --expand org,firmwareUpgradeStatus
 
   # Table output with selected fields
   incloud device list -o table -f name -f serialNumber -f online
@@ -92,6 +96,10 @@ func NewCmdList(f *factory.Factory) *cobra.Command {
 				q.Add("devicegroupId", g)
 			}
 
+			if len(opts.Expand) > 0 {
+				q.Set("expand", strings.Join(opts.Expand, ","))
+			}
+
 			output, _ := cmd.Flags().GetString("output")
 			fields := opts.Fields
 			if len(fields) == 0 && output == "table" {
@@ -106,7 +114,7 @@ func NewCmdList(f *factory.Factory) *cobra.Command {
 				return err
 			}
 
-			return iostreams.FormatOutput(body, f.IO, output, fields)
+			return iostreams.FormatOutput(body, f.IO, output)
 		},
 	}
 
@@ -119,6 +127,7 @@ func NewCmdList(f *factory.Factory) *cobra.Command {
 	cmd.Flags().StringArrayVar(&opts.Product, "product", nil, "Filter by product (can be repeated)")
 	cmd.Flags().StringArrayVar(&opts.Group, "group", nil, "Filter by device group ID (can be repeated)")
 	cmd.Flags().StringSliceVarP(&opts.Fields, "fields", "f", nil, "Fields to return and display")
+	cmd.Flags().StringSliceVar(&opts.Expand, "expand", nil, "Expand related resources (e.g. org,firmwareUpgradeStatus,compatibilities)")
 
 	return cmd
 }

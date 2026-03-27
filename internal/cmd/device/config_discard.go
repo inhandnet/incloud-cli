@@ -59,7 +59,7 @@ func newCmdConfigAbort(f *factory.Factory) *cobra.Command {
 				fmt.Fprintf(f.IO.ErrOut, "Pending configuration delivery aborted for device %s.\n", deviceID)
 				return nil
 			}
-			return iostreams.FormatOutput(body, f.IO, output, nil)
+			return iostreams.FormatOutput(body, f.IO, output)
 		},
 	}
 

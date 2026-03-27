@@ -43,7 +43,7 @@ func newCmdClientOnlineStats(f *factory.Factory) *cobra.Command {
 
 			output, _ := cmd.Flags().GetString("output")
 			if output != "table" {
-				return iostreams.FormatOutput(body, f.IO, output, nil)
+				return iostreams.FormatOutput(body, f.IO, output)
 			}
 
 			return renderOnlineStatsTable(body, f.IO)

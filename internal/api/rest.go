@@ -198,9 +198,11 @@ func cleanValues(v url.Values) url.Values {
 	clean := make(url.Values)
 	for k, vals := range v {
 		for _, val := range vals {
-			if val != "" {
-				clean.Add(k, val)
+			// "fields=*" means "all fields" — drop it so the API returns everything.
+			if val == "" || (k == "fields" && val == "*") {
+				continue
 			}
+			clean.Add(k, val)
 		}
 	}
 	return clean

@@ -104,7 +104,7 @@ func newCmdConfigCopy(f *factory.Factory) *cobra.Command {
 				fmt.Fprintln(f.IO.ErrOut, "Configuration copied successfully.")
 				return nil
 			}
-			return iostreams.FormatOutput(resp, f.IO, output, nil)
+			return iostreams.FormatOutput(resp, f.IO, output)
 		},
 	}
 

@@ -74,7 +74,7 @@ func invokeMethod(cmd *cobra.Command, f *factory.Factory, client *api.APIClient,
 		return err
 	}
 
-	return formatOutput(cmd, f.IO, respBody, nil)
+	return formatOutput(cmd, f.IO, respBody)
 }
 
 func bulkInvokeMethod(cmd *cobra.Command, f *factory.Factory, client *api.APIClient, ids []string, method string, payload interface{}) error {

@@ -25,12 +25,6 @@ type JobExecutionsOptions struct {
 	Expand       []string
 }
 
-var defaultExecutionFields = []string{
-	"_id", "jobId", "status", "device.serialNumber", "device.name",
-	"currentVersion", "jobDetails.pendingVersion", "progress",
-	"createdAt", "completedAt",
-}
-
 func NewCmdJobExecutions(f *factory.Factory) *cobra.Command {
 	opts := &JobExecutionsOptions{}
 
@@ -119,17 +113,6 @@ func commonQuery(opts *JobExecutionsOptions) url.Values {
 	return q
 }
 
-func resolveExecutionFields(opts *JobExecutionsOptions, output string) []string {
-	fields := opts.Fields
-	if len(fields) == 0 && output == "table" {
-		fields = defaultExecutionFields
-	}
-	if len(fields) > 0 {
-		return fields
-	}
-	return nil
-}
-
 // runOTAExecutions lists all OTA job executions via GET /api/v1/ota/job/executions.
 func runOTAExecutions(cmd *cobra.Command, f *factory.Factory, opts *JobExecutionsOptions) error {
 	client, err := f.APIClient()
@@ -145,14 +128,12 @@ func runOTAExecutions(cmd *cobra.Command, f *factory.Factory, opts *JobExecution
 	}
 
 	output, _ := cmd.Flags().GetString("output")
-	fields := resolveExecutionFields(opts, output)
-
 	body, err := client.Get("/api/v1/ota/job/executions", q)
 	if err != nil {
 		return err
 	}
 
-	return iostreams.FormatOutput(body, f.IO, output, fields)
+	return iostreams.FormatOutput(body, f.IO, output)
 }
 
 // runFirmwareExecutions lists executions for a specific firmware via
@@ -169,14 +150,12 @@ func runFirmwareExecutions(cmd *cobra.Command, f *factory.Factory, opts *JobExec
 	}
 
 	output, _ := cmd.Flags().GetString("output")
-	fields := resolveExecutionFields(opts, output)
-
 	body, err := client.Get("/api/v1/firmwares/"+url.PathEscape(opts.Firmware)+"/job/executions", q)
 	if err != nil {
 		return err
 	}
 
-	return iostreams.FormatOutput(body, f.IO, output, fields)
+	return iostreams.FormatOutput(body, f.IO, output)
 }
 
 // runDeviceExecutions lists completed executions for a specific device via
@@ -193,12 +172,10 @@ func runDeviceExecutions(cmd *cobra.Command, f *factory.Factory, opts *JobExecut
 	}
 
 	output, _ := cmd.Flags().GetString("output")
-	fields := resolveExecutionFields(opts, output)
-
 	body, err := client.Get("/api/v1/devices/"+url.PathEscape(opts.Device)+"/ota/jobs/completed", q)
 	if err != nil {
 		return err
 	}
 
-	return iostreams.FormatOutput(body, f.IO, output, fields)
+	return iostreams.FormatOutput(body, f.IO, output)
 }

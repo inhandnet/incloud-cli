@@ -100,7 +100,7 @@ Use --device to auto-detect product/version, or --product/--version to specify d
 				}
 			}
 
-			return iostreams.FormatOutput(body, f.IO, output, defaultSchemaListFields,
+			return iostreams.FormatOutput(body, f.IO, output,
 				iostreams.WithTransform(transformSchemaList),
 			)
 		},

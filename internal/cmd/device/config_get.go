@@ -75,10 +75,10 @@ configuration layers instead (actual, target, pending, group, individual).`,
 				if !r.Exists() {
 					return fmt.Errorf("config key %q not found in device configuration", key)
 				}
-				return iostreams.FormatOutput([]byte(r.Raw), f.IO, output, nil)
+				return iostreams.FormatOutput([]byte(r.Raw), f.IO, output)
 			}
 
-			return iostreams.FormatOutput(body, f.IO, output, nil,
+			return iostreams.FormatOutput(body, f.IO, output,
 				iostreams.WithTransform(extractResultArray),
 			)
 		},

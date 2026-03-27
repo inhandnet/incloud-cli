@@ -35,8 +35,7 @@ func WithFormatters(fmts ColumnFormatters) FormatOption {
 }
 
 // FormatOutput renders body according to the output mode (table/yaml/json/jq/compact).
-// fields controls which columns to show in table mode (empty = all).
-func FormatOutput(body []byte, io *IOStreams, output string, fields []string, opts ...FormatOption) error {
+func FormatOutput(body []byte, io *IOStreams, output string, opts ...FormatOption) error {
 	var o formatOptions
 	for _, opt := range opts {
 		opt(&o)
@@ -67,7 +66,7 @@ func FormatOutput(body []byte, io *IOStreams, output string, fields []string, op
 		if len(o.formatters) > 0 {
 			data = applyFormatters(data, o.formatters)
 		}
-		return FormatTable(data, io, fields)
+		return FormatTable(data, io, nil)
 	case "yaml":
 		s, err := FormatYAML(unwrapResult(normalizePage(body)))
 		if err != nil {

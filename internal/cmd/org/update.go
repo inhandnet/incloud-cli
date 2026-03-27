@@ -87,7 +87,7 @@ func NewCmdUpdate(f *factory.Factory) *cobra.Command {
 			if err != nil {
 				output, _ := cmd.Flags().GetString("output")
 				if respBody != nil {
-					_ = iostreams.FormatOutput(respBody, f.IO, output, nil)
+					_ = iostreams.FormatOutput(respBody, f.IO, output)
 				}
 				return err
 			}
@@ -99,7 +99,7 @@ func NewCmdUpdate(f *factory.Factory) *cobra.Command {
 			fmt.Fprintf(f.IO.ErrOut, "Organization %q (%s) updated.\n", name, respID)
 
 			output, _ := cmd.Flags().GetString("output")
-			return iostreams.FormatOutput(respBody, f.IO, output, nil)
+			return iostreams.FormatOutput(respBody, f.IO, output)
 		},
 	}
 

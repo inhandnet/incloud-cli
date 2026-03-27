@@ -63,7 +63,7 @@ func NewCmdCreate(f *factory.Factory) *cobra.Command {
 			if err != nil {
 				output, _ := cmd.Flags().GetString("output")
 				if respBody != nil {
-					_ = iostreams.FormatOutput(respBody, f.IO, output, nil)
+					_ = iostreams.FormatOutput(respBody, f.IO, output)
 				}
 				return err
 			}
@@ -72,7 +72,7 @@ func NewCmdCreate(f *factory.Factory) *cobra.Command {
 			fmt.Fprintf(f.IO.ErrOut, "User %q created. (id: %s)\n", name, id)
 
 			output, _ := cmd.Flags().GetString("output")
-			return iostreams.FormatOutput(respBody, f.IO, output, nil)
+			return iostreams.FormatOutput(respBody, f.IO, output)
 		},
 	}
 

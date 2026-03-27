@@ -21,15 +21,15 @@ func newAssetRoot(f *factory.Factory) *cobra.Command {
 
 var sampleAsset = map[string]interface{}{
 	"_id":                "67c8d537e7f8d2c1e5fffdaa",
-	"name":              "Office Router",
-	"mac":               "00:18:05:AB:CD:EF",
-	"number":            "AST-001",
-	"category":          "router",
-	"status":            "in_use",
+	"name":               "Office Router",
+	"mac":                "00:18:05:AB:CD:EF",
+	"number":             "AST-001",
+	"category":           "router",
+	"status":             "in_use",
 	"warrantyExpiration": "2027-12-31",
-	"notes":             "2nd floor",
-	"createdAt":         "2026-03-01T00:00:00Z",
-	"updatedAt":         "2026-03-15T00:00:00Z",
+	"notes":              "2nd floor",
+	"createdAt":          "2026-03-01T00:00:00Z",
+	"updatedAt":          "2026-03-15T00:00:00Z",
 }
 
 func TestAssetList(t *testing.T) {

@@ -92,7 +92,7 @@ Authorization header is automatically injected.`,
 
 			// Format output based on TTY and -o flag
 			output, _ := cmd.Flags().GetString("output")
-			return iostreams.FormatOutput(body, f.IO, output, opts.Columns)
+			return iostreams.FormatOutput(body, f.IO, output)
 		},
 	}
 

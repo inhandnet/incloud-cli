@@ -45,7 +45,7 @@ func newCmdNetworkGet(f *factory.Factory) *cobra.Command {
 				return err
 			}
 
-			return formatOutput(cmd, f.IO, body, opts.Fields)
+			return formatOutput(cmd, f.IO, body)
 		},
 	}
 

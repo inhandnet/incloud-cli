@@ -120,13 +120,13 @@ for devices that remain in the network.`,
 			if err != nil {
 				output, _ := cmd.Flags().GetString("output")
 				if respBody != nil {
-					_ = iostreams.FormatOutput(respBody, f.IO, output, nil)
+					_ = iostreams.FormatOutput(respBody, f.IO, output)
 				}
 				return err
 			}
 
 			writeUpdated(f, "SD-WAN network", respBody)
-			return formatOutput(cmd, f.IO, respBody, nil)
+			return formatOutput(cmd, f.IO, respBody)
 		},
 	}
 

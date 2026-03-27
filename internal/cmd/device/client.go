@@ -76,5 +76,5 @@ func fetchClientSeries(f *factory.Factory, cmd *cobra.Command, clientID, endpoin
 
 	formatOpts := []iostreams.FormatOption{iostreams.WithTransform(iostreams.FlattenSeries)}
 	formatOpts = append(formatOpts, fmts...)
-	return iostreams.FormatOutput(body, f.IO, output, fields, formatOpts...)
+	return iostreams.FormatOutput(body, f.IO, output, formatOpts...)
 }

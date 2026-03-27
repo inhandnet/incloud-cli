@@ -226,7 +226,7 @@ func TestFormatOutput_WithFormatters_Array(t *testing.T) {
 		"tx": FormatBytes,
 		"rx": FormatBytes,
 	}
-	err := FormatOutput(data, io, "table", nil, WithFormatters(fmts))
+	err := FormatOutput(data, io, "table", WithFormatters(fmts))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -255,7 +255,7 @@ func TestFormatOutput_WithFormatters_Object(t *testing.T) {
 	fmts := ColumnFormatters{
 		"tx": FormatBytes,
 	}
-	err := FormatOutput(data, io, "table", nil, WithFormatters(fmts))
+	err := FormatOutput(data, io, "table", WithFormatters(fmts))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -271,7 +271,7 @@ func TestFormatOutput_WithFormatters_JSON_NotApplied(t *testing.T) {
 	fmts := ColumnFormatters{
 		"tx": FormatBytes,
 	}
-	err := FormatOutput(data, io, "json", nil, WithFormatters(fmts))
+	err := FormatOutput(data, io, "json", WithFormatters(fmts))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -293,7 +293,7 @@ func TestFormatOutput_WithFormatters_AndTransform(t *testing.T) {
 		"tx": FormatBytes,
 		"rx": FormatBytes,
 	}
-	err := FormatOutput(data, io, "table", nil, WithTransform(FlattenSeries), WithFormatters(fmts))
+	err := FormatOutput(data, io, "table", WithTransform(FlattenSeries), WithFormatters(fmts))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -312,7 +312,7 @@ func TestFormatOutput_WithFormatters_Percent(t *testing.T) {
 	fmts := ColumnFormatters{
 		"cpu.usage": FormatPercent,
 	}
-	err := FormatOutput(data, io, "table", nil, WithFormatters(fmts))
+	err := FormatOutput(data, io, "table", WithFormatters(fmts))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -330,7 +330,7 @@ func TestFormatOutput_WithFormatters_NestedDotPath(t *testing.T) {
 		"sim.rx":    FormatBytes,
 		"sim.total": FormatBytes,
 	}
-	err := FormatOutput(data, io, "table", nil, WithFormatters(fmts))
+	err := FormatOutput(data, io, "table", WithFormatters(fmts))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -352,7 +352,7 @@ func TestFormatOutput_WithFormatters_NoMatch(t *testing.T) {
 	fmts := ColumnFormatters{
 		"nonexistent": FormatBytes,
 	}
-	err := FormatOutput(data, io, "table", nil, WithFormatters(fmts))
+	err := FormatOutput(data, io, "table", WithFormatters(fmts))
 	if err != nil {
 		t.Fatal(err)
 	}

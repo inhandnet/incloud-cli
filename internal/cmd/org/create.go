@@ -82,7 +82,7 @@ to create the admin user. For sub-organizations, only --name is required.`,
 			if err != nil {
 				output, _ := cmd.Flags().GetString("output")
 				if respBody != nil {
-					_ = iostreams.FormatOutput(respBody, f.IO, output, nil)
+					_ = iostreams.FormatOutput(respBody, f.IO, output)
 				}
 				return err
 			}
@@ -91,7 +91,7 @@ to create the admin user. For sub-organizations, only --name is required.`,
 			fmt.Fprintf(f.IO.ErrOut, "Organization %q created. (id: %s)\n", name, id)
 
 			output, _ := cmd.Flags().GetString("output")
-			return iostreams.FormatOutput(respBody, f.IO, output, nil)
+			return iostreams.FormatOutput(respBody, f.IO, output)
 		},
 	}
 

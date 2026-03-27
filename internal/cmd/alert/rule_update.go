@@ -98,7 +98,7 @@ Use 'incloud alert rule types' to see all supported types and their parameters.`
 			fmt.Fprintf(f.IO.ErrOut, "Alert rule (%s) updated.\n", ruleID)
 
 			output, _ := cmd.Flags().GetString("output")
-			return iostreams.FormatOutput(body, f.IO, output, nil)
+			return iostreams.FormatOutput(body, f.IO, output)
 		},
 	}
 

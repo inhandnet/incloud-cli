@@ -56,7 +56,7 @@ func newCmdLocationGet(f *factory.Factory) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			return formatOutput(cmd, f.IO, locBody, nil)
+			return formatOutput(cmd, f.IO, locBody)
 		},
 	}
 
@@ -106,7 +106,7 @@ func newCmdLocationSet(f *factory.Factory) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			return formatOutput(cmd, f.IO, locBody, nil)
+			return formatOutput(cmd, f.IO, locBody)
 		},
 	}
 
@@ -147,7 +147,7 @@ func newCmdLocationUnpin(f *factory.Factory) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			return formatOutput(cmd, f.IO, locBody, nil)
+			return formatOutput(cmd, f.IO, locBody)
 		},
 	}
 
@@ -179,7 +179,7 @@ func newCmdLocationRefresh(f *factory.Factory) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			return formatOutput(cmd, f.IO, locBody, nil)
+			return formatOutput(cmd, f.IO, locBody)
 		},
 	}
 

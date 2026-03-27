@@ -55,7 +55,7 @@ func newCmdShadowDelete(f *factory.Factory) *cobra.Command {
 				fmt.Fprintf(f.IO.ErrOut, "Shadow %q deleted from device %s.\n", name, deviceID)
 				return nil
 			}
-			return iostreams.FormatOutput(body, f.IO, output, nil,
+			return iostreams.FormatOutput(body, f.IO, output,
 				iostreams.WithTransform(extractResultArray),
 			)
 		},

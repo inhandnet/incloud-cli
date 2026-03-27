@@ -103,7 +103,7 @@ func runTrend(cmd *cobra.Command, f *factory.Factory, opts *TrendOptions) error 
 	if len(fields) == 0 {
 		fields = defaultTrendFields
 	}
-	return iostreams.FormatOutput(merged, f.IO, output, fields)
+	return iostreams.FormatOutput(merged, f.IO, output)
 }
 
 // applyDefaultTrendRange sets after/before to the last 30 days when not specified.
@@ -188,4 +188,3 @@ func parseStatsValues(body []byte) (map[string]float64, error) {
 	}
 	return m, nil
 }
-

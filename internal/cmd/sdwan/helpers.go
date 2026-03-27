@@ -27,9 +27,9 @@ func resultIDName(body []byte) (id, name string) {
 }
 
 // formatOutput is a shorthand for FormatOutput with the --output flag.
-func formatOutput(cmd *cobra.Command, io *iostreams.IOStreams, body []byte, fields []string) error {
+func formatOutput(cmd *cobra.Command, io *iostreams.IOStreams, body []byte) error {
 	output, _ := cmd.Flags().GetString("output")
-	return iostreams.FormatOutput(body, io, output, fields)
+	return iostreams.FormatOutput(body, io, output)
 }
 
 // writeCreated writes a "<resource> created" confirmation to stderr.

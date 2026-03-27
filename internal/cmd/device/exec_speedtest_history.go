@@ -53,12 +53,8 @@ func NewCmdExecSpeedtestHistory(f *factory.Factory) *cobra.Command {
 				return err
 			}
 
-			cols := defaultSpeedtestHistoryFields
-			if len(fields) > 0 {
-				cols = fields
-			}
 			output, _ := cmd.Flags().GetString("output")
-			return iostreams.FormatOutput(body, f.IO, output, cols,
+			return iostreams.FormatOutput(body, f.IO, output,
 				iostreams.WithFormatters(iostreams.ColumnFormatters{
 					"download":    iostreams.FormatMbps,
 					"upload":      iostreams.FormatMbps,

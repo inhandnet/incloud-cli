@@ -81,7 +81,7 @@ Use 'incloud device config snapshots get' to view the full snapshot including me
 				displayFields = defaultConfigHistoryFields
 			}
 
-			return iostreams.FormatOutput(body, f.IO, output, displayFields)
+			return iostreams.FormatOutput(body, f.IO, output)
 		},
 	}
 

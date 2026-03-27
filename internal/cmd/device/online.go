@@ -91,7 +91,7 @@ func runOnlineEvents(f *factory.Factory, deviceID string, opts *onlineOptions, c
 	if err != nil {
 		return err
 	}
-	return iostreams.FormatOutput(body, f.IO, output, fields)
+	return iostreams.FormatOutput(body, f.IO, output)
 }
 
 func runOnlineDaily(f *factory.Factory, deviceID string, opts *onlineOptions, cmd *cobra.Command) error {
@@ -114,5 +114,5 @@ func runOnlineDaily(f *factory.Factory, deviceID string, opts *onlineOptions, cm
 	if err != nil {
 		return err
 	}
-	return iostreams.FormatOutput(body, f.IO, output, opts.Fields)
+	return iostreams.FormatOutput(body, f.IO, output)
 }

@@ -91,7 +91,7 @@ forward the tunnel to a local port for direct ssh/telnet/curl access.`,
 
 			combined, _ := json.Marshal(results)
 			output, _ := cmd.Flags().GetString("output")
-			return iostreams.FormatOutput(combined, f.IO, output, nil)
+			return iostreams.FormatOutput(combined, f.IO, output)
 		},
 	}
 

@@ -48,7 +48,7 @@ func NewCmdAntenna(f *factory.Factory) *cobra.Command {
 			}
 
 			output, _ := cmd.Flags().GetString("output")
-			return iostreams.FormatOutput(body, f.IO, output, opts.Fields, iostreams.WithTransform(flattenAntennaSeries))
+			return iostreams.FormatOutput(body, f.IO, output, iostreams.WithTransform(flattenAntennaSeries))
 		},
 	}
 

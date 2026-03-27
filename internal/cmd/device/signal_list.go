@@ -74,7 +74,7 @@ func newCmdSignalList(f *factory.Factory) *cobra.Command {
 			if opts.Order == "desc" {
 				transform = iostreams.ChainTransforms(iostreams.FlattenSeries, iostreams.ReverseJSONArray)
 			}
-			return iostreams.FormatOutput(body, f.IO, output, fields, iostreams.WithTransform(transform))
+			return iostreams.FormatOutput(body, f.IO, output, iostreams.WithTransform(transform))
 		},
 	}
 

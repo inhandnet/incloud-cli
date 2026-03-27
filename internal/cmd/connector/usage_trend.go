@@ -36,7 +36,7 @@ func newCmdUsageTrend(f *factory.Factory) *cobra.Command {
 			if !cmd.Flags().Changed("output") {
 				output = "table"
 			}
-			return iostreams.FormatOutput(body, f.IO, output, nil,
+			return iostreams.FormatOutput(body, f.IO, output,
 				iostreams.WithTransform(iostreams.FlattenSeries))
 		},
 	}

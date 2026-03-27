@@ -61,7 +61,7 @@ The JSON key can be found from 'incloud device config schema list'.`,
 			doc := []byte(result.Array()[0].Raw)
 
 			output, _ := cmd.Flags().GetString("output")
-			return iostreams.FormatOutput(doc, f.IO, output, nil)
+			return iostreams.FormatOutput(doc, f.IO, output)
 		},
 	}
 

@@ -32,7 +32,7 @@ func NewCmdOobmSerialClose(f *factory.Factory) *cobra.Command {
 			fmt.Fprintf(f.IO.ErrOut, "OOBM serial connection (%s) closed.\n", id)
 
 			output, _ := cmd.Flags().GetString("output")
-			return iostreams.FormatOutput(respBody, f.IO, output, nil)
+			return iostreams.FormatOutput(respBody, f.IO, output)
 		},
 	}
 

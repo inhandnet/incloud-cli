@@ -126,11 +126,7 @@ Target types:
 			}
 
 			output, _ := cmd.Flags().GetString("output")
-			var fields []string
-			if output == "table" {
-				fields = defaultJobFields
-			}
-			return iostreams.FormatOutput(respBody, f.IO, output, fields)
+			return iostreams.FormatOutput(respBody, f.IO, output)
 		},
 	}
 

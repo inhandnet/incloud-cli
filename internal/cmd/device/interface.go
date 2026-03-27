@@ -64,7 +64,7 @@ func NewCmdInterface(f *factory.Factory) *cobra.Command {
 			if len(fields) == 0 {
 				fields = defaultInterfaceFields
 			}
-			return iostreams.FormatOutput(body, f.IO, output, fields, iostreams.WithTransform(flattenInterfaces))
+			return iostreams.FormatOutput(body, f.IO, output, iostreams.WithTransform(flattenInterfaces))
 		},
 	}
 
