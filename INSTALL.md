@@ -51,10 +51,13 @@ The `checksums.txt` file contains SHA256 checksums in the format:
 Verify the downloaded binary:
 - macOS: `shasum -a 256 <binary>`
 - Linux: `sha256sum <binary>`
+- Windows (PowerShell): `(Get-FileHash <binary> -Algorithm SHA256).Hash.ToLower()`
 
 Compare the output hash with the corresponding entry in `checksums.txt`. **Do not proceed if the checksum does not match.**
 
 ### 4. Install
+
+#### macOS / Linux
 
 Make the binary executable and move it to the install path:
 
@@ -64,6 +67,31 @@ Make the binary executable and move it to the install path:
 ```bash
 chmod +x <binary>
 mv <binary> /usr/local/bin/incloud
+```
+
+#### Windows
+
+Rename the binary and move it to a directory in PATH:
+
+```powershell
+# Create install directory
+New-Item -ItemType Directory -Force -Path "$env:LOCALAPPDATA\incloud"
+
+# Move and rename
+Move-Item <binary> "$env:LOCALAPPDATA\incloud\incloud.exe"
+
+# Add to user PATH (persistent, takes effect in new terminal sessions)
+$currentPath = [Environment]::GetEnvironmentVariable('Path', 'User')
+if ($currentPath -notlike "*$env:LOCALAPPDATA\incloud*") {
+    [Environment]::SetEnvironmentVariable('Path', "$currentPath;$env:LOCALAPPDATA\incloud", 'User')
+}
+```
+
+After modifying PATH, refresh the current session or open a new terminal:
+
+```powershell
+# Refresh PATH in current session (other open terminals still need to be reopened)
+$env:Path = [Environment]::GetEnvironmentVariable('Path', 'Machine') + ';' + [Environment]::GetEnvironmentVariable('Path', 'User')
 ```
 
 ### 5. Verify
