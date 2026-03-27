@@ -1,3 +1,46 @@
+# v0.4.0 (2026-03-27)
+
+## 新功能
+
+### 远程隧道
+- **`tunnel` 命令组** — 管理设备远程访问隧道（list/get/create/delete），查看隧道连接状态和详情
+- **`tunnel forward`** — 通过隧道将设备端口转发到本地，基于 smux 多路复用实现高效 TCP 转发
+- **`tunnel exec`** — 通过隧道在设备上执行 CLI 命令，无需 SSH 直连设备
+
+### Webhook 管理
+- **`webhook` 命令组** — 消息 Webhook 全生命周期管理（list/get/create/update/delete）
+- **`webhook test`** — 测试 Webhook 连通性，支持按 ID 测试和通用 provider 测试
+
+### 设备资产
+- **`device asset` 命令组** — 设备资产 CRUD 管理（list/get/create/update/delete）
+- **`client mark-asset`** — 将客户端标记为资产
+
+### 客户端管理
+- **`client set-pos-ready`** — 设置客户端 POS 就绪状态
+
+### 数据概览
+- **`overview trend`** — 查询每日设备在线数/总数趋势
+
+### 查询增强
+- **`--order` 排序参数** — `device log mqtt` 和 `signal list` 支持 `--order` 指定排序方式
+- **`--timeout` 超时参数** — `device log syslog --fetch` 支持自定义超时时间
+
+### 其他
+- **User-Agent 请求头** — 所有 CLI 请求自动携带 User-Agent，便于服务端识别 CLI 流量
+- **Windows 安装文档** — INSTALL.md 新增 Windows 安装步骤
+
+## 修复
+- 修复 `api` 命令错误信息重复输出的问题
+- 修复 JSON/YAML/JQ 输出模式下 0-based 页码未转换为 1-based 的问题
+- 修复分页查询参数误用 `size` 而非 `limit` 的问题
+- 修复 syslog 时间戳参数重复追加 `Z` 后缀的问题
+- 修复时间戳参数未正确归一化的问题
+
+## 调整
+- `open-web` 移除 `--forward` 参数，端口转发功能统一到 `tunnel forward` 命令
+
+---
+
 # v0.3.0 (2026-03-26)
 
 ## 新功能
