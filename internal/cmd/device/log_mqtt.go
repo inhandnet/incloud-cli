@@ -20,6 +20,7 @@ type LogMqttOptions struct {
 	Limit  int
 	Next   string
 	Prev   string
+	Order  string
 	Fields []string
 }
 
@@ -51,6 +52,9 @@ func NewCmdLogMqtt(f *factory.Factory) *cobra.Command {
   incloud device log mqtt 507f1f77bcf86cd799439011 -o table -f timestamp -f logType -f topic -f payload`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if opts.Order != "asc" && opts.Order != "desc" {
+				return fmt.Errorf("invalid --order value %q: must be asc or desc", opts.Order)
+			}
 			deviceID := args[0]
 
 			client, err := f.APIClient()
@@ -89,7 +93,11 @@ func NewCmdLogMqtt(f *factory.Factory) *cobra.Command {
 			if len(fields) == 0 {
 				fields = defaultMqttLogFields
 			}
-			if err := iostreams.FormatOutput(body, f.IO, output, fields, iostreams.WithTransform(extractResultArray)); err != nil {
+			transform := iostreams.TransformFunc(extractResultArray)
+			if opts.Order == "desc" {
+				transform = iostreams.ChainTransforms(extractResultArray, iostreams.ReverseJSONArray)
+			}
+			if err := iostreams.FormatOutput(body, f.IO, output, fields, iostreams.WithTransform(transform)); err != nil {
 				return err
 			}
 			if output == "table" {
@@ -106,6 +114,10 @@ func NewCmdLogMqtt(f *factory.Factory) *cobra.Command {
 	cmd.Flags().IntVar(&opts.Limit, "limit", 20, "Number of results per page")
 	cmd.Flags().StringVar(&opts.Next, "next", "", "Cursor token for next page")
 	cmd.Flags().StringVar(&opts.Prev, "prev", "", "Cursor token for previous page")
+	cmd.Flags().StringVar(&opts.Order, "order", "desc", "Sort order: asc (oldest first) or desc (newest first)")
+	_ = cmd.RegisterFlagCompletionFunc("order", func(_ *cobra.Command, _ []string, _ string) ([]string, cobra.ShellCompDirective) {
+		return []string{"asc", "desc"}, cobra.ShellCompDirectiveNoFileComp
+	})
 	cmd.Flags().StringSliceVarP(&opts.Fields, "fields", "f", nil, "Fields to display in table mode")
 	_ = cmd.RegisterFlagCompletionFunc("type", func(_ *cobra.Command, _ []string, _ string) ([]string, cobra.ShellCompDirective) {
 		return []string{"publish", "connected", "disconnected"}, cobra.ShellCompDirectiveNoFileComp

@@ -1,6 +1,7 @@
 package device
 
 import (
+	"fmt"
 	"net/url"
 
 	"github.com/spf13/cobra"
@@ -12,6 +13,7 @@ import (
 type signalListOptions struct {
 	After  string
 	Before string
+	Order  string
 	Fields []string
 }
 
@@ -37,6 +39,9 @@ func newCmdSignalList(f *factory.Factory) *cobra.Command {
   incloud device signal list 507f1f77bcf86cd799439011 -o json`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if opts.Order != "asc" && opts.Order != "desc" {
+				return fmt.Errorf("invalid --order value %q: must be asc or desc", opts.Order)
+			}
 			deviceID := args[0]
 
 			client, err := f.APIClient()
@@ -65,12 +70,20 @@ func newCmdSignalList(f *factory.Factory) *cobra.Command {
 			if len(fields) == 0 {
 				fields = defaultSignalFields
 			}
-			return iostreams.FormatOutput(body, f.IO, output, fields, iostreams.WithTransform(iostreams.FlattenSeries))
+			transform := iostreams.TransformFunc(iostreams.FlattenSeries)
+			if opts.Order == "desc" {
+				transform = iostreams.ChainTransforms(iostreams.FlattenSeries, iostreams.ReverseJSONArray)
+			}
+			return iostreams.FormatOutput(body, f.IO, output, fields, iostreams.WithTransform(transform))
 		},
 	}
 
 	cmd.Flags().StringVar(&opts.After, "after", "", "Start time (ISO 8601, e.g. 2024-01-01T00:00:00Z)")
 	cmd.Flags().StringVar(&opts.Before, "before", "", "End time (ISO 8601, e.g. 2024-01-02T00:00:00Z)")
+	cmd.Flags().StringVar(&opts.Order, "order", "desc", "Sort order: asc (oldest first) or desc (newest first)")
+	_ = cmd.RegisterFlagCompletionFunc("order", func(_ *cobra.Command, _ []string, _ string) ([]string, cobra.ShellCompDirective) {
+		return []string{"asc", "desc"}, cobra.ShellCompDirectiveNoFileComp
+	})
 	cmd.Flags().StringSliceVarP(&opts.Fields, "fields", "f", nil, "Fields to display in table mode")
 
 	return cmd

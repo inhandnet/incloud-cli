@@ -3,6 +3,7 @@ package iostreams
 import (
 	"encoding/json"
 	"fmt"
+	"slices"
 	"strings"
 )
 
@@ -193,6 +194,44 @@ func applyFormattersToObject(obj map[string]interface{}, fmts ColumnFormatters) 
 			cur[leaf] = fn(fmt.Sprint(v))
 		}
 	}
+}
+
+// ChainTransforms composes multiple TransformFuncs into one, applying them in order.
+func ChainTransforms(fns ...TransformFunc) TransformFunc {
+	return func(data []byte) ([]byte, error) {
+		var err error
+		for _, fn := range fns {
+			data, err = fn(data)
+			if err != nil {
+				return nil, err
+			}
+		}
+		return data, nil
+	}
+}
+
+// ReverseJSONArray reverses the order of elements in a JSON array.
+// It handles both bare arrays ([...]) and enveloped arrays ({"result": [...]}).
+func ReverseJSONArray(data []byte) ([]byte, error) {
+	// Try {"result": [...]} envelope first
+	var envelope map[string]json.RawMessage
+	if err := json.Unmarshal(data, &envelope); err == nil {
+		if result, ok := envelope["result"]; ok {
+			var arr []json.RawMessage
+			if err := json.Unmarshal(result, &arr); err == nil {
+				slices.Reverse(arr)
+				envelope["result"], _ = json.Marshal(arr)
+				return json.Marshal(envelope)
+			}
+		}
+	}
+	// Try bare array
+	var arr []json.RawMessage
+	if err := json.Unmarshal(data, &arr); err == nil {
+		slices.Reverse(arr)
+		return json.Marshal(arr)
+	}
+	return data, nil
 }
 
 // FlattenSeries converts a time-series API response (FluxResult) into a flat
