@@ -112,7 +112,7 @@ Use 'incloud tunnel close <tunnel-id>' to close the tunnel when done.`,
 	cmd.Flags().BoolVar(&noOpen, "no-open", false, "Do not open the URL in the browser")
 	cmd.Flags().BoolVar(&forward, "forward", false, "Forward tunnel to a local port instead of opening browser")
 	cmd.Flags().IntVarP(&localPort, "port", "p", 0, "Local port for --forward (0 = random)")
-	cmd.Flags().IntVar(&ngrokPort, "ngrok-port", 4443, "Ngrok TCP proxy port")
+	cmd.Flags().IntVar(&ngrokPort, "ngrok-port", defaultNgrokPort, "Ngrok TCP proxy port")
 	cmd.MarkFlagsMutuallyExclusive("no-open", "forward")
 
 	return cmd

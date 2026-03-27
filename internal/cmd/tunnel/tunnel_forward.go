@@ -12,10 +12,18 @@ import (
 	"os/signal"
 	"sync"
 	"syscall"
+	"time"
 
 	"github.com/spf13/cobra"
+	"github.com/xtaci/smux"
 
 	"github.com/inhandnet/incloud-cli/internal/factory"
+)
+
+const (
+	defaultNgrokPort     = 4443
+	msgNewVisitorConn    = "NewVisitorConn"
+	msgNewVisitorConnRes = "NewVisitorConnResp"
 )
 
 // forwardOptions holds configuration for local port forwarding.
@@ -80,14 +88,20 @@ Press Ctrl+C to stop.`,
 
 	cmd.Flags().IntVarP(&localPort, "port", "p", 0, "Local port to listen on (0 = random)")
 	cmd.Flags().StringVar(&token, "token", "", "Auth token for the tunnel (from tunnel creation response)")
-	cmd.Flags().IntVar(&ngrokPort, "ngrok-port", 4443, "Ngrok TCP proxy port")
+	cmd.Flags().IntVar(&ngrokPort, "ngrok-port", defaultNgrokPort, "Ngrok TCP proxy port")
 
 	return cmd
 }
 
-// runForward starts a local TCP listener and forwards connections to the
-// ngrok tunnel. It blocks until interrupted by SIGINT/SIGTERM.
+// runForward establishes a multiplexed visitor connection to the ngrok server
+// and forwards local TCP connections as smux streams.
 func runForward(f *factory.Factory, opts *forwardOptions) error {
+	session, err := dialMuxSession(opts.ngrokAddr, opts.tunnelID, opts.token)
+	if err != nil {
+		return err
+	}
+	defer session.Close()
+
 	listener, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", opts.localPort))
 	if err != nil {
 		return fmt.Errorf("failed to listen: %w", err)
@@ -112,6 +126,39 @@ func runForward(f *factory.Factory, opts *forwardOptions) error {
 		listener.Close()
 	}()
 
+	// Server sends a notification stream when tunnel closes. AcceptStream
+	// blocks until the server opens a stream (close notification) or the
+	// session dies (network failure). Either way, we shut down.
+	go func() {
+		stream, err := session.AcceptStream()
+		if err != nil {
+			if ctx.Err() == nil {
+				fmt.Fprintf(f.IO.ErrOut, "Tunnel closed\n")
+				cancel()
+				listener.Close()
+			}
+			return
+		}
+		defer stream.Close()
+		// Read the close notification message from server
+		if notifyMsg, err := readNgrokMsg(stream); err == nil {
+			var closePayload struct {
+				Error string `json:"Error"`
+			}
+			if json.Unmarshal(notifyMsg.Payload, &closePayload) == nil && closePayload.Error != "" {
+				fmt.Fprintf(f.IO.ErrOut, "Tunnel closed: %s\n", closePayload.Error)
+			} else {
+				fmt.Fprintf(f.IO.ErrOut, "Tunnel closed by server\n")
+			}
+		} else {
+			fmt.Fprintf(f.IO.ErrOut, "Tunnel closed\n")
+		}
+		if ctx.Err() == nil {
+			cancel()
+			listener.Close()
+		}
+	}()
+
 	var wg sync.WaitGroup
 	for {
 		localConn, err := listener.Accept()
@@ -124,10 +171,101 @@ func runForward(f *factory.Factory, opts *forwardOptions) error {
 		}
 
 		wg.Go(func() {
-			handleForwardConn(f, localConn, opts.ngrokAddr, opts.tunnelID, opts.token)
+			if err := forwardViaStream(session, localConn); err != nil {
+				fmt.Fprintf(f.IO.ErrOut, "Stream error: %v\n", err)
+				if session.IsClosed() {
+					cancel()
+					listener.Close()
+				}
+			}
 		})
 	}
 
+	wg.Wait()
+	return nil
+}
+
+// dialMuxSession connects to the ngrok server, authenticates, and establishes
+// a smux multiplexed session over the TLS connection. The smux session owns
+// the underlying TLS connection and will close it when the session closes.
+func dialMuxSession(ngrokAddr, tunnelID, token string) (_ *smux.Session, err error) {
+	// ngrok tunnel port uses self-signed certificates
+	tlsConn, err := tls.Dial("tcp", ngrokAddr, &tls.Config{
+		InsecureSkipVerify: true,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("connect to ngrok: %w", err)
+	}
+	defer func() {
+		if err != nil {
+			tlsConn.Close()
+		}
+	}()
+
+	payload := visitorConnPayload{Mux: true}
+	if token != "" {
+		payload.Token = token
+	} else {
+		payload.Key = tunnelID
+	}
+	if err = writeNgrokMsg(tlsConn, msgNewVisitorConn, &payload); err != nil {
+		return nil, fmt.Errorf("visitor conn send: %w", err)
+	}
+
+	respMsg, err := readNgrokMsg(tlsConn)
+	if err != nil {
+		return nil, fmt.Errorf("visitor conn response: %w", err)
+	}
+	if respMsg.Type != msgNewVisitorConnRes {
+		return nil, fmt.Errorf("unexpected response type: %s", respMsg.Type)
+	}
+
+	var resp visitorConnRespPayload
+	if err = json.Unmarshal(respMsg.Payload, &resp); err != nil {
+		return nil, fmt.Errorf("visitor conn response parse: %w", err)
+	}
+	if resp.Error != "" {
+		return nil, fmt.Errorf("%s", resp.Error)
+	}
+
+	smuxCfg := smux.DefaultConfig()
+	smuxCfg.KeepAliveInterval = 5 * time.Second
+	smuxCfg.KeepAliveTimeout = 15 * time.Second
+	session, err := smux.Client(tlsConn, smuxCfg)
+	if err != nil {
+		return nil, fmt.Errorf("smux session: %w", err)
+	}
+
+	return session, nil
+}
+
+// forwardViaStream opens a smux stream and bridges it with the local connection.
+// Returns an error if the stream cannot be opened (e.g., session closed).
+func forwardViaStream(session *smux.Session, localConn net.Conn) error {
+	defer localConn.Close()
+
+	stream, err := session.OpenStream()
+	if err != nil {
+		return err
+	}
+	defer stream.Close()
+
+	// Each goroutine closes both ends when its direction finishes,
+	// which unblocks the other goroutine's io.Copy.
+	var wg sync.WaitGroup
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		defer stream.Close()
+		defer localConn.Close()
+		io.Copy(stream, localConn)
+	}()
+	go func() {
+		defer wg.Done()
+		defer stream.Close()
+		defer localConn.Close()
+		io.Copy(localConn, stream)
+	}()
 	wg.Wait()
 	return nil
 }
@@ -144,6 +282,7 @@ type ngrokMsg struct {
 type visitorConnPayload struct {
 	Key   string `json:"Key,omitempty"`
 	Token string `json:"Token,omitempty"`
+	Mux   bool   `json:"Mux,omitempty"`
 }
 
 type visitorConnRespPayload struct {
@@ -187,65 +326,4 @@ func readNgrokMsg(c net.Conn) (*ngrokMsg, error) {
 		return nil, err
 	}
 	return &m, nil
-}
-
-// handleForwardConn bridges a local TCP connection to the ngrok server
-// via the visitor connection protocol.
-func handleForwardConn(f *factory.Factory, localConn net.Conn, ngrokAddr, tunnelID, token string) {
-	defer localConn.Close()
-
-	// ngrok tunnel port uses self-signed certificates
-	remoteConn, err := tls.Dial("tcp", ngrokAddr, &tls.Config{
-		InsecureSkipVerify: true,
-	})
-	if err != nil {
-		fmt.Fprintf(f.IO.ErrOut, "Failed to connect to ngrok: %v\n", err)
-		return
-	}
-	defer remoteConn.Close()
-
-	// Send NewVisitorConn message (prefer Token over Key for JWT auth)
-	payload := visitorConnPayload{}
-	if token != "" {
-		payload.Token = token
-	} else {
-		payload.Key = tunnelID
-	}
-	if err := writeNgrokMsg(remoteConn, "NewVisitorConn", &payload); err != nil {
-		fmt.Fprintf(f.IO.ErrOut, "Visitor conn send failed: %v\n", err)
-		return
-	}
-
-	respMsg, err := readNgrokMsg(remoteConn)
-	if err != nil {
-		fmt.Fprintf(f.IO.ErrOut, "Visitor conn response failed: %v\n", err)
-		return
-	}
-	if respMsg.Type != "NewVisitorConnResp" {
-		fmt.Fprintf(f.IO.ErrOut, "Unexpected response type: %s\n", respMsg.Type)
-		return
-	}
-
-	var resp visitorConnRespPayload
-	if err := json.Unmarshal(respMsg.Payload, &resp); err != nil {
-		fmt.Fprintf(f.IO.ErrOut, "Visitor conn response parse failed: %v\n", err)
-		return
-	}
-	if resp.Error != "" {
-		fmt.Fprintf(f.IO.ErrOut, "Visitor conn rejected: %s\n", resp.Error)
-		return
-	}
-
-	// Bidirectional proxy — connection is now a transparent TCP pipe to the device
-	done := make(chan struct{}, 2)
-	go func() {
-		io.Copy(remoteConn, localConn)
-		done <- struct{}{}
-	}()
-	go func() {
-		io.Copy(localConn, remoteConn)
-		done <- struct{}{}
-	}()
-
-	<-done
 }
