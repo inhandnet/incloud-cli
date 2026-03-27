@@ -86,18 +86,13 @@ Authorization header is automatically injected.`,
 
 			body, err := client.Do(opts.Method, opts.Path, reqOpts)
 
-			// Format output based on TTY and -o flag
-			output, _ := cmd.Flags().GetString("output")
-			if body != nil {
-				if fmtErr := iostreams.FormatOutput(body, f.IO, output, opts.Columns); fmtErr != nil {
-					return fmtErr
-				}
-			}
-
 			if err != nil {
 				return err
 			}
-			return nil
+
+			// Format output based on TTY and -o flag
+			output, _ := cmd.Flags().GetString("output")
+			return iostreams.FormatOutput(body, f.IO, output, opts.Columns)
 		},
 	}
 
