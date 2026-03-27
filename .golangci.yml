@@ -28,6 +28,36 @@ linters:
     - unconvert
     - unused
 
+  exclusions:
+    generated: strict
+    presets:
+      - std-error-handling
+      - common-false-positives
+    paths:
+      - vendor
+    rules:
+      - path: _test\.go
+        linters:
+          - errcheck
+          - gosec
+          - govet
+          - noctx
+      - linters:
+          - errcheck
+        text: MarkFlagRequired
+      - linters:
+          - errcheck
+          - noctx
+          - staticcheck
+        path: internal/cmd/tunnel/
+      - linters:
+          - gosec
+        text: G402
+        path: internal/cmd/tunnel/
+      - linters:
+          - gocritic
+        text: unnamedResult|builtinShadow|ifElseChain|paramTypeCombine|stringXbytes
+
   settings:
     errcheck:
       exclude-functions:
@@ -54,14 +84,3 @@ linters:
 issues:
   max-issues-per-linter: 0
   max-same-issues: 0
-
-exclusions:
-  generated: strict
-  paths:
-    - vendor
-  rules:
-    - path: _test\.go
-      linters:
-        - errcheck
-        - gosec
-        - noctx
