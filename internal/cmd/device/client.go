@@ -69,11 +69,6 @@ func fetchClientSeries(f *factory.Factory, cmd *cobra.Command, clientID, endpoin
 	if !cmd.Flags().Changed("output") {
 		output = "table"
 	}
-	fields := opts.Fields
-	if len(fields) == 0 {
-		fields = defaultFields
-	}
-
 	formatOpts := []iostreams.FormatOption{iostreams.WithTransform(iostreams.FlattenSeries)}
 	formatOpts = append(formatOpts, fmts...)
 	return iostreams.FormatOutput(body, f.IO, output, formatOpts...)

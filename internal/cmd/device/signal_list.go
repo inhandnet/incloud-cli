@@ -17,8 +17,6 @@ type signalListOptions struct {
 	Fields []string
 }
 
-var defaultSignalFields = []string{"time", "type", "rsrp", "rsrq", "sinr", "networkType", "carrier", "band"}
-
 func newCmdSignalList(f *factory.Factory) *cobra.Command {
 	opts := &signalListOptions{}
 
@@ -65,10 +63,6 @@ func newCmdSignalList(f *factory.Factory) *cobra.Command {
 			output, _ := cmd.Flags().GetString("output")
 			if !cmd.Flags().Changed("output") {
 				output = "table"
-			}
-			fields := opts.Fields
-			if len(fields) == 0 {
-				fields = defaultSignalFields
 			}
 			transform := iostreams.TransformFunc(iostreams.FlattenSeries)
 			if opts.Order == "desc" {

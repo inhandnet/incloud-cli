@@ -36,10 +36,6 @@ func NewCmdSelf(f *factory.Factory) *cobra.Command {
 			}
 
 			output, _ := cmd.Flags().GetString("output")
-			fs := fields
-			if len(fs) == 0 && output == "table" {
-				fs = defaultListFields
-			}
 			return iostreams.FormatOutput(body, f.IO, output)
 		},
 	}

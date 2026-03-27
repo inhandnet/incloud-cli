@@ -13,8 +13,6 @@ type DevicesOptions struct {
 	Fields []string
 }
 
-var defaultDevicesFields = []string{"count.total", "count.online", "count.offline", "count.inactive"}
-
 func NewCmdDevices(f *factory.Factory) *cobra.Command {
 	opts := &DevicesOptions{}
 
@@ -54,10 +52,6 @@ func NewCmdDevices(f *factory.Factory) *cobra.Command {
 			}
 
 			output, _ := cmd.Flags().GetString("output")
-			fields := opts.Fields
-			if len(fields) == 0 {
-				fields = defaultDevicesFields
-			}
 			return iostreams.FormatOutput(data, f.IO, output)
 		},
 	}

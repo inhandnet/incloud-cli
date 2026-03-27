@@ -25,8 +25,6 @@ func NewCmdDatausage(f *factory.Factory) *cobra.Command {
 	return cmd
 }
 
-var defaultDatausageFields = []string{"time", "type", "tx", "rx", "total"}
-
 // datausageSeriesOptions holds flags shared by hourly/daily/monthly subcommands.
 // Each subcommand only registers the flags it needs (e.g. daily registers --month
 // but not --after/--before).
@@ -59,10 +57,6 @@ func fetchDatausageSeries(f *factory.Factory, cmd *cobra.Command, deviceID, endp
 	}
 
 	output, _ := cmd.Flags().GetString("output")
-	fields := opts.Fields
-	if len(fields) == 0 {
-		fields = defaultDatausageFields
-	}
 	return iostreams.FormatOutput(body, f.IO, output,
 		iostreams.WithTransform(iostreams.FlattenSeries),
 		iostreams.WithFormatters(iostreams.ColumnFormatters{

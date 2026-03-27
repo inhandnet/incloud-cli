@@ -20,8 +20,6 @@ type JobCreateOptions struct {
 	UpgradableEnd   string
 }
 
-var defaultJobFields = []string{"_id", "type", "status", "createdAt", "ignored.unlicensed", "ignored.filtered"}
-
 func (o *JobCreateOptions) toRequestBody(firmwareID string) map[string]any {
 	job := map[string]any{
 		"firmware": firmwareID,

@@ -11,8 +11,6 @@ import (
 	"github.com/inhandnet/incloud-cli/internal/iostreams"
 )
 
-var defaultConfigHistoryFields = []string{"_id", "trigger", "version", "createdAt"}
-
 func newCmdConfigHistoryList(f *factory.Factory) *cobra.Command {
 	var (
 		module string
@@ -76,11 +74,6 @@ Use 'incloud device config snapshots get' to view the full snapshot including me
 			if output == "" {
 				output = "table"
 			}
-			displayFields := fields
-			if len(displayFields) == 0 && output == "table" {
-				displayFields = defaultConfigHistoryFields
-			}
-
 			return iostreams.FormatOutput(body, f.IO, output)
 		},
 	}

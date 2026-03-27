@@ -33,8 +33,6 @@ func (sf *schemaFlags) resolve(client *api.APIClient) (*productVersion, error) {
 	return resolveProductVersion(client, sf.device, sf.product, sf.version)
 }
 
-var defaultSchemaListFields = []string{"name", "jsonKeys", "description"}
-
 func newCmdSchemaList(f *factory.Factory) *cobra.Command {
 	sf := &schemaFlags{}
 	var name string

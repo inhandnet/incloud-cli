@@ -38,10 +38,6 @@ func newCmdUplinkGet(f *factory.Factory) *cobra.Command {
 			}
 
 			output, _ := cmd.Flags().GetString("output")
-			fields := opts.Fields
-			if len(fields) == 0 {
-				fields = defaultUplinkDetailFields
-			}
 			return iostreams.FormatOutput(body, f.IO, output,
 				iostreams.WithFormatters(uplinkFormatters),
 			)

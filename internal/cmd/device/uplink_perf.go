@@ -16,8 +16,6 @@ type uplinkPerfOptions struct {
 	Fields []string
 }
 
-var defaultUplinkPerfFields = []string{"time", "throughputUp", "throughputDown", "latency", "jitter", "loss", "signal"}
-
 func newCmdUplinkPerf(f *factory.Factory) *cobra.Command {
 	opts := &uplinkPerfOptions{}
 
@@ -59,10 +57,6 @@ func newCmdUplinkPerf(f *factory.Factory) *cobra.Command {
 			output, _ := cmd.Flags().GetString("output")
 			if !cmd.Flags().Changed("output") {
 				output = "table"
-			}
-			fields := opts.Fields
-			if len(fields) == 0 {
-				fields = defaultUplinkPerfFields
 			}
 			return iostreams.FormatOutput(body, f.IO, output,
 				iostreams.WithTransform(iostreams.FlattenSeries),

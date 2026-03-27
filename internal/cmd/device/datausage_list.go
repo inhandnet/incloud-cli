@@ -19,8 +19,6 @@ type datausageListOptions struct {
 	Fields []string
 }
 
-var defaultDatausageListFields = []string{"deviceId", "sim.tx", "sim.rx", "sim.total", "esim.tx", "esim.rx", "esim.total"}
-
 var datausageListFormatters = iostreams.ColumnFormatters{
 	"sim.tx":     iostreams.FormatBytes,
 	"sim.rx":     iostreams.FormatBytes,
@@ -68,10 +66,6 @@ func newCmdDatausageList(f *factory.Factory) *cobra.Command {
 			}
 
 			output, _ := cmd.Flags().GetString("output")
-			fields := opts.Fields
-			if len(fields) == 0 {
-				fields = defaultDatausageListFields
-			}
 			return iostreams.FormatOutput(body, f.IO, output,
 				iostreams.WithTransform(flattenDatausageDetails),
 				iostreams.WithFormatters(datausageListFormatters),

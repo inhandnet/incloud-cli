@@ -23,11 +23,6 @@ type JobListOptions struct {
 	Fields   []string
 }
 
-var defaultJobListFields = []string{
-	"_id", "status", "document.module", "document.version",
-	"progress", "creator.name", "createdAt",
-}
-
 // flattenJobList flattens nested jobProcessDetails into a human-readable "progress" field
 // for table display: "succeeded/total (failed:N)".
 func flattenJobList(body []byte) ([]byte, error) {
@@ -116,10 +111,6 @@ func NewCmdJobList(f *factory.Factory) *cobra.Command {
 			}
 
 			output, _ := cmd.Flags().GetString("output")
-			fields := opts.Fields
-			if len(fields) == 0 && output == "table" {
-				fields = defaultJobListFields
-			}
 
 			body, err := client.Get("/api/v1/ota/jobs", q)
 			if err != nil {

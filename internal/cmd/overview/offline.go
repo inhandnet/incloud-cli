@@ -23,9 +23,6 @@ type OfflineOptions struct {
 }
 
 var (
-	defaultTopFields   = []string{"deviceName", "serialNumber", "offlineTimes"}
-	defaultStatsFields = []string{"deviceName", "serialNumber", "totalOfflineTimes", "maxOfflineTimes", "avgOfflineTimes", "totalOfflineDuration"}
-
 	offlineFormatters = iostreams.ColumnFormatters{
 		"totalOfflineDuration": iostreams.FormatDuration,
 		"avgOfflineDuration":   iostreams.FormatDuration,
@@ -172,10 +169,6 @@ func printOfflineDashboard(streams *iostreams.IOStreams, opts *OfflineOptions, t
 
 	// --- Top Offline Devices ---
 	fmt.Fprintln(out, c.Bold("Top Offline Devices"))
-	topFields := opts.Fields
-	if len(topFields) == 0 {
-		topFields = defaultTopFields
-	}
 	topWrapper, _ := json.Marshal(map[string]json.RawMessage{"result": topnData})
 	if err := iostreams.FormatOutput(topWrapper, streams, "table"); err != nil {
 		fmt.Fprintln(out, c.Gray("  No data"))
@@ -184,10 +177,6 @@ func printOfflineDashboard(streams *iostreams.IOStreams, opts *OfflineOptions, t
 
 	// --- Offline Statistics ---
 	fmt.Fprintln(out, c.Bold("Offline Statistics"))
-	statsFields := opts.Fields
-	if len(statsFields) == 0 {
-		statsFields = defaultStatsFields
-	}
 	if err := iostreams.FormatOutput(statsBody, streams, "table",
 		iostreams.WithFormatters(offlineFormatters),
 	); err != nil {

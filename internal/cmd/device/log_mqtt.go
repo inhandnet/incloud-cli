@@ -24,8 +24,6 @@ type LogMqttOptions struct {
 	Fields []string
 }
 
-var defaultMqttLogFields = []string{"timestamp", "logType", "topic"}
-
 func NewCmdLogMqtt(f *factory.Factory) *cobra.Command {
 	opts := &LogMqttOptions{}
 
@@ -89,10 +87,6 @@ func NewCmdLogMqtt(f *factory.Factory) *cobra.Command {
 			}
 
 			output, _ := cmd.Flags().GetString("output")
-			fields := opts.Fields
-			if len(fields) == 0 {
-				fields = defaultMqttLogFields
-			}
 			transform := iostreams.TransformFunc(extractResultArray)
 			if opts.Order == "desc" {
 				transform = iostreams.ChainTransforms(extractResultArray, iostreams.ReverseJSONArray)

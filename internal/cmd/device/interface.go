@@ -15,8 +15,6 @@ type InterfaceOptions struct {
 	Fields  []string
 }
 
-var defaultInterfaceFields = []string{"name", "type", "state", "subnet", "publicIp"}
-
 // interfaceTypes lists the keys we extract from the API result, in display order.
 var interfaceTypes = []string{"cellular", "wan", "lan", "wifiSta"}
 
@@ -60,10 +58,6 @@ func NewCmdInterface(f *factory.Factory) *cobra.Command {
 			}
 
 			output, _ := cmd.Flags().GetString("output")
-			fields := opts.Fields
-			if len(fields) == 0 {
-				fields = defaultInterfaceFields
-			}
 			return iostreams.FormatOutput(body, f.IO, output, iostreams.WithTransform(flattenInterfaces))
 		},
 	}

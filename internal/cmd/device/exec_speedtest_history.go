@@ -10,8 +10,6 @@ import (
 	"github.com/inhandnet/incloud-cli/internal/iostreams"
 )
 
-var defaultSpeedtestHistoryFields = []string{"_id", "interface", "download", "upload", "idleLatency", "jitter", "loss", "serverNode", "success", "createdAt"}
-
 func NewCmdExecSpeedtestHistory(f *factory.Factory) *cobra.Command {
 	var (
 		after  string

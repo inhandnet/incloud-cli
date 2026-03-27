@@ -22,8 +22,6 @@ type TrafficOptions struct {
 	Fields []string
 }
 
-var defaultTrafficFields = []string{"deviceName", "serialNumber", "tx", "rx", "total"}
-
 var trafficFormatters = iostreams.ColumnFormatters{
 	"tx":    iostreams.FormatBytes,
 	"rx":    iostreams.FormatBytes,
@@ -145,10 +143,6 @@ func runTraffic(cmd *cobra.Command, f *factory.Factory, opts *TrafficOptions) er
 		return iostreams.FormatOutput(b, f.IO, output)
 
 	case "table":
-		fields := opts.Fields
-		if len(fields) == 0 {
-			fields = defaultTrafficFields
-		}
 		wrapped := []byte(`{"result":` + string(results["topk"]) + `}`)
 		if err := iostreams.FormatOutput(wrapped, f.IO, "table", iostreams.WithFormatters(trafficFormatters)); err != nil {
 			return err
@@ -205,10 +199,6 @@ func printTrafficDashboard(io *iostreams.IOStreams, data map[string]json.RawMess
 
 	// --- Top Devices by Data Usage ---
 	fmt.Fprintln(out, c.Bold("Top Devices by Data Usage"))
-	topFields := fields
-	if len(topFields) == 0 {
-		topFields = defaultTrafficFields
-	}
 	wrapped := []byte(`{"result":` + string(data["topk"]) + `}`)
 	if err := iostreams.FormatOutput(wrapped, io, "table",
 		iostreams.WithFormatters(trafficFormatters),

@@ -11,8 +11,6 @@ type uplinkOptions struct {
 	Fields []string
 }
 
-var defaultUplinkDetailFields = []string{"name", "type", "status", "mode", "publicIp", "latency", "loss", "deviceName"}
-
 var uplinkFormatters = iostreams.ColumnFormatters{
 	"latency": iostreams.FormatMicroseconds,
 	"jitter":  iostreams.FormatMicroseconds,

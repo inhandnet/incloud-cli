@@ -25,8 +25,6 @@ type ListOptions struct {
 	Count  bool
 }
 
-var defaultListFields = []string{"_id", "app", "action", "actor.name", "entity.type", "entity.name", "ipAddress", "timestamp"}
-
 func NewCmdList(f *factory.Factory) *cobra.Command {
 	opts := &ListOptions{}
 
@@ -95,10 +93,6 @@ func NewCmdList(f *factory.Factory) *cobra.Command {
 			}
 
 			output, _ := cmd.Flags().GetString("output")
-			fields := opts.Fields
-			if len(fields) == 0 && output == "table" {
-				fields = defaultListFields
-			}
 
 			body, err := client.Get("/api/v1/audit/logs", q)
 			if err != nil {

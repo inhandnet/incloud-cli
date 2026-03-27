@@ -19,8 +19,6 @@ type TrendOptions struct {
 	Fields []string
 }
 
-var defaultTrendFields = []string{"date", "online", "total"}
-
 func NewCmdTrend(f *factory.Factory) *cobra.Command {
 	opts := &TrendOptions{}
 
@@ -98,10 +96,6 @@ func runTrend(cmd *cobra.Command, f *factory.Factory, opts *TrendOptions) error 
 	output, _ := cmd.Flags().GetString("output")
 	if !cmd.Flags().Changed("output") {
 		output = "table"
-	}
-	fields := opts.Fields
-	if len(fields) == 0 {
-		fields = defaultTrendFields
 	}
 	return iostreams.FormatOutput(merged, f.IO, output)
 }
