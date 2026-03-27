@@ -27,7 +27,11 @@ Diagnostics:
   flowscan           Start flow scan
   flowscan-status    Get flow scan status
   cancel             Cancel a diagnostic task
-  interfaces         List network interfaces`,
+  interfaces         List network interfaces
+
+These operations run through the platform API. To run arbitrary CLI commands
+directly on the device (e.g. show running-config, routing tables), use
+'tunnel cli' instead.`,
 	}
 
 	// Remote methods
@@ -46,6 +50,9 @@ Diagnostics:
 	cmd.AddCommand(NewCmdExecFlowscanStatus(f))
 	cmd.AddCommand(NewCmdExecCancel(f))
 	cmd.AddCommand(NewCmdExecInterfaces(f))
+
+	// Direct device CLI access (via tunnel)
+	cmd.AddCommand(NewCmdExecCli(f))
 
 	return cmd
 }
