@@ -2,12 +2,11 @@ package user
 
 import (
 	"encoding/json"
-	"net/url"
-	"strconv"
 	"strings"
 
 	"github.com/spf13/cobra"
 
+	"github.com/inhandnet/incloud-cli/internal/cmdutil"
 	"github.com/inhandnet/incloud-cli/internal/factory"
 	"github.com/inhandnet/incloud-cli/internal/iostreams"
 )
@@ -46,9 +45,7 @@ the assigned roles and optional expiration date for external organizations.`,
 				return err
 			}
 
-			q := url.Values{}
-			q.Set("page", strconv.Itoa(page-1))
-			q.Set("limit", strconv.Itoa(limit))
+			q := cmdutil.NewQuery(cmd, nil)
 			if orgName != "" {
 				q.Set("orgName", orgName)
 			}

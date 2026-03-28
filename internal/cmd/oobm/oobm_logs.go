@@ -1,12 +1,11 @@
 package oobm
 
 import (
-	"net/url"
-	"strconv"
 	"strings"
 
 	"github.com/spf13/cobra"
 
+	"github.com/inhandnet/incloud-cli/internal/cmdutil"
 	"github.com/inhandnet/incloud-cli/internal/factory"
 	"github.com/inhandnet/incloud-cli/internal/iostreams"
 )
@@ -53,10 +52,7 @@ func NewCmdOobmLogs(f *factory.Factory) *cobra.Command {
 				return err
 			}
 
-			q := make(url.Values)
-			q.Set("page", strconv.Itoa(opts.Page-1))
-			q.Set("limit", strconv.Itoa(opts.Limit))
-
+			q := cmdutil.NewQuery(cmd, defaultOobmLogsFields)
 			if opts.Type != "" {
 				q.Set("type", opts.Type)
 			}
@@ -66,18 +62,8 @@ func NewCmdOobmLogs(f *factory.Factory) *cobra.Command {
 			if opts.BusinessID != "" {
 				q.Set("businessId", opts.BusinessID)
 			}
-			if opts.Sort != "" {
-				q.Set("sort", opts.Sort)
-			}
 
 			output, _ := cmd.Flags().GetString("output")
-			fields := opts.Fields
-			if len(fields) == 0 && output == "table" {
-				fields = defaultOobmLogsFields
-			}
-			if len(fields) > 0 {
-				q.Set("fields", strings.Join(fields, ","))
-			}
 
 			body, err := client.Get("/api/v1/ngrok/devices/"+deviceID+"/logs", q)
 			if err != nil {

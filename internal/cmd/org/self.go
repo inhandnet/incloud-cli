@@ -8,8 +8,6 @@ import (
 )
 
 func NewCmdSelf(f *factory.Factory) *cobra.Command {
-	var fields []string
-
 	cmd := &cobra.Command{
 		Use:   "self",
 		Short: "Show current organization",
@@ -18,9 +16,6 @@ func NewCmdSelf(f *factory.Factory) *cobra.Command {
 
   # Table output
   incloud org self -o table
-
-  # Only specific fields
-  incloud org self -f name -f email -f userCount -f deviceCount
 
   # YAML output
   incloud org self -o yaml`,
@@ -39,8 +34,6 @@ func NewCmdSelf(f *factory.Factory) *cobra.Command {
 			return iostreams.FormatOutput(body, f.IO, output)
 		},
 	}
-
-	cmd.Flags().StringSliceVarP(&fields, "fields", "f", nil, "Fields to return and display")
 
 	return cmd
 }

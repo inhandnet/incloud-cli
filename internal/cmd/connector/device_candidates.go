@@ -1,11 +1,9 @@
 package connector
 
 import (
-	"net/url"
-	"strconv"
-
 	"github.com/spf13/cobra"
 
+	"github.com/inhandnet/incloud-cli/internal/cmdutil"
 	"github.com/inhandnet/incloud-cli/internal/factory"
 )
 
@@ -32,9 +30,7 @@ func newCmdDeviceCandidates(f *factory.Factory) *cobra.Command {
 				return err
 			}
 
-			q := url.Values{}
-			q.Set("page", strconv.Itoa(opts.Page-1))
-			q.Set("limit", strconv.Itoa(opts.Limit))
+			q := cmdutil.NewQuery(cmd, nil)
 			if opts.Search != "" {
 				q.Set("nameOrSn", opts.Search)
 			}

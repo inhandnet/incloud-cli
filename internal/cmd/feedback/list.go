@@ -3,12 +3,11 @@ package feedback
 import (
 	"encoding/json"
 	"fmt"
-	"net/url"
-	"strconv"
 	"strings"
 
 	"github.com/spf13/cobra"
 
+	"github.com/inhandnet/incloud-cli/internal/cmdutil"
 	"github.com/inhandnet/incloud-cli/internal/factory"
 	"github.com/inhandnet/incloud-cli/internal/iostreams"
 )
@@ -63,16 +62,10 @@ func NewCmdFeedbackList(f *factory.Factory) *cobra.Command {
 				return err
 			}
 
-			q := make(url.Values)
+			q := cmdutil.NewQuery(cmd, defaultListFields)
 			if opts.Count {
 				q.Set("page", "0")
 				q.Set("limit", "1")
-			} else {
-				q.Set("page", strconv.Itoa(opts.Page-1))
-				q.Set("limit", strconv.Itoa(opts.Limit))
-			}
-			if opts.Sort != "" {
-				q.Set("sort", opts.Sort)
 			}
 			if opts.App != "" {
 				q.Set("app", opts.App)
@@ -85,13 +78,6 @@ func NewCmdFeedbackList(f *factory.Factory) *cobra.Command {
 			}
 
 			output, _ := cmd.Flags().GetString("output")
-			fields := opts.Fields
-			if len(fields) == 0 && output == "table" {
-				fields = defaultListFields
-			}
-			if len(fields) > 0 {
-				q.Set("fields", strings.Join(fields, ","))
-			}
 
 			body, err := client.Get("/api/v1/feedbacks", q)
 			if err != nil {

@@ -1,12 +1,9 @@
 package sdwan
 
 import (
-	"net/url"
-	"strconv"
-	"strings"
-
 	"github.com/spf13/cobra"
 
+	"github.com/inhandnet/incloud-cli/internal/cmdutil"
 	"github.com/inhandnet/incloud-cli/internal/factory"
 	"github.com/inhandnet/incloud-cli/internal/iostreams"
 )
@@ -39,24 +36,12 @@ func newCmdNetworkConnections(f *factory.Factory) *cobra.Command {
 				return err
 			}
 
-			q := url.Values{}
-			q.Set("page", strconv.Itoa(opts.Page-1))
-			q.Set("limit", strconv.Itoa(opts.Limit))
-			if opts.Sort != "" {
-				q.Set("sort", opts.Sort)
-			}
+			q := cmdutil.NewQuery(cmd, defaultConnectionFields)
 			if opts.Name != "" {
 				q.Set("deviceName", opts.Name)
 			}
 
 			output, _ := cmd.Flags().GetString("output")
-			fields := opts.Fields
-			if len(fields) == 0 && output == "table" {
-				fields = defaultConnectionFields
-			}
-			if len(fields) > 0 {
-				q.Set("fields", strings.Join(fields, ","))
-			}
 
 			body, err := client.Get(apiBase+"/networks/"+args[0]+"/connections", q)
 			if err != nil {

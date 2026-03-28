@@ -1,12 +1,9 @@
 package oobm
 
 import (
-	"net/url"
-	"strconv"
-	"strings"
-
 	"github.com/spf13/cobra"
 
+	"github.com/inhandnet/incloud-cli/internal/cmdutil"
 	"github.com/inhandnet/incloud-cli/internal/factory"
 	"github.com/inhandnet/incloud-cli/internal/iostreams"
 )
@@ -49,12 +46,7 @@ func NewCmdOobmList(f *factory.Factory) *cobra.Command {
 				return err
 			}
 
-			q := make(url.Values)
-			q.Set("page", strconv.Itoa(opts.Page-1))
-			q.Set("limit", strconv.Itoa(opts.Limit))
-			if opts.Sort != "" {
-				q.Set("sort", opts.Sort)
-			}
+			q := cmdutil.NewQuery(cmd, defaultOobmListFields)
 			if opts.Name != "" {
 				q.Set("name", opts.Name)
 			}
@@ -63,13 +55,6 @@ func NewCmdOobmList(f *factory.Factory) *cobra.Command {
 			}
 
 			output, _ := cmd.Flags().GetString("output")
-			fields := opts.Fields
-			if len(fields) == 0 && output == "table" {
-				fields = defaultOobmListFields
-			}
-			if len(fields) > 0 {
-				q.Set("fields", strings.Join(fields, ","))
-			}
 
 			body, err := client.Get("/api/v1/oobm/resources", q)
 			if err != nil {

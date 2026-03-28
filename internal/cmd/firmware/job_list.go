@@ -3,12 +3,11 @@ package firmware
 import (
 	"encoding/json"
 	"fmt"
-	"net/url"
-	"strconv"
 	"strings"
 
 	"github.com/spf13/cobra"
 
+	"github.com/inhandnet/incloud-cli/internal/cmdutil"
 	"github.com/inhandnet/incloud-cli/internal/factory"
 	"github.com/inhandnet/incloud-cli/internal/iostreams"
 )
@@ -21,6 +20,7 @@ type JobListOptions struct {
 	Module   string
 	Status   string
 	Fields   []string
+	Expand   []string
 }
 
 // flattenJobList flattens nested jobProcessDetails into a human-readable "progress" field
@@ -93,13 +93,7 @@ func NewCmdJobList(f *factory.Factory) *cobra.Command {
 				return err
 			}
 
-			q := url.Values{}
-			q.Set("page", strconv.Itoa(opts.Page-1))
-			q.Set("limit", strconv.Itoa(opts.Limit))
-			q.Set("expand", "creator,jobProcessDetails")
-			if opts.Sort != "" {
-				q.Set("sort", opts.Sort)
-			}
+			q := cmdutil.NewQuery(cmd, nil)
 			if opts.Firmware != "" {
 				q.Set("firmwareId", opts.Firmware)
 			}
@@ -129,6 +123,7 @@ func NewCmdJobList(f *factory.Factory) *cobra.Command {
 	cmd.Flags().StringVar(&opts.Module, "module", "", "Filter by module name")
 	cmd.Flags().StringVar(&opts.Status, "status", "", "Filter by status (queued|inprogress|succeeded|canceled)")
 	cmd.Flags().StringSliceVarP(&opts.Fields, "fields", "f", nil, "Fields to return and display")
+	cmd.Flags().StringSliceVar(&opts.Expand, "expand", []string{"creator", "jobProcessDetails"}, "Expand related resources")
 
 	return cmd
 }

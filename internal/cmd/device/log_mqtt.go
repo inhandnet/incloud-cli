@@ -3,11 +3,10 @@ package device
 import (
 	"encoding/json"
 	"fmt"
-	"net/url"
-	"strconv"
 
 	"github.com/spf13/cobra"
 
+	"github.com/inhandnet/incloud-cli/internal/cmdutil"
 	"github.com/inhandnet/incloud-cli/internal/factory"
 	"github.com/inhandnet/incloud-cli/internal/iostreams"
 )
@@ -60,7 +59,7 @@ func NewCmdLogMqtt(f *factory.Factory) *cobra.Command {
 				return err
 			}
 
-			q := url.Values{}
+			q := cmdutil.NewQuery(cmd, nil)
 			if opts.After != "" {
 				q.Set("after", opts.After)
 			}
@@ -79,7 +78,6 @@ func NewCmdLogMqtt(f *factory.Factory) *cobra.Command {
 			if opts.Prev != "" {
 				q.Set("prev", opts.Prev)
 			}
-			q.Set("limit", strconv.Itoa(opts.Limit))
 
 			body, err := client.Get("/api/v1/devices/"+deviceID+"/mqttlogs", q)
 			if err != nil {

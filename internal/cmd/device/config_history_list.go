@@ -2,11 +2,10 @@ package device
 
 import (
 	"encoding/json"
-	"net/url"
-	"strconv"
 
 	"github.com/spf13/cobra"
 
+	"github.com/inhandnet/incloud-cli/internal/cmdutil"
 	"github.com/inhandnet/incloud-cli/internal/factory"
 	"github.com/inhandnet/incloud-cli/internal/iostreams"
 )
@@ -47,14 +46,9 @@ Use 'incloud device config snapshots get' to view the full snapshot including me
 				return err
 			}
 
-			q := url.Values{}
-			q.Set("page", strconv.Itoa(page-1))
-			q.Set("limit", strconv.Itoa(limit))
+			q := cmdutil.NewQuery(cmd, nil)
 			if module != "" {
 				q.Set("module", module)
-			}
-			if sort != "" {
-				q.Set("sort", sort)
 			}
 			if after != "" {
 				q.Set("after", after)

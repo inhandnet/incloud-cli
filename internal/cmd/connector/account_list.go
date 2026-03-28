@@ -1,12 +1,9 @@
 package connector
 
 import (
-	"net/url"
-	"strconv"
-	"strings"
-
 	"github.com/spf13/cobra"
 
+	"github.com/inhandnet/incloud-cli/internal/cmdutil"
 	"github.com/inhandnet/incloud-cli/internal/factory"
 	"github.com/inhandnet/incloud-cli/internal/iostreams"
 )
@@ -47,12 +44,7 @@ func newCmdAccountList(f *factory.Factory) *cobra.Command {
 				return err
 			}
 
-			q := url.Values{}
-			q.Set("page", strconv.Itoa(opts.Page-1))
-			q.Set("limit", strconv.Itoa(opts.Limit))
-			if opts.Sort != "" {
-				q.Set("sort", opts.Sort)
-			}
+			q := cmdutil.NewQuery(cmd, defaultAccountFields)
 			if opts.Name != "" {
 				q.Set("name", opts.Name)
 			}
@@ -64,13 +56,6 @@ func newCmdAccountList(f *factory.Factory) *cobra.Command {
 			}
 
 			output, _ := cmd.Flags().GetString("output")
-			fields := opts.Fields
-			if len(fields) == 0 && output == "table" {
-				fields = defaultAccountFields
-			}
-			if len(fields) > 0 {
-				q.Set("fields", strings.Join(fields, ","))
-			}
 
 			body, err := client.Get("/api/v1/connectors/"+networkID+"/accounts", q)
 			if err != nil {

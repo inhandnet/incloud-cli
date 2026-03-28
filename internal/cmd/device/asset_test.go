@@ -54,8 +54,8 @@ func TestAssetList(t *testing.T) {
 	if gotPath != "/api/v1/network/assets" {
 		t.Errorf("path = %q, want /api/v1/network/assets", gotPath)
 	}
-	if !strings.Contains(gotQuery, "size=20") {
-		t.Errorf("query %q missing size=20 (should use 'size' not 'limit')", gotQuery)
+	if !strings.Contains(gotQuery, "limit=20") {
+		t.Errorf("query %q missing limit=20", gotQuery)
 	}
 	if !strings.Contains(gotQuery, "page=0") {
 		t.Errorf("query %q missing page=0", gotQuery)

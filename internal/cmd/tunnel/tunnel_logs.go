@@ -1,12 +1,11 @@
 package tunnel
 
 import (
-	"net/url"
-	"strconv"
 	"strings"
 
 	"github.com/spf13/cobra"
 
+	"github.com/inhandnet/incloud-cli/internal/cmdutil"
 	"github.com/inhandnet/incloud-cli/internal/factory"
 	"github.com/inhandnet/incloud-cli/internal/iostreams"
 )
@@ -51,10 +50,7 @@ func NewCmdTunnelLogs(f *factory.Factory) *cobra.Command {
 				return err
 			}
 
-			q := make(url.Values)
-			q.Set("page", strconv.Itoa(opts.Page-1))
-			q.Set("limit", strconv.Itoa(opts.Limit))
-
+			q := cmdutil.NewQuery(cmd, defaultTunnelLogsFields)
 			if opts.Type != "" {
 				q.Set("type", opts.Type)
 			}
@@ -64,21 +60,8 @@ func NewCmdTunnelLogs(f *factory.Factory) *cobra.Command {
 			if opts.BusinessID != "" {
 				q.Set("businessId", opts.BusinessID)
 			}
-			if opts.Sort != "" {
-				q.Set("sort", opts.Sort)
-			}
-			if len(opts.Expand) > 0 {
-				q.Set("expand", strings.Join(opts.Expand, ","))
-			}
 
 			output, _ := cmd.Flags().GetString("output")
-			fields := opts.Fields
-			if len(fields) == 0 && output == "table" {
-				fields = defaultTunnelLogsFields
-			}
-			if len(fields) > 0 {
-				q.Set("fields", strings.Join(fields, ","))
-			}
 
 			body, err := client.Get("/api/v1/ngrok/devices/"+deviceID+"/logs", q)
 			if err != nil {

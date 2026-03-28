@@ -1,18 +1,16 @@
 package user
 
 import (
-	"net/url"
-	"strings"
-
 	"github.com/spf13/cobra"
 
+	"github.com/inhandnet/incloud-cli/internal/cmdutil"
 	"github.com/inhandnet/incloud-cli/internal/factory"
 	"github.com/inhandnet/incloud-cli/internal/iostreams"
 )
 
 type MeOptions struct {
 	Fields []string
-	Expand string
+	Expand []string
 }
 
 func NewCmdMe(f *factory.Factory) *cobra.Command {
@@ -46,16 +44,7 @@ func NewCmdMe(f *factory.Factory) *cobra.Command {
 				return err
 			}
 
-			var q url.Values
-			if len(opts.Fields) > 0 || opts.Expand != "" {
-				q = url.Values{}
-			}
-			if len(opts.Fields) > 0 {
-				q.Set("fields", strings.Join(opts.Fields, ","))
-			}
-			if opts.Expand != "" {
-				q.Set("expand", opts.Expand)
-			}
+			q := cmdutil.NewQuery(cmd, nil)
 
 			body, err := client.Get("/api/v1/users/me", q)
 			if err != nil {
@@ -68,7 +57,7 @@ func NewCmdMe(f *factory.Factory) *cobra.Command {
 	}
 
 	cmd.Flags().StringSliceVarP(&opts.Fields, "fields", "f", nil, "Fields to return and display")
-	cmd.Flags().StringVar(&opts.Expand, "expand", "", "Expand related objects (e.g. roles)")
+	cmd.Flags().StringSliceVar(&opts.Expand, "expand", nil, "Expand related objects (e.g. roles)")
 
 	return cmd
 }

@@ -2,10 +2,10 @@ package product
 
 import (
 	"net/url"
-	"strings"
 
 	"github.com/spf13/cobra"
 
+	"github.com/inhandnet/incloud-cli/internal/cmdutil"
 	"github.com/inhandnet/incloud-cli/internal/factory"
 	"github.com/inhandnet/incloud-cli/internal/iostreams"
 )
@@ -44,11 +44,7 @@ func NewCmdGet(f *factory.Factory) *cobra.Command {
 				return err
 			}
 
-			var q url.Values
-			if len(opts.Fields) > 0 {
-				q = url.Values{}
-				q.Set("fields", strings.Join(opts.Fields, ","))
-			}
+			q := cmdutil.NewQuery(cmd, nil)
 
 			body, err := client.Get("/api/v1/products/"+url.PathEscape(idOrName), q)
 			if err != nil {

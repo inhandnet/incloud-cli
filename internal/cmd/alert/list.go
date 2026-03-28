@@ -3,12 +3,10 @@ package alert
 import (
 	"encoding/json"
 	"fmt"
-	"net/url"
-	"strconv"
-	"strings"
 
 	"github.com/spf13/cobra"
 
+	"github.com/inhandnet/incloud-cli/internal/cmdutil"
 	"github.com/inhandnet/incloud-cli/internal/factory"
 	"github.com/inhandnet/incloud-cli/internal/iostreams"
 )
@@ -87,16 +85,10 @@ func NewCmdList(f *factory.Factory) *cobra.Command {
 				return err
 			}
 
-			q := make(url.Values)
+			q := cmdutil.NewQuery(cmd, defaultListFields)
 			if opts.Count {
 				q.Set("page", "0")
 				q.Set("limit", "1")
-			} else {
-				q.Set("page", strconv.Itoa(opts.Page-1))
-				q.Set("limit", strconv.Itoa(opts.Limit))
-			}
-			if opts.Sort != "" {
-				q.Set("sort", opts.Sort)
 			}
 			var priority *int
 			if cmd.Flags().Changed("priority") {
@@ -105,13 +97,6 @@ func NewCmdList(f *factory.Factory) *cobra.Command {
 			applyProbeParams(q, opts.After, opts.Before, opts.Status, priority, opts.Device, opts.Group, opts.Type, opts.Ack, opts.Query)
 
 			output, _ := cmd.Flags().GetString("output")
-			fields := opts.Fields
-			if len(fields) == 0 && output == "table" {
-				fields = defaultListFields
-			}
-			if len(fields) > 0 {
-				q.Set("fields", strings.Join(fields, ","))
-			}
 
 			body, err := client.Get("/api/v1/alerts", q)
 			if err != nil {

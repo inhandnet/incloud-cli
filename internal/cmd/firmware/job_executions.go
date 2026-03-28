@@ -2,11 +2,10 @@ package firmware
 
 import (
 	"net/url"
-	"strconv"
-	"strings"
 
 	"github.com/spf13/cobra"
 
+	"github.com/inhandnet/incloud-cli/internal/cmdutil"
 	"github.com/inhandnet/incloud-cli/internal/factory"
 	"github.com/inhandnet/incloud-cli/internal/iostreams"
 )
@@ -91,13 +90,8 @@ list completed executions for a specific device.`,
 	return cmd
 }
 
-func commonQuery(opts *JobExecutionsOptions) url.Values {
-	q := url.Values{}
-	q.Set("page", strconv.Itoa(opts.Page-1))
-	q.Set("limit", strconv.Itoa(opts.Limit))
-	if opts.Sort != "" {
-		q.Set("sort", opts.Sort)
-	}
+func commonQuery(cmd *cobra.Command, opts *JobExecutionsOptions) url.Values {
+	q := cmdutil.NewQuery(cmd, nil)
 	if opts.JobID != "" {
 		q.Set("jobId", opts.JobID)
 	}
@@ -106,9 +100,6 @@ func commonQuery(opts *JobExecutionsOptions) url.Values {
 	}
 	if opts.SerialNumber != "" {
 		q.Set("serialNumber", opts.SerialNumber)
-	}
-	if len(opts.Expand) > 0 {
-		q.Set("expand", strings.Join(opts.Expand, ","))
 	}
 	return q
 }
@@ -120,7 +111,7 @@ func runOTAExecutions(cmd *cobra.Command, f *factory.Factory, opts *JobExecution
 		return err
 	}
 
-	q := commonQuery(opts)
+	q := commonQuery(cmd, opts)
 	if opts.Module != "" {
 		q.Set("module", opts.Module)
 	} else {
@@ -144,7 +135,7 @@ func runFirmwareExecutions(cmd *cobra.Command, f *factory.Factory, opts *JobExec
 		return err
 	}
 
-	q := commonQuery(opts)
+	q := commonQuery(cmd, opts)
 	if opts.Module != "" {
 		q.Set("module", opts.Module)
 	}
@@ -166,7 +157,7 @@ func runDeviceExecutions(cmd *cobra.Command, f *factory.Factory, opts *JobExecut
 		return err
 	}
 
-	q := commonQuery(opts)
+	q := commonQuery(cmd, opts)
 	if opts.Module != "" {
 		q.Set("module", opts.Module)
 	}

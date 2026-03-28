@@ -1,12 +1,9 @@
 package user
 
 import (
-	"net/url"
-	"strconv"
-	"strings"
-
 	"github.com/spf13/cobra"
 
+	"github.com/inhandnet/incloud-cli/internal/cmdutil"
 	"github.com/inhandnet/incloud-cli/internal/factory"
 	"github.com/inhandnet/incloud-cli/internal/iostreams"
 )
@@ -19,7 +16,7 @@ type ListOptions struct {
 	Name   string
 	Q      string
 	Type   string
-	Expand string
+	Expand []string
 	Fields []string
 }
 
@@ -62,12 +59,7 @@ func NewCmdList(f *factory.Factory) *cobra.Command {
 				return err
 			}
 
-			q := url.Values{}
-			q.Set("page", strconv.Itoa(opts.Page-1))
-			q.Set("limit", strconv.Itoa(opts.Limit))
-			if opts.Sort != "" {
-				q.Set("sort", opts.Sort)
-			}
+			q := cmdutil.NewQuery(cmd, defaultListFields)
 			if opts.Email != "" {
 				q.Set("email", opts.Email)
 			}
@@ -80,18 +72,8 @@ func NewCmdList(f *factory.Factory) *cobra.Command {
 			if opts.Type != "" {
 				q.Set("type", opts.Type)
 			}
-			if opts.Expand != "" {
-				q.Set("expand", opts.Expand)
-			}
 
 			output, _ := cmd.Flags().GetString("output")
-			fields := opts.Fields
-			if len(fields) == 0 && output == "table" {
-				fields = defaultListFields
-			}
-			if len(fields) > 0 {
-				q.Set("fields", strings.Join(fields, ","))
-			}
 
 			body, err := client.Get("/api/v1/users", q)
 			if err != nil {
@@ -109,7 +91,7 @@ func NewCmdList(f *factory.Factory) *cobra.Command {
 	cmd.Flags().StringVar(&opts.Name, "name", "", "Filter by name (LIKE search)")
 	cmd.Flags().StringVarP(&opts.Q, "search", "q", "", "General search query")
 	cmd.Flags().StringVar(&opts.Type, "type", "", "Filter by user type (INTERNAL=org members, EXTERNAL=collaborators)")
-	cmd.Flags().StringVar(&opts.Expand, "expand", "", `Expand related resources (e.g. "roles")`)
+	cmd.Flags().StringSliceVar(&opts.Expand, "expand", nil, `Expand related resources (e.g. "roles")`)
 	cmd.Flags().StringSliceVarP(&opts.Fields, "fields", "f", nil, "Fields to return and display")
 
 	return cmd

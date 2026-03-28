@@ -1,11 +1,9 @@
 package connector
 
 import (
-	"net/url"
-	"strconv"
-
 	"github.com/spf13/cobra"
 
+	"github.com/inhandnet/incloud-cli/internal/cmdutil"
 	"github.com/inhandnet/incloud-cli/internal/factory"
 )
 
@@ -33,11 +31,9 @@ func newCmdAccountLogs(f *factory.Factory) *cobra.Command {
 				return err
 			}
 
-			q := url.Values{}
+			q := cmdutil.NewQuery(cmd, nil)
 			q.Set("after", opts.After)
 			q.Set("before", opts.Before)
-			q.Set("page", strconv.Itoa(opts.Page-1))
-			q.Set("limit", strconv.Itoa(opts.Limit))
 
 			body, err := client.Get("/api/v1/connectors/"+networkID+"/accounts/"+accountID+"/online-logs", q)
 			if err != nil {
