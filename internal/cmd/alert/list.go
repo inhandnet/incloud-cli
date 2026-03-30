@@ -1,9 +1,6 @@
 package alert
 
 import (
-	"encoding/json"
-	"fmt"
-
 	"github.com/spf13/cobra"
 
 	"github.com/inhandnet/incloud-cli/internal/cmdutil"
@@ -22,7 +19,6 @@ type ListOptions struct {
 	Type     []string
 	Ack      string
 	Query    string
-	Count    bool
 }
 
 var defaultListFields = []string{"_id", "type", "priority", "status", "entityName", "ack", "createdAt"}
@@ -68,12 +64,6 @@ func NewCmdList(f *factory.Factory) *cobra.Command {
   # Table output with selected fields
   incloud alert list -o table -f type -f status -f entityName
 
-  # Count unacknowledged alerts
-  incloud alert list --ack false --count
-
-  # Count active alerts for a device
-  incloud alert list --status ACTIVE --device 507f1f77bcf86cd799439011 --count
-
   # Aggregate alert types with jq
   incloud alert list --limit 100 --jq '[.result[].type] | group_by(.) | map({type: .[0], count: length})'`,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -83,10 +73,6 @@ func NewCmdList(f *factory.Factory) *cobra.Command {
 			}
 
 			q := cmdutil.NewQuery(cmd, defaultListFields)
-			if opts.Count {
-				q.Set("page", "0")
-				q.Set("limit", "1")
-			}
 			var priority *int
 			if cmd.Flags().Changed("priority") {
 				priority = &opts.Priority
@@ -98,17 +84,6 @@ func NewCmdList(f *factory.Factory) *cobra.Command {
 			body, err := client.Get("/api/v1/alerts", q)
 			if err != nil {
 				return err
-			}
-
-			if opts.Count {
-				var envelope struct {
-					Total int64 `json:"total"`
-				}
-				if err := json.Unmarshal(body, &envelope); err != nil {
-					return fmt.Errorf("parsing response: %w", err)
-				}
-				fmt.Fprintln(f.IO.Out, envelope.Total)
-				return nil
 			}
 
 			return iostreams.FormatOutput(body, f.IO, output)
@@ -125,7 +100,6 @@ func NewCmdList(f *factory.Factory) *cobra.Command {
 	cmd.Flags().StringArrayVar(&opts.Type, "type", nil, "Filter by alert type (use 'incloud alert rule types' to list available types; can be repeated)")
 	cmd.Flags().StringVar(&opts.Ack, "ack", "", "Filter by acknowledgement status (true/false)")
 	cmd.Flags().StringVarP(&opts.Query, "query", "q", "", "Search by entity name (fuzzy match)")
-	cmd.Flags().BoolVar(&opts.Count, "count", false, "Only print the total count of matching alerts")
 
 	return cmd
 }

@@ -1,8 +1,6 @@
 package feedback
 
 import (
-	"encoding/json"
-	"fmt"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -17,7 +15,6 @@ type listOptions struct {
 	App        string
 	Resolution string
 	Type       string
-	Count      bool
 }
 
 var defaultListFields = []string{"_id", "app", "type", "resolution", "content", "attachments", "createdAt"}
@@ -48,9 +45,6 @@ func NewCmdFeedbackList(f *factory.Factory) *cobra.Command {
   # Show only feedback that has attachments (using jq)
   incloud feedback list --jq '[.result[] | select(.attachments | length > 0)]'
 
-  # Count total feedback entries
-  incloud feedback list --count
-
   # Paginate results
   incloud feedback list --page 2 --limit 10`,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -60,10 +54,6 @@ func NewCmdFeedbackList(f *factory.Factory) *cobra.Command {
 			}
 
 			q := cmdutil.NewQuery(cmd, defaultListFields)
-			if opts.Count {
-				q.Set("page", "0")
-				q.Set("limit", "1")
-			}
 			if opts.App != "" {
 				q.Set("app", opts.App)
 			}
@@ -81,17 +71,6 @@ func NewCmdFeedbackList(f *factory.Factory) *cobra.Command {
 				return err
 			}
 
-			if opts.Count {
-				var envelope struct {
-					Total int64 `json:"total"`
-				}
-				if err := json.Unmarshal(body, &envelope); err != nil {
-					return fmt.Errorf("parsing response: %w", err)
-				}
-				fmt.Fprintln(f.IO.Out, envelope.Total)
-				return nil
-			}
-
 			return iostreams.FormatOutput(body, f.IO, output,
 				iostreams.WithFormatters(iostreams.ColumnFormatters{
 					"attachments": formatAttachments,
@@ -104,7 +83,6 @@ func NewCmdFeedbackList(f *factory.Factory) *cobra.Command {
 	cmd.Flags().StringVar(&opts.App, "app", "", "Filter by app (e.g. star, portal)")
 	cmd.Flags().StringVar(&opts.Resolution, "resolution", "", "Filter by resolution status (new, resolved)")
 	cmd.Flags().StringVar(&opts.Type, "type", "", "Filter by feedback type (issue, question, comment, suggestion)")
-	cmd.Flags().BoolVar(&opts.Count, "count", false, "Only print the total count of matching feedback entries")
 
 	return cmd
 }

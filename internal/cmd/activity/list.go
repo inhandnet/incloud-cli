@@ -1,9 +1,6 @@
 package activity
 
 import (
-	"encoding/json"
-	"fmt"
-
 	"github.com/spf13/cobra"
 
 	"github.com/inhandnet/incloud-cli/internal/cmdutil"
@@ -18,7 +15,6 @@ type ListOptions struct {
 	App    string
 	Action string
 	Actor  string
-	Count  bool
 }
 
 func NewCmdList(f *factory.Factory) *cobra.Command {
@@ -51,10 +47,7 @@ func NewCmdList(f *factory.Factory) *cobra.Command {
   incloud activity list --sort "timestamp,asc"
 
   # Table output with selected fields
-  incloud activity list -o table -f action -f actor.name -f entity.name
-
-  # Count activity logs in a time range
-  incloud activity list --after 2024-01-01T00:00:00Z --count`,
+  incloud activity list -o table -f action -f actor.name -f entity.name`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := f.APIClient()
 			if err != nil {
@@ -62,10 +55,6 @@ func NewCmdList(f *factory.Factory) *cobra.Command {
 			}
 
 			q := cmdutil.NewQuery(cmd, nil)
-			if opts.Count {
-				q.Set("page", "0")
-				q.Set("limit", "1")
-			}
 			if opts.After != "" {
 				q.Set("from", opts.After)
 			}
@@ -89,17 +78,6 @@ func NewCmdList(f *factory.Factory) *cobra.Command {
 				return err
 			}
 
-			if opts.Count {
-				var envelope struct {
-					Total int64 `json:"total"`
-				}
-				if err := json.Unmarshal(body, &envelope); err != nil {
-					return fmt.Errorf("parsing response: %w", err)
-				}
-				fmt.Fprintln(f.IO.Out, envelope.Total)
-				return nil
-			}
-
 			return iostreams.FormatOutput(body, f.IO, output)
 		},
 	}
@@ -110,7 +88,6 @@ func NewCmdList(f *factory.Factory) *cobra.Command {
 	cmd.Flags().StringVar(&opts.App, "app", "", "Filter by application name")
 	cmd.Flags().StringVar(&opts.Action, "action", "", "Filter by action type (e.g. device_created, device_deleted)")
 	cmd.Flags().StringVar(&opts.Actor, "actor", "", "Filter by actor ID")
-	cmd.Flags().BoolVar(&opts.Count, "count", false, "Only print the total count of matching logs")
 
 	return cmd
 }
