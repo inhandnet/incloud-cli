@@ -11,7 +11,7 @@ BINARY := incloud
 
 PLATFORMS ?= linux/amd64 linux/arm64 darwin/amd64 darwin/arm64 windows/amd64
 
-.PHONY: build build-all install clean fmt lint test
+.PHONY: build build-all install clean fmt lint test docs
 
 build:
 	CGO_ENABLED=0 go build -ldflags "$(LDFLAGS)" -o bin/$(BINARY) ./cmd/incloud
@@ -40,3 +40,6 @@ lint:
 
 clean:
 	rm -rf bin/
+
+docs:
+	go run ./cmd/docgen
