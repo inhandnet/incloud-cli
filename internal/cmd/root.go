@@ -1,7 +1,10 @@
 package cmd
 
 import (
+	"encoding/json"
+	"net/url"
 	"os"
+	"time"
 
 	"github.com/spf13/cobra"
 
@@ -76,4 +79,88 @@ func NewCmdRoot(f *factory.Factory) *cobra.Command {
 	}
 
 	return cmd
+}
+
+// SetupSuperAdminFlags hooks into the root help function to unhide
+// super-admin-only flags (e.g. --sudo) when the current user is a super admin.
+// The result is cached to a file per context with a 1-hour TTL to avoid
+// repeated API calls across CLI invocations.
+func SetupSuperAdminFlags(rootCmd *cobra.Command, f *factory.Factory) {
+	origHelp := rootCmd.HelpFunc()
+	rootCmd.SetHelpFunc(func(cmd *cobra.Command, args []string) {
+		if cmd == rootCmd && isSuperAdmin(f) {
+			if fl := rootCmd.PersistentFlags().Lookup("sudo"); fl != nil {
+				fl.Hidden = false
+			}
+		}
+		origHelp(cmd, args)
+	})
+}
+
+const superAdminCacheTTL = 1 * time.Hour
+
+// isSuperAdmin checks the config cache first, falls back to API, then persists.
+func isSuperAdmin(f *factory.Factory) bool {
+	cfg, err := f.Config()
+	if err != nil {
+		return false
+	}
+	ctx, err := cfg.ActiveContext()
+	if err != nil {
+		return false
+	}
+
+	// Use cached value if present and valid
+	if ctx.SuperAdmin != nil &&
+		!ctx.SuperAdminAt.IsZero() &&
+		!ctx.SuperAdminAt.After(time.Now()) &&
+		time.Since(ctx.SuperAdminAt) < superAdminCacheTTL {
+		debug.Log("admin check: using cached value %v", *ctx.SuperAdmin)
+		return *ctx.SuperAdmin
+	}
+
+	result := checkSuperAdmin(f)
+
+	// Persist to config
+	ctx.SuperAdmin = &result
+	ctx.SuperAdminAt = time.Now()
+	_ = f.SaveConfig()
+
+	return result
+}
+
+func checkSuperAdmin(f *factory.Factory) bool {
+	client, err := f.APIClient()
+	if err != nil {
+		debug.Log("admin check: failed to get API client: %v", err)
+		return false
+	}
+
+	q := url.Values{}
+	q.Set("fields", "roles")
+	body, err := client.Get("/api/v1/users/me", q)
+	if err != nil {
+		debug.Log("admin check: API request failed: %v", err)
+		return false
+	}
+
+	var resp struct {
+		Result struct {
+			Roles []struct {
+				Name        string `json:"name"`
+				BuiltInRole bool   `json:"builtInRole"`
+			} `json:"roles"`
+		} `json:"result"`
+	}
+	if err := json.Unmarshal(body, &resp); err != nil {
+		debug.Log("admin check: failed to parse response: %v", err)
+		return false
+	}
+
+	for _, role := range resp.Result.Roles {
+		if role.Name == "root" && role.BuiltInRole {
+			return true
+		}
+	}
+	return false
 }

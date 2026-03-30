@@ -13,6 +13,10 @@ type Context struct {
 	RefreshToken string    `yaml:"refresh_token,omitempty"`
 	User         string    `yaml:"user,omitempty"`
 	ExpiresAt    time.Time `yaml:"expires_at,omitempty"`
+
+	// Cached super admin check result; expires after SuperAdminAt + TTL.
+	SuperAdmin   *bool     `yaml:"super_admin,omitempty"`
+	SuperAdminAt time.Time `yaml:"super_admin_at,omitempty"`
 }
 
 // EffectiveToken returns INCLOUD_TOKEN env var if set, else the stored token.

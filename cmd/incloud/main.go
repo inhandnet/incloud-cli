@@ -55,6 +55,8 @@ func main() {
 	rootCmd.AddCommand(versionCmd.NewCmdVersion(f))
 	rootCmd.AddCommand(webhookCmd.NewCmdWebhook(f))
 
+	cmd.SetupSuperAdminFlags(rootCmd, f)
+
 	// Top-level shortcuts: `incloud login` → `incloud auth login`
 	loginAlias := authCmd.NewCmdLogin(f)
 	loginAlias.Use = "login"
