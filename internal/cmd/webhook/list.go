@@ -9,10 +9,8 @@ import (
 )
 
 type ListOptions struct {
-	Page     int
-	Limit    int
+	cmdutil.ListFlags
 	Provider string
-	Fields   []string
 }
 
 var defaultListFields = []string{"_id", "name", "provider", "webhook", "createdAt"}
@@ -55,10 +53,9 @@ func NewCmdList(f *factory.Factory) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().IntVar(&opts.Page, "page", 1, "Page number (starting from 1)")
-	cmd.Flags().IntVar(&opts.Limit, "limit", 20, "Number of items per page")
+	opts.ListFlags.Register(cmd)
 	cmd.Flags().StringVar(&opts.Provider, "provider", "", "Filter by provider (supported: wechat)")
-	cmd.Flags().StringSliceVarP(&opts.Fields, "fields", "f", nil, "Fields to return and display")
+	opts.ListFlags.RegisterExpand(cmd)
 
 	return cmd
 }

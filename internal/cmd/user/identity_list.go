@@ -11,13 +11,13 @@ import (
 	"github.com/inhandnet/incloud-cli/internal/iostreams"
 )
 
+type IdentityListOptions struct {
+	cmdutil.ListFlags
+	OrgName string
+}
+
 func NewCmdIdentityList(f *factory.Factory) *cobra.Command {
-	var (
-		page    int
-		limit   int
-		orgName string
-		fields  []string
-	)
+	opts := &IdentityListOptions{}
 
 	cmd := &cobra.Command{
 		Use:     "list",
@@ -46,8 +46,8 @@ the assigned roles and optional expiration date for external organizations.`,
 			}
 
 			q := cmdutil.NewQuery(cmd, nil)
-			if orgName != "" {
-				q.Set("orgName", orgName)
+			if opts.OrgName != "" {
+				q.Set("orgName", opts.OrgName)
 			}
 
 			body, err := client.Get("/api/v1/user/identities", q)
@@ -61,10 +61,9 @@ the assigned roles and optional expiration date for external organizations.`,
 		},
 	}
 
-	cmd.Flags().IntVar(&page, "page", 1, "Page number (starting from 1)")
-	cmd.Flags().IntVar(&limit, "limit", 20, "Number of items per page")
-	cmd.Flags().StringVar(&orgName, "org-name", "", "Filter by organization name")
-	cmd.Flags().StringSliceVarP(&fields, "fields", "f", nil, "Fields to return and display")
+	opts.ListFlags.Register(cmd)
+	cmd.Flags().StringVar(&opts.OrgName, "org-name", "", "Filter by organization name")
+	opts.ListFlags.RegisterExpand(cmd)
 
 	return cmd
 }
