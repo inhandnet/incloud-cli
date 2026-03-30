@@ -3,6 +3,7 @@ package connector
 import (
 	"github.com/spf13/cobra"
 
+	"github.com/inhandnet/incloud-cli/internal/cmdutil"
 	"github.com/inhandnet/incloud-cli/internal/factory"
 	"github.com/inhandnet/incloud-cli/internal/iostreams"
 )
@@ -48,8 +49,9 @@ func newCmdDeviceAdd(f *factory.Factory) *cobra.Command {
 				return err
 			}
 
-			writeCreated(f, "Connector device", respBody)
-			return formatOutput(cmd, f.IO, respBody)
+			cmdutil.WriteCreated(f, "Connector device", respBody)
+			output, _ := cmd.Flags().GetString("output")
+			return iostreams.FormatOutput(respBody, f.IO, output)
 		},
 	}
 

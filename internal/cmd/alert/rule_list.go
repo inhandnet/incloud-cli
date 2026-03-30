@@ -9,10 +9,7 @@ import (
 )
 
 type RuleListOptions struct {
-	Page   int
-	Limit  int
-	Sort   string
-	Fields []string
+	cmdutil.ListOpts
 }
 
 var defaultRuleListFields = []string{"_id", "groupIds", "rules", "notify.channels", "createdAt"}
@@ -55,10 +52,7 @@ func NewCmdRuleList(f *factory.Factory) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().IntVar(&opts.Page, "page", 1, "Page number (starting from 1)")
-	cmd.Flags().IntVar(&opts.Limit, "limit", 20, "Number of items per page")
-	cmd.Flags().StringVar(&opts.Sort, "sort", "", `Sort order (e.g. "createdAt,desc")`)
-	cmd.Flags().StringSliceVarP(&opts.Fields, "fields", "f", nil, "Fields to return and display")
+	cmdutil.RegisterListFlags(cmd, &opts.ListOpts)
 
 	return cmd
 }

@@ -9,13 +9,10 @@ import (
 )
 
 type deviceListAllOptions struct {
-	Page      int
-	Limit     int
-	Sort      string
+	cmdutil.ListOpts
 	NetworkID string
 	Connected string
 	Search    string
-	Fields    []string
 }
 
 func newCmdDeviceListAll(f *factory.Factory) *cobra.Command {
@@ -57,13 +54,10 @@ func newCmdDeviceListAll(f *factory.Factory) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().IntVar(&opts.Page, "page", 1, "Page number (starting from 1)")
-	cmd.Flags().IntVar(&opts.Limit, "limit", 20, "Number of items per page")
-	cmd.Flags().StringVar(&opts.Sort, "sort", "", `Sort order (e.g. "createdAt,desc")`)
+	cmdutil.RegisterListFlags(cmd, &opts.ListOpts)
 	cmd.Flags().StringVar(&opts.NetworkID, "network", "", "Filter by network ID (use 'incloud connector network list' to find IDs)")
 	cmd.Flags().StringVar(&opts.Connected, "connected", "", "Filter by connected status (true/false)")
 	cmd.Flags().StringVarP(&opts.Search, "search", "q", "", "Search by name or serial number")
-	cmd.Flags().StringSliceVarP(&opts.Fields, "fields", "f", nil, "Fields to return and display")
 
 	return cmd
 }

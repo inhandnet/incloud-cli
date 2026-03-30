@@ -12,9 +12,7 @@ import (
 )
 
 type ListOptions struct {
-	Page     int
-	Limit    int
-	Sort     string
+	cmdutil.ListOpts
 	After    string
 	Before   string
 	Status   string
@@ -24,7 +22,6 @@ type ListOptions struct {
 	Type     []string
 	Ack      string
 	Query    string
-	Fields   []string
 	Count    bool
 }
 
@@ -118,9 +115,7 @@ func NewCmdList(f *factory.Factory) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().IntVar(&opts.Page, "page", 1, "Page number (starting from 1)")
-	cmd.Flags().IntVar(&opts.Limit, "limit", 20, "Number of items per page")
-	cmd.Flags().StringVar(&opts.Sort, "sort", "", `Sort order (e.g. "createdAt,desc")`)
+	cmdutil.RegisterListFlags(cmd, &opts.ListOpts)
 	cmd.Flags().StringVar(&opts.After, "after", "", "Filter alerts after this time (e.g. 2024-01-01T00:00:00Z)")
 	cmd.Flags().StringVar(&opts.Before, "before", "", "Filter alerts before this time (e.g. 2024-01-31T23:59:59Z)")
 	cmd.Flags().StringVar(&opts.Status, "status", "", "Filter by status (ACTIVE/CLOSED)")
@@ -130,7 +125,6 @@ func NewCmdList(f *factory.Factory) *cobra.Command {
 	cmd.Flags().StringArrayVar(&opts.Type, "type", nil, "Filter by alert type (use 'incloud alert rule types' to list available types; can be repeated)")
 	cmd.Flags().StringVar(&opts.Ack, "ack", "", "Filter by acknowledgement status (true/false)")
 	cmd.Flags().StringVarP(&opts.Query, "query", "q", "", "Search by entity name (fuzzy match)")
-	cmd.Flags().StringSliceVarP(&opts.Fields, "fields", "f", nil, "Fields to return and display")
 	cmd.Flags().BoolVar(&opts.Count, "count", false, "Only print the total count of matching alerts")
 
 	return cmd

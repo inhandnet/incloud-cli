@@ -11,11 +11,8 @@ import (
 var defaultNetworkFields = []string{"_id", "name", "subnet", "counts.deviceCount", "counts.accountCount", "counts.endpointsCount", "createdAt"}
 
 type networkListOptions struct {
-	Page   int
-	Limit  int
-	Sort   string
-	Name   string
-	Fields []string
+	cmdutil.ListOpts
+	Name string
 }
 
 func newCmdNetworkList(f *factory.Factory) *cobra.Command {
@@ -55,11 +52,8 @@ func newCmdNetworkList(f *factory.Factory) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().IntVar(&opts.Page, "page", 1, "Page number (starting from 1)")
-	cmd.Flags().IntVar(&opts.Limit, "limit", 20, "Number of items per page")
-	cmd.Flags().StringVar(&opts.Sort, "sort", "", `Sort order (e.g. "createdAt,desc")`)
+	cmdutil.RegisterListFlags(cmd, &opts.ListOpts)
 	cmd.Flags().StringVar(&opts.Name, "name", "", "Filter by name")
-	cmd.Flags().StringSliceVarP(&opts.Fields, "fields", "f", nil, "Fields to return and display")
 
 	return cmd
 }

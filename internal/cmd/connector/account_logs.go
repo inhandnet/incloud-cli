@@ -5,13 +5,13 @@ import (
 
 	"github.com/inhandnet/incloud-cli/internal/cmdutil"
 	"github.com/inhandnet/incloud-cli/internal/factory"
+	"github.com/inhandnet/incloud-cli/internal/iostreams"
 )
 
 type accountLogsOptions struct {
+	cmdutil.ListOpts
 	After  string
 	Before string
-	Page   int
-	Limit  int
 }
 
 func newCmdAccountLogs(f *factory.Factory) *cobra.Command {
@@ -40,14 +40,14 @@ func newCmdAccountLogs(f *factory.Factory) *cobra.Command {
 				return err
 			}
 
-			return formatOutput(cmd, f.IO, body)
+			output, _ := cmd.Flags().GetString("output")
+			return iostreams.FormatOutput(body, f.IO, output)
 		},
 	}
 
+	cmdutil.RegisterListFlags(cmd, &opts.ListOpts)
 	cmd.Flags().StringVar(&opts.After, "after", "", "Start time (ISO 8601, required)")
 	cmd.Flags().StringVar(&opts.Before, "before", "", "End time (ISO 8601, required)")
-	cmd.Flags().IntVar(&opts.Page, "page", 1, "Page number (starting from 1)")
-	cmd.Flags().IntVar(&opts.Limit, "limit", 20, "Number of items per page")
 	_ = cmd.MarkFlagRequired("after")
 	_ = cmd.MarkFlagRequired("before")
 

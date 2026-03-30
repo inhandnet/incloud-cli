@@ -11,13 +11,10 @@ import (
 var defaultAccountFields = []string{"_id", "name", "vip", "staticIp", "connected", "createdAt"}
 
 type accountListOptions struct {
-	Page      int
-	Limit     int
-	Sort      string
+	cmdutil.ListOpts
 	Name      string
 	Connected string
 	Search    string
-	Fields    []string
 }
 
 func newCmdAccountList(f *factory.Factory) *cobra.Command {
@@ -66,13 +63,10 @@ func newCmdAccountList(f *factory.Factory) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().IntVar(&opts.Page, "page", 1, "Page number (starting from 1)")
-	cmd.Flags().IntVar(&opts.Limit, "limit", 20, "Number of items per page")
-	cmd.Flags().StringVar(&opts.Sort, "sort", "", `Sort order (e.g. "createdAt,desc")`)
+	cmdutil.RegisterListFlags(cmd, &opts.ListOpts)
 	cmd.Flags().StringVar(&opts.Name, "name", "", "Filter by account name")
 	cmd.Flags().StringVar(&opts.Connected, "connected", "", "Filter by connected status (true/false)")
 	cmd.Flags().StringVarP(&opts.Search, "search", "q", "", "Search by name")
-	cmd.Flags().StringSliceVarP(&opts.Fields, "fields", "f", nil, "Fields to return and display")
 
 	return cmd
 }

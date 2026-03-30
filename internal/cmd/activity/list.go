@@ -12,15 +12,12 @@ import (
 )
 
 type ListOptions struct {
-	Page   int
-	Limit  int
-	Sort   string
+	cmdutil.ListOpts
 	After  string
 	Before string
 	App    string
 	Action string
 	Actor  string
-	Fields []string
 	Count  bool
 }
 
@@ -107,15 +104,12 @@ func NewCmdList(f *factory.Factory) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().IntVar(&opts.Page, "page", 1, "Page number (starting from 1)")
-	cmd.Flags().IntVar(&opts.Limit, "limit", 20, "Number of items per page")
-	cmd.Flags().StringVar(&opts.Sort, "sort", "", `Sort order (e.g. "timestamp,desc")`)
+	cmdutil.RegisterListFlags(cmd, &opts.ListOpts)
 	cmd.Flags().StringVar(&opts.After, "after", "", "Filter logs after this time (e.g. 2024-01-01T00:00:00Z)")
 	cmd.Flags().StringVar(&opts.Before, "before", "", "Filter logs before this time (e.g. 2024-01-31T23:59:59Z)")
 	cmd.Flags().StringVar(&opts.App, "app", "", "Filter by application name")
 	cmd.Flags().StringVar(&opts.Action, "action", "", "Filter by action type (e.g. device_created, device_deleted)")
 	cmd.Flags().StringVar(&opts.Actor, "actor", "", "Filter by actor ID")
-	cmd.Flags().StringSliceVarP(&opts.Fields, "fields", "f", nil, "Fields to return and display")
 	cmd.Flags().BoolVar(&opts.Count, "count", false, "Only print the total count of matching logs")
 
 	return cmd

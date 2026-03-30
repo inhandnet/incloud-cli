@@ -5,12 +5,12 @@ import (
 
 	"github.com/inhandnet/incloud-cli/internal/cmdutil"
 	"github.com/inhandnet/incloud-cli/internal/factory"
+	"github.com/inhandnet/incloud-cli/internal/iostreams"
 )
 
 type deviceCandidatesOptions struct {
+	cmdutil.ListOpts
 	Search string
-	Page   int
-	Limit  int
 }
 
 func newCmdDeviceCandidates(f *factory.Factory) *cobra.Command {
@@ -40,13 +40,13 @@ func newCmdDeviceCandidates(f *factory.Factory) *cobra.Command {
 				return err
 			}
 
-			return formatOutput(cmd, f.IO, body)
+			output, _ := cmd.Flags().GetString("output")
+			return iostreams.FormatOutput(body, f.IO, output)
 		},
 	}
 
+	cmdutil.RegisterListFlags(cmd, &opts.ListOpts)
 	cmd.Flags().StringVarP(&opts.Search, "search", "q", "", "Search by name or serial number")
-	cmd.Flags().IntVar(&opts.Page, "page", 1, "Page number (starting from 1)")
-	cmd.Flags().IntVar(&opts.Limit, "limit", 20, "Number of items per page")
 
 	return cmd
 }

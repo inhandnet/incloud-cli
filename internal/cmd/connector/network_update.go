@@ -5,6 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/inhandnet/incloud-cli/internal/cmdutil"
 	"github.com/inhandnet/incloud-cli/internal/factory"
 	"github.com/inhandnet/incloud-cli/internal/iostreams"
 )
@@ -53,8 +54,9 @@ func newCmdNetworkUpdate(f *factory.Factory) *cobra.Command {
 				return err
 			}
 
-			writeUpdated(f, "Connector network", respBody)
-			return formatOutput(cmd, f.IO, respBody)
+			cmdutil.WriteUpdated(f, "Connector network", respBody)
+			output, _ := cmd.Flags().GetString("output")
+			return iostreams.FormatOutput(respBody, f.IO, output)
 		},
 	}
 

@@ -11,14 +11,11 @@ import (
 var defaultEndpointFields = []string{"_id", "name", "lanIp", "vip", "deviceName", "connected", "createdAt"}
 
 type endpointListOptions struct {
-	Page     int
-	Limit    int
-	Sort     string
+	cmdutil.ListOpts
 	Name     string
 	LanIP    string
 	DeviceID string
 	Search   string
-	Fields   []string
 }
 
 func newCmdEndpointList(f *factory.Factory) *cobra.Command {
@@ -73,14 +70,11 @@ func newCmdEndpointList(f *factory.Factory) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().IntVar(&opts.Page, "page", 1, "Page number (starting from 1)")
-	cmd.Flags().IntVar(&opts.Limit, "limit", 20, "Number of items per page")
-	cmd.Flags().StringVar(&opts.Sort, "sort", "", `Sort order (e.g. "createdAt,desc")`)
+	cmdutil.RegisterListFlags(cmd, &opts.ListOpts)
 	cmd.Flags().StringVar(&opts.Name, "name", "", "Filter by name")
 	cmd.Flags().StringVar(&opts.LanIP, "lan-ip", "", "Filter by LAN IP")
 	cmd.Flags().StringVar(&opts.DeviceID, "device-id", "", "Filter by device ID (use 'incloud connector device list <network-id>' to find IDs)")
 	cmd.Flags().StringVarP(&opts.Search, "search", "q", "", "Search by name or LAN IP")
-	cmd.Flags().StringSliceVarP(&opts.Fields, "fields", "f", nil, "Fields to return and display")
 
 	return cmd
 }
