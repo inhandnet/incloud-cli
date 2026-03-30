@@ -127,3 +127,36 @@ func TestGroupList_UserFieldsOverrideDefaults(t *testing.T) {
 		t.Errorf("query %q should not contain default-only field createdAt when user specifies fields", *gotQuery)
 	}
 }
+
+// TestGroupList_OrgFilter verifies --org maps to oid query parameter.
+func TestGroupList_OrgFilter(t *testing.T) {
+	srv, gotQuery := newGroupServer(t)
+	f, _ := newTestFactory(t, srv.URL)
+	root := newGroupListRoot(f)
+	root.SetArgs([]string{"device", "group", "list", "--org", "org123", "-o", "json"})
+	if err := root.Execute(); err != nil {
+		t.Fatalf("group list --org: %v", err)
+	}
+
+	if !strings.Contains(*gotQuery, "oid=org123") {
+		t.Errorf("query %q should contain oid=org123", *gotQuery)
+	}
+}
+
+// TestGroupList_Expand verifies --expand is passed as query parameter.
+func TestGroupList_Expand(t *testing.T) {
+	srv, gotQuery := newGroupServer(t)
+	f, _ := newTestFactory(t, srv.URL)
+	root := newGroupListRoot(f)
+	root.SetArgs([]string{"device", "group", "list", "--expand", "count,org", "-o", "json"})
+	if err := root.Execute(); err != nil {
+		t.Fatalf("group list --expand: %v", err)
+	}
+
+	if !strings.Contains(*gotQuery, "expand=count") {
+		t.Errorf("query %q should contain expand=count", *gotQuery)
+	}
+	if !strings.Contains(*gotQuery, "org") {
+		t.Errorf("query %q should contain org in expand", *gotQuery)
+	}
+}

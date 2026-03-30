@@ -20,6 +20,7 @@ type GroupListOptions struct {
 	Name     string
 	Product  []string
 	Firmware string
+	Org      string
 	Summary  bool
 }
 
@@ -42,6 +43,12 @@ func newCmdGroupList(f *factory.Factory) *cobra.Command {
   # Show device counts per group
   incloud device group list --summary
 
+  # Filter by organization
+  incloud device group list --org 60a1b2c3d4e5f6a7b8c9d0e1
+
+  # Expand device count and org info
+  incloud device group list --expand count,org -o json
+
   # Paginate
   incloud device group list --page 2 --limit 10`,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -59,6 +66,9 @@ func newCmdGroupList(f *factory.Factory) *cobra.Command {
 			}
 			for _, p := range opts.Product {
 				q.Add("product", p)
+			}
+			if opts.Org != "" {
+				q.Set("oid", opts.Org)
 			}
 			output, _ := cmd.Flags().GetString("output")
 			if !cmd.Flags().Changed("fields") && (output == "" || output == "table") {
@@ -91,7 +101,9 @@ func newCmdGroupList(f *factory.Factory) *cobra.Command {
 	cmd.Flags().StringVar(&opts.Name, "name", "", "Filter by group name (fuzzy match)")
 	cmd.Flags().StringArrayVar(&opts.Product, "product", nil, "Filter by product (can be repeated)")
 	cmd.Flags().StringVar(&opts.Firmware, "firmware", "", "Filter by firmware version (fuzzy match)")
+	cmd.Flags().StringVar(&opts.Org, "org", "", "Filter by organization ID")
 	cmd.Flags().BoolVar(&opts.Summary, "summary", false, "Include device counts (online/offline/total) per group")
+	opts.ListFlags.RegisterExpand(cmd, "count", "org", "compatibilities")
 
 	return cmd
 }
