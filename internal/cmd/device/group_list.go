@@ -47,7 +47,7 @@ func newCmdGroupList(f *factory.Factory) *cobra.Command {
   incloud device group list --org 60a1b2c3d4e5f6a7b8c9d0e1
 
   # Expand device count and org info
-  incloud device group list --expand count,org -o json
+  incloud device group list --expand org,nezha-iot-device-summary -o json
 
   # Paginate
   incloud device group list --page 2 --limit 10`,
@@ -103,7 +103,7 @@ func newCmdGroupList(f *factory.Factory) *cobra.Command {
 	cmd.Flags().StringVar(&opts.Firmware, "firmware", "", "Filter by firmware version (fuzzy match)")
 	cmd.Flags().StringVar(&opts.Org, "org", "", "Filter by organization ID")
 	cmd.Flags().BoolVar(&opts.Summary, "summary", false, "Include device counts (online/offline/total) per group")
-	opts.ListFlags.RegisterExpand(cmd, "count", "org", "compatibilities")
+	opts.ListFlags.RegisterExpand(cmd, "org", "nezha-iot-device-summary")
 
 	return cmd
 }

@@ -56,7 +56,7 @@ func NewCmdGet(f *factory.Factory) *cobra.Command {
 	}
 
 	cmd.Flags().StringSliceVarP(&opts.Fields, "fields", "f", nil, "Fields to return and display")
-	cmd.Flags().StringSliceVar(&opts.Expand, "expand", []string{"roles"}, cmdutil.ExpandDesc([]string{"roles", "org"}))
+	cmd.Flags().StringSliceVar(&opts.Expand, "expand", []string{"org", "mfa", "roles"}, cmdutil.ExpandDesc([]string{"org", "mfa", "roles", "phoneNumberDetails", "members"}))
 
 	return cmd
 }

@@ -72,7 +72,6 @@ func NewCmdTunnelLogs(f *factory.Factory) *cobra.Command {
 	cmd.Flags().StringSliceVar(&opts.Protocols, "protocol", nil, "Protocol filter: local_web, local_cli (can be repeated)")
 	cmd.Flags().StringVar(&opts.BusinessID, "business-id", "", "Business resource ID filter")
 	opts.ListFlags.Register(cmd)
-	opts.ListFlags.RegisterExpand(cmd)
 
 	return cmd
 }

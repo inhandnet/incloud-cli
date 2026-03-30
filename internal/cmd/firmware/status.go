@@ -47,8 +47,8 @@ func NewCmdStatus(f *factory.Factory) *cobra.Command {
   # Show a specific module for a device
   incloud firmware status --device 6989ad34a7455f3f0bf9dce2 --module modem
 
-  # Expand device info
-  incloud firmware status --expand device`,
+  # Output as JSON
+  incloud firmware status -o json`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := f.APIClient()
 			if err != nil {
@@ -94,7 +94,6 @@ func NewCmdStatus(f *factory.Factory) *cobra.Command {
 	cmd.Flags().StringVar(&opts.Module, "module", "", "Filter by module name")
 	cmd.Flags().StringVar(&opts.Status, "status", "", "Filter by status (up_to_date|new_firmware_available|queued|in_progress)")
 	cmd.Flags().StringVar(&opts.Version, "version", "", "Filter by current firmware version")
-	opts.ListFlags.RegisterExpand(cmd, "device")
 
 	return cmd
 }

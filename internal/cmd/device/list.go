@@ -42,7 +42,7 @@ func NewCmdList(f *factory.Factory) *cobra.Command {
   incloud device list --online true --product IR615 --org <org-id>
 
   # Expand related resources and output as JSON
-  incloud device list --expand org,firmwareUpgradeStatus -o json
+  incloud device list --expand org,license -o json
 
   # Export offline devices as CSV
   incloud device list --online false --jq '.result[] | [.name, .serialNumber] | @csv'`,
@@ -123,7 +123,7 @@ func NewCmdList(f *factory.Factory) *cobra.Command {
 	cmd.Flags().StringArrayVar(&opts.Label, "label", nil, "Filter by label key=value (can be repeated)")
 	cmd.Flags().StringVar(&opts.ICCID, "iccid", "", "Filter by ICCID")
 	cmd.Flags().StringVar(&opts.MAC, "mac", "", "Filter by MAC address")
-	opts.ListFlags.RegisterExpand(cmd, "org", "firmwareUpgradeStatus")
+	opts.ListFlags.RegisterExpand(cmd, "org", "license", "licenseType")
 
 	return cmd
 }

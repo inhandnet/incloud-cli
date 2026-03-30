@@ -52,7 +52,7 @@ list completed executions for a specific device.`,
   incloud firmware job executions --device 69b24d278760dc6390e28db1
 
   # Expand related resources
-  incloud firmware job executions --expand job
+  incloud firmware job executions --expand job,creator
 
   # Select fields
   incloud firmware job executions -f _id -f status -f device.name`,
@@ -75,7 +75,7 @@ list completed executions for a specific device.`,
 	cmd.Flags().StringVar(&opts.JobID, "job", "", "Filter by job ID")
 	cmd.Flags().StringVar(&opts.Status, "status", "", "Filter by status (QUEUED|INPROGRESS|SUCCEEDED|FAILED|CANCELED)")
 	cmd.Flags().StringVar(&opts.SerialNumber, "sn", "", "Filter by device serial number (supports regex)")
-	opts.ListFlags.RegisterExpand(cmd, "job")
+	opts.ListFlags.RegisterExpand(cmd, "creator", "org", "job", "nezha-device-manager-device")
 
 	cmd.AddCommand(NewCmdExecCancel(f))
 	cmd.AddCommand(NewCmdExecRetry(f))

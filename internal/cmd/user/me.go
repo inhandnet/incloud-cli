@@ -30,7 +30,7 @@ func NewCmdMe(f *factory.Factory) *cobra.Command {
   incloud user me -f username -f email -f locale
 
   # Expand roles
-  incloud user me --expand roles
+  incloud user me --expand phoneNumberDetails
 
   # JSON output
   incloud user me -o json
@@ -57,7 +57,7 @@ func NewCmdMe(f *factory.Factory) *cobra.Command {
 	}
 
 	cmd.Flags().StringSliceVarP(&opts.Fields, "fields", "f", nil, "Fields to return and display")
-	cmd.Flags().StringSliceVar(&opts.Expand, "expand", nil, cmdutil.ExpandDesc([]string{"roles", "org"}))
+	cmd.Flags().StringSliceVar(&opts.Expand, "expand", nil, cmdutil.ExpandDesc([]string{"phoneNumberDetails", "mfa"}))
 
 	return cmd
 }
