@@ -6,6 +6,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/inhandnet/incloud-cli/internal/factory"
+	"github.com/inhandnet/incloud-cli/internal/iostreams"
 )
 
 type UpdateOptions struct {
@@ -37,6 +38,7 @@ func NewCmdUpdate(f *factory.Factory) *cobra.Command {
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			opts.ID = args[0]
+			output, _ := cmd.Flags().GetString("output")
 
 			client, err := f.APIClient()
 			if err != nil {
@@ -75,7 +77,7 @@ func NewCmdUpdate(f *factory.Factory) *cobra.Command {
 				return err
 			}
 
-			return formatOutput(cmd, f.IO, respBody)
+			return iostreams.FormatOutput(respBody, f.IO, output)
 		},
 	}
 

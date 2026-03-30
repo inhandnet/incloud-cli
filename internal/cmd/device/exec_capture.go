@@ -10,6 +10,7 @@ import (
 
 	"github.com/inhandnet/incloud-cli/internal/api"
 	"github.com/inhandnet/incloud-cli/internal/factory"
+	"github.com/inhandnet/incloud-cli/internal/iostreams"
 )
 
 func NewCmdExecCapture(f *factory.Factory) *cobra.Command {
@@ -112,6 +113,7 @@ func runCaptureAndWait(f *factory.Factory, cmd *cobra.Command, deviceID string, 
 // If download is set and capture succeeded, downloads the pcap file.
 // Otherwise prints a download hint.
 func captureFinish(f *factory.Factory, cmd *cobra.Command, client *api.APIClient, respBody []byte, download string) error {
+	output, _ := cmd.Flags().GetString("output")
 	status := strings.ToLower(gjson.GetBytes(respBody, "result.status").String())
 	fileURL := gjson.GetBytes(respBody, "result.fileUrl").String()
 
@@ -126,7 +128,7 @@ func captureFinish(f *factory.Factory, cmd *cobra.Command, client *api.APIClient
 		fmt.Fprintf(f.IO.ErrOut, "Capture finished. Download:\n  incloud api %s --output-file capture.pcap\n", fileURL)
 	}
 
-	return formatOutput(cmd, f.IO, respBody)
+	return iostreams.FormatOutput(respBody, f.IO, output)
 }
 
 func isCaptureTerminalStatus(status string) bool {

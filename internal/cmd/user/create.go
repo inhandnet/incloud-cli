@@ -6,6 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/inhandnet/incloud-cli/internal/api"
 	"github.com/inhandnet/incloud-cli/internal/factory"
 	"github.com/inhandnet/incloud-cli/internal/iostreams"
 )
@@ -35,6 +36,8 @@ func NewCmdCreate(f *factory.Factory) *cobra.Command {
   # With labels
   incloud user create --email user@example.com --password P@ssw0rd --role-id 5f1e5605fe20f674c2d14d45 --label dept=engineering --label level=senior`,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			output, _ := cmd.Flags().GetString("output")
+
 			client, err := f.APIClient()
 			if err != nil {
 				return err
@@ -61,17 +64,15 @@ func NewCmdCreate(f *factory.Factory) *cobra.Command {
 
 			respBody, err := client.Post("/api/v1/users", body)
 			if err != nil {
-				output, _ := cmd.Flags().GetString("output")
 				if respBody != nil {
 					_ = iostreams.FormatOutput(respBody, f.IO, output)
 				}
 				return err
 			}
 
-			id, name := resultIDName(respBody)
+			id, name := api.ResultIDName(respBody)
 			fmt.Fprintf(f.IO.ErrOut, "User %q created. (id: %s)\n", name, id)
 
-			output, _ := cmd.Flags().GetString("output")
 			return iostreams.FormatOutput(respBody, f.IO, output)
 		},
 	}

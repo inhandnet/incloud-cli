@@ -5,6 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/inhandnet/incloud-cli/internal/api"
 	"github.com/inhandnet/incloud-cli/internal/factory"
 	"github.com/inhandnet/incloud-cli/internal/ui"
 )
@@ -36,7 +37,7 @@ func NewCmdDelete(f *factory.Factory) *cobra.Command {
 				return err
 			}
 
-			_, name := resultIDName(body)
+			_, name := api.ResultIDName(body)
 			if name == "" {
 				name = id
 			}

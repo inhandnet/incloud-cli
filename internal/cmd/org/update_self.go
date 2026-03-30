@@ -5,6 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/inhandnet/incloud-cli/internal/api"
 	"github.com/inhandnet/incloud-cli/internal/factory"
 	"github.com/inhandnet/incloud-cli/internal/iostreams"
 )
@@ -32,6 +33,8 @@ func NewCmdUpdateSelf(f *factory.Factory) *cobra.Command {
   # Update multiple fields
   incloud org update-self --name "New Name" --description "Updated desc" --phone "+1234567890"`,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			output, _ := cmd.Flags().GetString("output")
+
 			client, err := f.APIClient()
 			if err != nil {
 				return err
@@ -67,20 +70,18 @@ func NewCmdUpdateSelf(f *factory.Factory) *cobra.Command {
 
 			respBody, err := client.Put("/api/v1/orgs/self", body)
 			if err != nil {
-				output, _ := cmd.Flags().GetString("output")
 				if respBody != nil {
 					_ = iostreams.FormatOutput(respBody, f.IO, output)
 				}
 				return err
 			}
 
-			id, name := resultIDName(respBody)
+			id, name := api.ResultIDName(respBody)
 			if name == "" {
 				name = id
 			}
 			fmt.Fprintf(f.IO.ErrOut, "Organization %q (%s) updated.\n", name, id)
 
-			output, _ := cmd.Flags().GetString("output")
 			return iostreams.FormatOutput(respBody, f.IO, output)
 		},
 	}

@@ -6,6 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/inhandnet/incloud-cli/internal/api"
 	"github.com/inhandnet/incloud-cli/internal/factory"
 	"github.com/inhandnet/incloud-cli/internal/iostreams"
 )
@@ -40,6 +41,7 @@ func NewCmdUpdate(f *factory.Factory) *cobra.Command {
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			id := args[0]
+			output, _ := cmd.Flags().GetString("output")
 
 			client, err := f.APIClient()
 			if err != nil {
@@ -93,20 +95,18 @@ func NewCmdUpdate(f *factory.Factory) *cobra.Command {
 
 			respBody, err := client.Put("/api/v1/users/"+id, body)
 			if err != nil {
-				output, _ := cmd.Flags().GetString("output")
 				if respBody != nil {
 					_ = iostreams.FormatOutput(respBody, f.IO, output)
 				}
 				return err
 			}
 
-			respID, name := resultIDName(respBody)
+			respID, name := api.ResultIDName(respBody)
 			if name == "" {
 				name = id
 			}
 			fmt.Fprintf(f.IO.ErrOut, "User %q (%s) updated.\n", name, respID)
 
-			output, _ := cmd.Flags().GetString("output")
 			return iostreams.FormatOutput(respBody, f.IO, output)
 		},
 	}

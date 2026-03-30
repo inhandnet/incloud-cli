@@ -5,6 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/inhandnet/incloud-cli/internal/api"
 	"github.com/inhandnet/incloud-cli/internal/factory"
 	"github.com/inhandnet/incloud-cli/internal/iostreams"
 )
@@ -42,6 +43,8 @@ to create the admin user. For sub-organizations, only --name is required.`,
   incloud org create --name "Acme Corp" --email admin@acme.com --password P@ssw0rd \
     --country-code US --biz-category TRANSPORTATION --phone "+1234567890"`,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			output, _ := cmd.Flags().GetString("output")
+
 			client, err := f.APIClient()
 			if err != nil {
 				return err
@@ -80,17 +83,15 @@ to create the admin user. For sub-organizations, only --name is required.`,
 
 			respBody, err := client.Post("/api/v1/orgs", body)
 			if err != nil {
-				output, _ := cmd.Flags().GetString("output")
 				if respBody != nil {
 					_ = iostreams.FormatOutput(respBody, f.IO, output)
 				}
 				return err
 			}
 
-			id, name := resultIDName(respBody)
+			id, name := api.ResultIDName(respBody)
 			fmt.Fprintf(f.IO.ErrOut, "Organization %q created. (id: %s)\n", name, id)
 
-			output, _ := cmd.Flags().GetString("output")
 			return iostreams.FormatOutput(respBody, f.IO, output)
 		},
 	}

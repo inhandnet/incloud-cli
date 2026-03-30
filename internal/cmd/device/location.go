@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/inhandnet/incloud-cli/internal/factory"
+	"github.com/inhandnet/incloud-cli/internal/iostreams"
 )
 
 func NewCmdLocation(f *factory.Factory) *cobra.Command {
@@ -38,6 +39,7 @@ func newCmdLocationGet(f *factory.Factory) *cobra.Command {
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			deviceID := args[0]
+			output, _ := cmd.Flags().GetString("output")
 
 			client, err := f.APIClient()
 			if err != nil {
@@ -56,7 +58,7 @@ func newCmdLocationGet(f *factory.Factory) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			return formatOutput(cmd, f.IO, locBody)
+			return iostreams.FormatOutput(locBody, f.IO, output)
 		},
 	}
 
@@ -82,6 +84,7 @@ func newCmdLocationSet(f *factory.Factory) *cobra.Command {
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			deviceID := args[0]
+			output, _ := cmd.Flags().GetString("output")
 
 			client, err := f.APIClient()
 			if err != nil {
@@ -106,7 +109,7 @@ func newCmdLocationSet(f *factory.Factory) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			return formatOutput(cmd, f.IO, locBody)
+			return iostreams.FormatOutput(locBody, f.IO, output)
 		},
 	}
 
@@ -130,6 +133,7 @@ func newCmdLocationUnpin(f *factory.Factory) *cobra.Command {
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			deviceID := args[0]
+			output, _ := cmd.Flags().GetString("output")
 
 			client, err := f.APIClient()
 			if err != nil {
@@ -147,7 +151,7 @@ func newCmdLocationUnpin(f *factory.Factory) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			return formatOutput(cmd, f.IO, locBody)
+			return iostreams.FormatOutput(locBody, f.IO, output)
 		},
 	}
 
@@ -164,6 +168,7 @@ func newCmdLocationRefresh(f *factory.Factory) *cobra.Command {
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			deviceID := args[0]
+			output, _ := cmd.Flags().GetString("output")
 
 			client, err := f.APIClient()
 			if err != nil {
@@ -179,7 +184,7 @@ func newCmdLocationRefresh(f *factory.Factory) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			return formatOutput(cmd, f.IO, locBody)
+			return iostreams.FormatOutput(locBody, f.IO, output)
 		},
 	}
 

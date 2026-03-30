@@ -13,6 +13,7 @@ import (
 
 	"github.com/inhandnet/incloud-cli/internal/api"
 	"github.com/inhandnet/incloud-cli/internal/factory"
+	"github.com/inhandnet/incloud-cli/internal/iostreams"
 )
 
 // cleanDiagnosisParams removes zero-value entries from a params map.
@@ -43,6 +44,8 @@ func cleanDiagnosisParams(params map[string]any) map[string]any {
 
 // runDiagnosis is a shared helper for POST diagnosis endpoints.
 func runDiagnosis(f *factory.Factory, cmd *cobra.Command, deviceID, tool string, params map[string]any) error {
+	output, _ := cmd.Flags().GetString("output")
+
 	client, err := f.APIClient()
 	if err != nil {
 		return err
@@ -55,7 +58,7 @@ func runDiagnosis(f *factory.Factory, cmd *cobra.Command, deviceID, tool string,
 		return err
 	}
 
-	return formatOutput(cmd, f.IO, respBody)
+	return iostreams.FormatOutput(respBody, f.IO, output)
 }
 
 // setupTaskCancellation wires Ctrl+C to cancel a diagnosis task.
@@ -203,6 +206,8 @@ func runDiagnosisStreamReplace(f *factory.Factory, cmd *cobra.Command, deviceID,
 // getDiagnosisStatus is a shared helper for GET diagnosis status endpoints.
 // An optional url.Values can be passed to add query parameters.
 func getDiagnosisStatus(f *factory.Factory, cmd *cobra.Command, deviceID, tool string, query ...url.Values) error {
+	output, _ := cmd.Flags().GetString("output")
+
 	client, err := f.APIClient()
 	if err != nil {
 		return err
@@ -218,5 +223,5 @@ func getDiagnosisStatus(f *factory.Factory, cmd *cobra.Command, deviceID, tool s
 		return err
 	}
 
-	return formatOutput(cmd, f.IO, respBody)
+	return iostreams.FormatOutput(respBody, f.IO, output)
 }

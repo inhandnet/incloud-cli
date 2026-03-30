@@ -4,6 +4,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/inhandnet/incloud-cli/internal/factory"
+	"github.com/inhandnet/incloud-cli/internal/iostreams"
 )
 
 func newCmdDeviceSubnets(f *factory.Factory) *cobra.Command {
@@ -24,7 +25,8 @@ func newCmdDeviceSubnets(f *factory.Factory) *cobra.Command {
 				return err
 			}
 
-			return formatOutput(cmd, f.IO, body)
+			output, _ := cmd.Flags().GetString("output")
+			return iostreams.FormatOutput(body, f.IO, output)
 		},
 	}
 

@@ -8,6 +8,7 @@ import (
 	"github.com/tidwall/gjson"
 
 	"github.com/inhandnet/incloud-cli/internal/api"
+	"github.com/inhandnet/incloud-cli/internal/cmdutil"
 	"github.com/inhandnet/incloud-cli/internal/factory"
 	"github.com/inhandnet/incloud-cli/internal/iostreams"
 	"github.com/inhandnet/incloud-cli/internal/ui"
@@ -72,6 +73,8 @@ will be prompted to enter it.`,
 }
 
 func runCreate(cmd *cobra.Command, f *factory.Factory, opts *CreateOptions) error {
+	output, _ := cmd.Flags().GetString("output")
+
 	client, err := f.APIClient()
 	if err != nil {
 		return err
@@ -158,11 +161,9 @@ func runCreate(cmd *cobra.Command, f *factory.Factory, opts *CreateOptions) erro
 	}
 
 	// Step 5: Success message
-	name := gjson.GetBytes(respBody, "result.name").String()
-	id := gjson.GetBytes(respBody, "result._id").String()
-	fmt.Fprintf(f.IO.ErrOut, "Device %q created. (id: %s)\n", name, id)
+	cmdutil.WriteCreated(f, "Device", respBody)
 
-	return formatOutput(cmd, f.IO, respBody)
+	return iostreams.FormatOutput(respBody, f.IO, output)
 }
 
 // snValidation holds the result of serial number validation.
@@ -274,8 +275,3 @@ func parseKeyValues(pairs []string) (map[string]string, error) {
 	return m, nil
 }
 
-// formatOutput handles -o flag output formatting, shared by create/update.
-func formatOutput(cmd *cobra.Command, streams *iostreams.IOStreams, body []byte) error {
-	output, _ := cmd.Flags().GetString("output")
-	return iostreams.FormatOutput(body, streams, output)
-}

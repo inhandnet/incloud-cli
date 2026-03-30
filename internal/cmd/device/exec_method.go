@@ -9,6 +9,7 @@ import (
 
 	"github.com/inhandnet/incloud-cli/internal/api"
 	"github.com/inhandnet/incloud-cli/internal/factory"
+	"github.com/inhandnet/incloud-cli/internal/iostreams"
 )
 
 func NewCmdExecMethod(f *factory.Factory) *cobra.Command {
@@ -61,6 +62,8 @@ is used and the request is processed asynchronously.`,
 }
 
 func invokeMethod(cmd *cobra.Command, f *factory.Factory, client *api.APIClient, id, method string, timeout int, payload interface{}) error {
+	output, _ := cmd.Flags().GetString("output")
+
 	body := map[string]interface{}{
 		"method":  method,
 		"timeout": timeout,
@@ -74,7 +77,7 @@ func invokeMethod(cmd *cobra.Command, f *factory.Factory, client *api.APIClient,
 		return err
 	}
 
-	return formatOutput(cmd, f.IO, respBody)
+	return iostreams.FormatOutput(respBody, f.IO, output)
 }
 
 func bulkInvokeMethod(cmd *cobra.Command, f *factory.Factory, client *api.APIClient, ids []string, method string, payload interface{}) error {
