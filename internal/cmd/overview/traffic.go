@@ -47,11 +47,8 @@ func NewCmdTraffic(f *factory.Factory) *cobra.Command {
   # Top 5 devices
   incloud overview traffic --n 5
 
-  # JSON output
-  incloud overview traffic -o json
-
-  # Table output with selected fields
-  incloud overview traffic -o table -f deviceName -f total`,
+  # JSON output (summary + trend + topDevices)
+  incloud overview traffic -o json`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runTraffic(cmd, f, opts)
 		},
@@ -135,65 +132,132 @@ func runTraffic(cmd *cobra.Command, f *factory.Factory, opts *TrafficOptions) er
 
 	switch output {
 	case "json", "jsonc", "yaml":
+		summary := buildTrafficSummary(results["overview"])
+		trend := buildTrafficTrend(results["overview"])
 		merged := map[string]json.RawMessage{
-			"overview":   results["overview"],
+			"summary":    mustMarshalRaw(summary),
+			"trend":      mustMarshalRaw(trend),
 			"topDevices": results["topk"],
 		}
 		b, _ := json.Marshal(merged)
 		return iostreams.FormatOutput(b, f.IO, output)
 
-	case "table":
-		wrapped := []byte(`{"result":` + string(results["topk"]) + `}`)
-		if err := iostreams.FormatOutput(wrapped, f.IO, "table", iostreams.WithFormatters(trafficFormatters)); err != nil {
-			return err
-		}
-
-	default:
-		printTrafficDashboard(f.IO, results, opts.Fields)
+	default: // table and human-readable
+		return printTrafficDashboard(f.IO, results)
 	}
-
-	return nil
 }
 
-func printTrafficDashboard(io *iostreams.IOStreams, data map[string]json.RawMessage, fields []string) {
+// overviewSeries is the parsed form of /api/v1/datausage/overview result.
+type overviewSeries struct {
+	Series []struct {
+		Type   string          `json:"type"`
+		Fields []string        `json:"fields"`
+		Data   [][]interface{} `json:"data"`
+	} `json:"series"`
+}
+
+func parseOverviewSeries(raw json.RawMessage) *overviewSeries {
+	var s overviewSeries
+	if json.Unmarshal(raw, &s) != nil {
+		return nil
+	}
+	return &s
+}
+
+// buildTrafficSummary aggregates each series into a single row per traffic type.
+func buildTrafficSummary(raw json.RawMessage) []map[string]any {
+	s := parseOverviewSeries(raw)
+	if s == nil {
+		return nil
+	}
+	rows := make([]map[string]any, 0, len(s.Series))
+	for _, series := range s.Series {
+		txIdx := fieldIndex(series.Fields, "tx")
+		rxIdx := fieldIndex(series.Fields, "rx")
+		totalIdx := fieldIndex(series.Fields, "total")
+		var txSum, rxSum, totalSum float64
+		for _, row := range series.Data {
+			if txIdx >= 0 && txIdx < len(row) {
+				txSum += toFloat(row[txIdx])
+			}
+			if rxIdx >= 0 && rxIdx < len(row) {
+				rxSum += toFloat(row[rxIdx])
+			}
+			if totalIdx >= 0 && totalIdx < len(row) {
+				totalSum += toFloat(row[totalIdx])
+			}
+		}
+		rows = append(rows, map[string]any{
+			"type":  series.Type,
+			"tx":    txSum,
+			"rx":    rxSum,
+			"total": totalSum,
+		})
+	}
+	return rows
+}
+
+// buildTrafficTrend flattens series data into one row per (type, timestamp).
+func buildTrafficTrend(raw json.RawMessage) []map[string]any {
+	s := parseOverviewSeries(raw)
+	if s == nil {
+		return nil
+	}
+	var rows []map[string]any
+	for _, series := range s.Series {
+		for _, row := range series.Data {
+			obj := map[string]any{"type": series.Type}
+			for i, field := range series.Fields {
+				if i < len(row) {
+					obj[field] = row[i]
+				}
+			}
+			rows = append(rows, obj)
+		}
+	}
+	return rows
+}
+
+func mustMarshalRaw(v any) json.RawMessage {
+	b, _ := json.Marshal(v)
+	return b
+}
+
+func printTrafficDashboard(io *iostreams.IOStreams, data map[string]json.RawMessage) error {
 	c := iostreams.NewColorizer(io.TermOutput())
 	out := io.Out
 
+	summary := buildTrafficSummary(data["overview"])
+	trend := buildTrafficTrend(data["overview"])
+
 	// --- Traffic Summary ---
 	fmt.Fprintln(out, c.Bold("Traffic Summary"))
-	var trafficData struct {
-		Series []struct {
-			Type   string          `json:"type"`
-			Fields []string        `json:"fields"`
-			Data   [][]interface{} `json:"data"`
-		} `json:"series"`
-	}
-	if json.Unmarshal(data["overview"], &trafficData) == nil && len(trafficData.Series) > 0 {
-		for _, s := range trafficData.Series {
-			txIdx := fieldIndex(s.Fields, "tx")
-			rxIdx := fieldIndex(s.Fields, "rx")
-			totalIdx := fieldIndex(s.Fields, "total")
-			var txSum, rxSum, totalSum float64
-			for _, row := range s.Data {
-				if txIdx >= 0 && txIdx < len(row) {
-					txSum += toFloat(row[txIdx])
-				}
-				if rxIdx >= 0 && rxIdx < len(row) {
-					rxSum += toFloat(row[rxIdx])
-				}
-				if totalIdx >= 0 && totalIdx < len(row) {
-					totalSum += toFloat(row[totalIdx])
-				}
-			}
+	if len(summary) > 0 {
+		for _, row := range summary {
 			fmt.Fprintf(out, "  %s — TX: %s  RX: %s  Total: %s\n",
-				s.Type,
-				c.Bold(formatBytes(txSum)),
-				c.Bold(formatBytes(rxSum)),
-				c.Bold(formatBytes(totalSum)),
+				row["type"],
+				c.Bold(formatBytes(toFloat(row["tx"]))),
+				c.Bold(formatBytes(toFloat(row["rx"]))),
+				c.Bold(formatBytes(toFloat(row["total"]))),
 			)
 		}
 	} else {
 		fmt.Fprintln(out, c.Gray("  No traffic data"))
+	}
+	fmt.Fprintln(out)
+
+	// --- Traffic Trend ---
+	fmt.Fprintln(out, c.Bold("Traffic Trend"))
+	if len(trend) > 0 {
+		wrapped, _ := json.Marshal(map[string]any{"result": trend})
+		if err := iostreams.FormatOutput(wrapped, io, "table",
+			iostreams.WithColumns("type", "time", "tx", "rx", "total"),
+			iostreams.WithFormatters(trafficFormatters),
+		); err != nil {
+			fmt.Fprintln(out, c.Gray("  No trend data"))
+		}
+	} else {
+		fmt.Fprintln(out, c.Gray("  No trend data"))
 	}
 	fmt.Fprintln(out)
 
@@ -205,4 +269,6 @@ func printTrafficDashboard(io *iostreams.IOStreams, data map[string]json.RawMess
 	); err != nil {
 		fmt.Fprintln(out, c.Gray("  No top device data"))
 	}
+
+	return nil
 }
