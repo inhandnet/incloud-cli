@@ -108,7 +108,8 @@ func TestChainTransforms(t *testing.T) {
 
 func TestChainTransforms_ErrorPropagation(t *testing.T) {
 	fail := func([]byte) ([]byte, error) {
-		return nil, json.Unmarshal([]byte("invalid"), nil)
+		var v any
+		return nil, json.Unmarshal([]byte("invalid"), &v)
 	}
 	noop := func(data []byte) ([]byte, error) { return data, nil }
 
