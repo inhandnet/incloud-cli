@@ -17,7 +17,7 @@ type listOptions struct {
 	Type       string
 }
 
-var defaultListFields = []string{"_id", "app", "type", "resolution", "content", "attachments", "createdAt"}
+var defaultListFields = []string{"_id", "app", "type", "resolution", "reply", "content", "attachments", "createdAt"}
 
 func NewCmdFeedbackList(f *factory.Factory) *cobra.Command {
 	opts := &listOptions{}
