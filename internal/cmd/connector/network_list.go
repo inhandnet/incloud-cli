@@ -11,7 +11,7 @@ import (
 var defaultNetworkFields = []string{"_id", "name", "subnet", "counts.deviceCount", "counts.accountCount", "counts.endpointsCount", "createdAt"}
 
 type networkListOptions struct {
-	cmdutil.ListOpts
+	cmdutil.ListFlags
 	Name string
 }
 
@@ -52,7 +52,7 @@ func newCmdNetworkList(f *factory.Factory) *cobra.Command {
 		},
 	}
 
-	cmdutil.RegisterListFlags(cmd, &opts.ListOpts)
+	opts.ListFlags.Register(cmd)
 	cmd.Flags().StringVar(&opts.Name, "name", "", "Filter by name")
 
 	return cmd

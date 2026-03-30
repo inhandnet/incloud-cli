@@ -11,17 +11,13 @@ import (
 )
 
 type ListOptions struct {
-	Page         int
-	Limit        int
-	Sort         string
+	cmdutil.ListFlags
 	Name         string
 	Email        string
 	ContactEmail string
 	Q            string
 	Ancestor     string
 	Depth        int
-	Expand       []string
-	Fields       []string
 }
 
 func NewCmdList(f *factory.Factory) *cobra.Command {
@@ -83,17 +79,14 @@ func NewCmdList(f *factory.Factory) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().IntVar(&opts.Page, "page", 1, "Page number (starting from 1)")
-	cmd.Flags().IntVar(&opts.Limit, "limit", 20, "Number of items per page")
-	cmd.Flags().StringVar(&opts.Sort, "sort", "", `Sort order (e.g. "createdAt,desc")`)
+	opts.ListFlags.Register(cmd)
 	cmd.Flags().StringVar(&opts.Name, "name", "", "Filter by name (LIKE search)")
 	cmd.Flags().StringVar(&opts.Email, "email", "", "Filter by email (LIKE search)")
 	cmd.Flags().StringVar(&opts.ContactEmail, "contact-email", "", "Filter by contact email (LIKE search)")
 	cmd.Flags().StringVarP(&opts.Q, "search", "q", "", "General search query")
 	cmd.Flags().StringVar(&opts.Ancestor, "ancestor", "", "Filter by ancestor organization ID (use 'incloud org list' or 'incloud org self' to find IDs)")
 	cmd.Flags().IntVar(&opts.Depth, "depth", 0, "Organization tree depth (default: API returns depth 1)")
-	cmd.Flags().StringSliceVar(&opts.Expand, "expand", nil, `Expand related resources (e.g. "parent")`)
-	cmd.Flags().StringSliceVarP(&opts.Fields, "fields", "f", nil, "Fields to return and display")
+	opts.ListFlags.RegisterExpand(cmd)
 
 	return cmd
 }

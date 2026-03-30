@@ -11,7 +11,7 @@ import (
 var defaultEndpointFields = []string{"_id", "name", "lanIp", "vip", "deviceName", "connected", "createdAt"}
 
 type endpointListOptions struct {
-	cmdutil.ListOpts
+	cmdutil.ListFlags
 	Name     string
 	LanIP    string
 	DeviceID string
@@ -70,7 +70,7 @@ func newCmdEndpointList(f *factory.Factory) *cobra.Command {
 		},
 	}
 
-	cmdutil.RegisterListFlags(cmd, &opts.ListOpts)
+	opts.ListFlags.Register(cmd)
 	cmd.Flags().StringVar(&opts.Name, "name", "", "Filter by name")
 	cmd.Flags().StringVar(&opts.LanIP, "lan-ip", "", "Filter by LAN IP")
 	cmd.Flags().StringVar(&opts.DeviceID, "device-id", "", "Filter by device ID (use 'incloud connector device list <network-id>' to find IDs)")

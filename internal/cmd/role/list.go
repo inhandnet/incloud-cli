@@ -9,11 +9,8 @@ import (
 )
 
 type ListOptions struct {
-	Page   int
-	Limit  int
-	Sort   string
+	cmdutil.ListFlags
 	App    string
-	Fields []string
 }
 
 var defaultListFields = []string{"_id", "name", "description", "builtInRole", "subOrgVisible"}
@@ -56,11 +53,8 @@ func NewCmdList(f *factory.Factory) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().IntVar(&opts.Page, "page", 1, "Page number (starting from 1)")
-	cmd.Flags().IntVar(&opts.Limit, "limit", 20, "Number of items per page")
-	cmd.Flags().StringVar(&opts.Sort, "sort", "", `Sort order (e.g. "createdAt,desc")`)
+	opts.ListFlags.Register(cmd)
 	cmd.Flags().StringVar(&opts.App, "app", "", "Filter by application (e.g. portal, console)")
-	cmd.Flags().StringSliceVarP(&opts.Fields, "fields", "f", nil, "Fields to return and display")
 
 	return cmd
 }

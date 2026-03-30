@@ -13,13 +13,10 @@ import (
 )
 
 type listOptions struct {
-	Page       int
-	Limit      int
-	Sort       string
+	cmdutil.ListFlags
 	App        string
 	Resolution string
 	Type       string
-	Fields     []string
 	Count      bool
 }
 
@@ -103,13 +100,10 @@ func NewCmdFeedbackList(f *factory.Factory) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().IntVar(&opts.Page, "page", 1, "Page number (starting from 1)")
-	cmd.Flags().IntVar(&opts.Limit, "limit", 20, "Number of items per page")
-	cmd.Flags().StringVar(&opts.Sort, "sort", "", `Sort order (e.g. "createdAt,desc")`)
+	opts.ListFlags.Register(cmd)
 	cmd.Flags().StringVar(&opts.App, "app", "", "Filter by app (e.g. star, portal)")
 	cmd.Flags().StringVar(&opts.Resolution, "resolution", "", "Filter by resolution status (new, resolved)")
 	cmd.Flags().StringVar(&opts.Type, "type", "", "Filter by feedback type (issue, question, comment, suggestion)")
-	cmd.Flags().StringSliceVarP(&opts.Fields, "fields", "f", nil, "Fields to return and display")
 	cmd.Flags().BoolVar(&opts.Count, "count", false, "Only print the total count of matching feedback entries")
 
 	return cmd

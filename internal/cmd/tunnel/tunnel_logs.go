@@ -14,11 +14,7 @@ type TunnelLogsOptions struct {
 	Type       string
 	Protocols  []string
 	BusinessID string
-	Expand     []string
-	Page       int
-	Limit      int
-	Sort       string
-	Fields     []string
+	cmdutil.ListFlags
 }
 
 var defaultTunnelLogsFields = []string{
@@ -75,11 +71,8 @@ func NewCmdTunnelLogs(f *factory.Factory) *cobra.Command {
 	cmd.Flags().StringVar(&opts.Type, "type", "local", "Tunnel type filter")
 	cmd.Flags().StringSliceVar(&opts.Protocols, "protocol", nil, "Protocol filter: local_web, local_cli (can be repeated)")
 	cmd.Flags().StringVar(&opts.BusinessID, "business-id", "", "Business resource ID filter")
-	cmd.Flags().IntVar(&opts.Page, "page", 1, "Page number (starting from 1)")
-	cmd.Flags().IntVar(&opts.Limit, "limit", 20, "Number of items per page")
-	cmd.Flags().StringVar(&opts.Sort, "sort", "", `Sort order (e.g. "createdAt,desc")`)
-	cmd.Flags().StringSliceVar(&opts.Expand, "expand", nil, "Expand related objects: creator")
-	cmd.Flags().StringSliceVarP(&opts.Fields, "fields", "f", nil, "Fields to return and display")
+	opts.ListFlags.Register(cmd)
+	opts.ListFlags.RegisterExpand(cmd)
 
 	return cmd
 }

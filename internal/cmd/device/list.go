@@ -9,16 +9,12 @@ import (
 )
 
 type ListOptions struct {
-	Page    int
-	Limit   int
-	Sort    string
+	cmdutil.ListFlags
 	Query   string
 	Online  string
 	Status  string
 	Product []string
 	Group   []string
-	Fields  []string
-	Expand  []string
 }
 
 var defaultListFields = []string{"_id", "name", "serialNumber", "online", "product", "firmware"}
@@ -99,16 +95,13 @@ func NewCmdList(f *factory.Factory) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().IntVar(&opts.Page, "page", 1, "Page number (starting from 1)")
-	cmd.Flags().IntVar(&opts.Limit, "limit", 20, "Number of items per page")
-	cmd.Flags().StringVar(&opts.Sort, "sort", "", "Sort order (e.g. \"createdAt,desc\")")
+	opts.ListFlags.Register(cmd)
 	cmd.Flags().StringVarP(&opts.Query, "query", "q", "", "Search by name or serial number")
 	cmd.Flags().StringVar(&opts.Online, "online", "", "Filter by online status (true/false)")
 	cmd.Flags().StringVar(&opts.Status, "status", "", "Filter by status (online/offline)")
 	cmd.Flags().StringArrayVar(&opts.Product, "product", nil, "Filter by product (can be repeated)")
 	cmd.Flags().StringArrayVar(&opts.Group, "group", nil, "Filter by device group ID (can be repeated)")
-	cmd.Flags().StringSliceVarP(&opts.Fields, "fields", "f", nil, "Fields to return and display")
-	cmd.Flags().StringSliceVar(&opts.Expand, "expand", nil, "Expand related resources (e.g. org,firmwareUpgradeStatus,compatibilities)")
+	opts.ListFlags.RegisterExpand(cmd)
 
 	return cmd
 }

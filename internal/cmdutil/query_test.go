@@ -338,59 +338,59 @@ func TestNewQuery_NoOutputFlag(t *testing.T) {
 	}
 }
 
-func TestRegisterListFlags(t *testing.T) {
-	opts := &ListOpts{}
+func TestListFlags_Register(t *testing.T) {
+	lf := &ListFlags{}
 	cmd := &cobra.Command{Use: "test"}
-	RegisterListFlags(cmd, opts)
+	lf.Register(cmd)
 
 	cmd.SetArgs([]string{"--page", "2", "--limit", "50", "--sort", "name,asc", "--fields", "a,b"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatal(err)
 	}
 
-	if opts.Page != 2 {
-		t.Errorf("Page: got %d, want 2", opts.Page)
+	if lf.Page != 2 {
+		t.Errorf("Page: got %d, want 2", lf.Page)
 	}
-	if opts.Limit != 50 {
-		t.Errorf("Limit: got %d, want 50", opts.Limit)
+	if lf.Limit != 50 {
+		t.Errorf("Limit: got %d, want 50", lf.Limit)
 	}
-	if opts.Sort != "name,asc" {
-		t.Errorf("Sort: got %q, want %q", opts.Sort, "name,asc")
+	if lf.Sort != "name,asc" {
+		t.Errorf("Sort: got %q, want %q", lf.Sort, "name,asc")
 	}
-	if len(opts.Fields) != 2 || opts.Fields[0] != "a" || opts.Fields[1] != "b" {
-		t.Errorf("Fields: got %v, want [a b]", opts.Fields)
+	if len(lf.Fields) != 2 || lf.Fields[0] != "a" || lf.Fields[1] != "b" {
+		t.Errorf("Fields: got %v, want [a b]", lf.Fields)
 	}
 }
 
-func TestRegisterListFlags_Defaults(t *testing.T) {
-	opts := &ListOpts{}
+func TestListFlags_Register_Defaults(t *testing.T) {
+	lf := &ListFlags{}
 	cmd := &cobra.Command{Use: "test"}
-	RegisterListFlags(cmd, opts)
+	lf.Register(cmd)
 
 	cmd.SetArgs([]string{})
 	if err := cmd.Execute(); err != nil {
 		t.Fatal(err)
 	}
 
-	if opts.Page != 1 {
-		t.Errorf("Page default: got %d, want 1", opts.Page)
+	if lf.Page != 1 {
+		t.Errorf("Page default: got %d, want 1", lf.Page)
 	}
-	if opts.Limit != 20 {
-		t.Errorf("Limit default: got %d, want 20", opts.Limit)
+	if lf.Limit != 20 {
+		t.Errorf("Limit default: got %d, want 20", lf.Limit)
 	}
 }
 
-func TestRegisterExpandFlag(t *testing.T) {
-	var expand []string
+func TestListFlags_RegisterExpand(t *testing.T) {
+	lf := &ListFlags{}
 	cmd := &cobra.Command{Use: "test"}
-	RegisterExpandFlag(cmd, &expand)
+	lf.RegisterExpand(cmd)
 
 	cmd.SetArgs([]string{"--expand", "org,firmware"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatal(err)
 	}
 
-	if len(expand) != 2 || expand[0] != "org" || expand[1] != "firmware" {
-		t.Errorf("Expand: got %v, want [org firmware]", expand)
+	if len(lf.Expand) != 2 || lf.Expand[0] != "org" || lf.Expand[1] != "firmware" {
+		t.Errorf("Expand: got %v, want [org firmware]", lf.Expand)
 	}
 }

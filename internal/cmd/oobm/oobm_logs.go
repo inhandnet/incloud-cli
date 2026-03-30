@@ -14,10 +14,7 @@ type OobmLogsOptions struct {
 	Type       string
 	Protocols  []string
 	BusinessID string
-	Page       int
-	Limit      int
-	Sort       string
-	Fields     []string
+	cmdutil.ListFlags
 }
 
 var defaultOobmLogsFields = []string{
@@ -77,10 +74,7 @@ func NewCmdOobmLogs(f *factory.Factory) *cobra.Command {
 	cmd.Flags().StringVar(&opts.Type, "type", "", "Tunnel type filter")
 	cmd.Flags().StringSliceVar(&opts.Protocols, "protocol", nil, "Protocol filter (can be repeated)")
 	cmd.Flags().StringVar(&opts.BusinessID, "business-id", "", "Business resource ID filter")
-	cmd.Flags().IntVar(&opts.Page, "page", 1, "Page number (starting from 1)")
-	cmd.Flags().IntVar(&opts.Limit, "limit", 20, "Number of items per page")
-	cmd.Flags().StringVar(&opts.Sort, "sort", "", `Sort order (e.g. "createdAt,desc")`)
-	cmd.Flags().StringSliceVarP(&opts.Fields, "fields", "f", nil, "Fields to return and display")
+	opts.ListFlags.Register(cmd)
 
 	return cmd
 }

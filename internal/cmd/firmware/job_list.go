@@ -13,14 +13,10 @@ import (
 )
 
 type JobListOptions struct {
-	Page     int
-	Limit    int
-	Sort     string
+	cmdutil.ListFlags
 	Firmware string
 	Module   string
 	Status   string
-	Fields   []string
-	Expand   []string
 }
 
 // flattenJobList flattens nested jobProcessDetails into a human-readable "progress" field
@@ -116,14 +112,11 @@ func NewCmdJobList(f *factory.Factory) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().IntVar(&opts.Page, "page", 1, "Page number (starting from 1)")
-	cmd.Flags().IntVar(&opts.Limit, "limit", 20, "Number of items per page")
-	cmd.Flags().StringVar(&opts.Sort, "sort", "", `Sort order (e.g. "createdAt,desc")`)
+	opts.ListFlags.Register(cmd)
 	cmd.Flags().StringVar(&opts.Firmware, "firmware", "", "Filter by firmware ID")
 	cmd.Flags().StringVar(&opts.Module, "module", "", "Filter by module name")
 	cmd.Flags().StringVar(&opts.Status, "status", "", "Filter by status (queued|inprogress|succeeded|canceled)")
-	cmd.Flags().StringSliceVarP(&opts.Fields, "fields", "f", nil, "Fields to return and display")
-	cmd.Flags().StringSliceVar(&opts.Expand, "expand", []string{"creator", "jobProcessDetails"}, "Expand related resources")
+	opts.ListFlags.RegisterExpand(cmd)
 
 	return cmd
 }

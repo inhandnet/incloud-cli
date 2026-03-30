@@ -11,7 +11,7 @@ import (
 var defaultAccountFields = []string{"_id", "name", "vip", "staticIp", "connected", "createdAt"}
 
 type accountListOptions struct {
-	cmdutil.ListOpts
+	cmdutil.ListFlags
 	Name      string
 	Connected string
 	Search    string
@@ -63,7 +63,7 @@ func newCmdAccountList(f *factory.Factory) *cobra.Command {
 		},
 	}
 
-	cmdutil.RegisterListFlags(cmd, &opts.ListOpts)
+	opts.ListFlags.Register(cmd)
 	cmd.Flags().StringVar(&opts.Name, "name", "", "Filter by account name")
 	cmd.Flags().StringVar(&opts.Connected, "connected", "", "Filter by connected status (true/false)")
 	cmd.Flags().StringVarP(&opts.Search, "search", "q", "", "Search by name")

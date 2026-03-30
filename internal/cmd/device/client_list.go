@@ -9,9 +9,7 @@ import (
 )
 
 type clientListOptions struct {
-	Page   int
-	Limit  int
-	Sort   string
+	cmdutil.ListFlags
 	Query  string
 	Type   string
 	Online string
@@ -19,7 +17,6 @@ type clientListOptions struct {
 	MAC    string
 	IP     string
 	Asset  string
-	Fields []string
 }
 
 var defaultClientListFields = []string{"_id", "name", "mac", "ip", "type", "online", "deviceId", "ssid", "connectedAt"}
@@ -86,9 +83,7 @@ func newCmdClientList(f *factory.Factory) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().IntVar(&opts.Page, "page", 1, "Page number (starting from 1)")
-	cmd.Flags().IntVar(&opts.Limit, "limit", 20, "Number of items per page")
-	cmd.Flags().StringVar(&opts.Sort, "sort", "", `Sort order (e.g. "createdAt,desc")`)
+	opts.ListFlags.Register(cmd)
 	cmd.Flags().StringVarP(&opts.Query, "query", "q", "", "Search by client name")
 	cmd.Flags().StringVar(&opts.Type, "type", "", "Filter by type (wireless/wired)")
 	cmd.Flags().StringVar(&opts.Online, "online", "", "Filter by online status (true/false)")
@@ -96,7 +91,6 @@ func newCmdClientList(f *factory.Factory) *cobra.Command {
 	cmd.Flags().StringVar(&opts.MAC, "mac", "", "Filter by MAC address")
 	cmd.Flags().StringVar(&opts.IP, "ip", "", "Filter by IP address")
 	cmd.Flags().StringVar(&opts.Asset, "asset", "", "Filter by asset status (true/false)")
-	cmd.Flags().StringSliceVarP(&opts.Fields, "fields", "f", nil, "Fields to return and display")
 
 	return cmd
 }

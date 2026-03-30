@@ -11,17 +11,13 @@ import (
 )
 
 type JobExecutionsOptions struct {
-	Page         int
-	Limit        int
-	Sort         string
+	cmdutil.ListFlags
 	Firmware     string
 	Device       string
 	Module       string
 	JobID        string
 	Status       string
 	SerialNumber string
-	Fields       []string
-	Expand       []string
 }
 
 func NewCmdJobExecutions(f *factory.Factory) *cobra.Command {
@@ -72,17 +68,14 @@ list completed executions for a specific device.`,
 		},
 	}
 
-	cmd.Flags().IntVar(&opts.Page, "page", 1, "Page number (starting from 1)")
-	cmd.Flags().IntVar(&opts.Limit, "limit", 20, "Number of items per page")
-	cmd.Flags().StringVar(&opts.Sort, "sort", "", `Sort order (e.g. "createdAt,desc")`)
+	opts.ListFlags.Register(cmd)
 	cmd.Flags().StringVar(&opts.Firmware, "firmware", "", "Filter by firmware ID (uses /firmwares/{id}/job/executions)")
 	cmd.Flags().StringVar(&opts.Device, "device", "", "Filter by device ID (uses /devices/{id}/ota/jobs/completed)")
 	cmd.Flags().StringVar(&opts.Module, "module", "", "Filter by OTA module name (default: \"default\")")
 	cmd.Flags().StringVar(&opts.JobID, "job", "", "Filter by job ID")
 	cmd.Flags().StringVar(&opts.Status, "status", "", "Filter by status (QUEUED|INPROGRESS|SUCCEEDED|FAILED|CANCELED)")
 	cmd.Flags().StringVar(&opts.SerialNumber, "sn", "", "Filter by device serial number (supports regex)")
-	cmd.Flags().StringSliceVarP(&opts.Fields, "fields", "f", nil, "Fields to return and display")
-	cmd.Flags().StringSliceVar(&opts.Expand, "expand", nil, "Expand related resources (device,job,creator,org)")
+	opts.ListFlags.RegisterExpand(cmd)
 
 	cmd.AddCommand(NewCmdExecCancel(f))
 	cmd.AddCommand(NewCmdExecRetry(f))

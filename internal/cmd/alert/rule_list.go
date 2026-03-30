@@ -9,7 +9,7 @@ import (
 )
 
 type RuleListOptions struct {
-	cmdutil.ListOpts
+	cmdutil.ListFlags
 }
 
 var defaultRuleListFields = []string{"_id", "groupIds", "rules", "notify.channels", "createdAt"}
@@ -52,7 +52,7 @@ func NewCmdRuleList(f *factory.Factory) *cobra.Command {
 		},
 	}
 
-	cmdutil.RegisterListFlags(cmd, &opts.ListOpts)
+	opts.ListFlags.Register(cmd)
 
 	return cmd
 }

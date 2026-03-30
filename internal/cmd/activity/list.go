@@ -12,7 +12,7 @@ import (
 )
 
 type ListOptions struct {
-	cmdutil.ListOpts
+	cmdutil.ListFlags
 	After  string
 	Before string
 	App    string
@@ -104,7 +104,7 @@ func NewCmdList(f *factory.Factory) *cobra.Command {
 		},
 	}
 
-	cmdutil.RegisterListFlags(cmd, &opts.ListOpts)
+	opts.ListFlags.Register(cmd)
 	cmd.Flags().StringVar(&opts.After, "after", "", "Filter logs after this time (e.g. 2024-01-01T00:00:00Z)")
 	cmd.Flags().StringVar(&opts.Before, "before", "", "Filter logs before this time (e.g. 2024-01-31T23:59:59Z)")
 	cmd.Flags().StringVar(&opts.App, "app", "", "Filter by application name")

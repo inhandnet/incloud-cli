@@ -52,33 +52,35 @@ func NewQuery(cmd *cobra.Command, defaultFields []string) url.Values {
 	return q
 }
 
-// ListOpts holds the common pagination/sorting/fields flags for list commands.
+// ListFlags holds the common pagination/sorting/fields/expand flags for list commands.
 // Embed this struct in your command's options struct:
 //
-//	type MyListOptions struct {
-//	    cmdutil.ListOpts
-//	    MyField string
+//	type ListOptions struct {
+//	    cmdutil.ListFlags
+//	    Query  string
+//	    Status string
 //	}
 //
-// Then call RegisterListFlags(cmd, &opts.ListOpts) in NewCmd.
-type ListOpts struct {
+// Then call opts.ListFlags.Register(cmd) to register page/limit/sort/fields,
+// and opts.ListFlags.RegisterExpand(cmd) for commands that also support --expand.
+type ListFlags struct {
 	Page   int
 	Limit  int
 	Sort   string
 	Fields []string
+	Expand []string
 }
 
-// RegisterListFlags registers the standard list flags (page, limit, sort, fields)
-// on cmd, binding them to opts.
-func RegisterListFlags(cmd *cobra.Command, opts *ListOpts) {
-	cmd.Flags().IntVar(&opts.Page, "page", 1, "Page number (starting from 1)")
-	cmd.Flags().IntVar(&opts.Limit, "limit", 20, "Number of items per page")
-	cmd.Flags().StringVar(&opts.Sort, "sort", "", `Sort order (e.g. "createdAt,desc")`)
-	cmd.Flags().StringSliceVarP(&opts.Fields, "fields", "f", nil, "Fields to return and display")
+// Register registers the standard list flags (page, limit, sort, fields) on cmd.
+func (lf *ListFlags) Register(cmd *cobra.Command) {
+	cmd.Flags().IntVar(&lf.Page, "page", 1, "Page number (starting from 1)")
+	cmd.Flags().IntVar(&lf.Limit, "limit", 20, "Number of items per page")
+	cmd.Flags().StringVar(&lf.Sort, "sort", "", `Sort order (e.g. "createdAt,desc")`)
+	cmd.Flags().StringSliceVarP(&lf.Fields, "fields", "f", nil, "Fields to return and display")
 }
 
-// RegisterExpandFlag registers the --expand flag on cmd, binding it to expand.
-// Only call this for commands that support resource expansion.
-func RegisterExpandFlag(cmd *cobra.Command, expand *[]string) {
-	cmd.Flags().StringSliceVar(expand, "expand", nil, "Expand related resources")
+// RegisterExpand registers the --expand flag on cmd.
+// Call this in addition to Register for commands that support resource expansion.
+func (lf *ListFlags) RegisterExpand(cmd *cobra.Command) {
+	cmd.Flags().StringSliceVar(&lf.Expand, "expand", nil, "Expand related resources")
 }

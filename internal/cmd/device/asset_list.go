@@ -9,15 +9,12 @@ import (
 )
 
 type assetListOptions struct {
-	Page     int
-	Limit    int
-	Sort     string
+	cmdutil.ListFlags
 	Name     string
 	MAC      string
 	Number   string
 	Category []string
 	Status   []string
-	Fields   []string
 }
 
 var defaultAssetListFields = []string{"_id", "name", "mac", "number", "category", "status", "warrantyExpiration", "createdAt"}
@@ -78,15 +75,12 @@ func newCmdAssetList(f *factory.Factory) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().IntVar(&opts.Page, "page", 1, "Page number (starting from 1)")
-	cmd.Flags().IntVar(&opts.Limit, "limit", 20, "Number of items per page")
-	cmd.Flags().StringVar(&opts.Sort, "sort", "", `Sort order (e.g. "createdAt,desc")`)
+	opts.ListFlags.Register(cmd)
 	cmd.Flags().StringVar(&opts.Name, "name", "", "Filter by asset name (partial match)")
 	cmd.Flags().StringVar(&opts.MAC, "mac", "", "Filter by MAC address (partial match)")
 	cmd.Flags().StringVar(&opts.Number, "number", "", "Filter by asset number (partial match)")
 	cmd.Flags().StringSliceVar(&opts.Category, "category", nil, "Filter by category ("+assetCategories+")")
 	cmd.Flags().StringSliceVar(&opts.Status, "status", nil, "Filter by status ("+assetStatuses+")")
-	cmd.Flags().StringSliceVarP(&opts.Fields, "fields", "f", nil, "Fields to return and display")
 
 	return cmd
 }

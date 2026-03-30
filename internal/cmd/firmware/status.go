@@ -11,16 +11,12 @@ import (
 )
 
 type StatusOptions struct {
-	Page    int
-	Limit   int
-	Sort    string
+	cmdutil.ListFlags
 	Device  string
 	Product string
 	Module  string
 	Status  string
 	Version string
-	Expand  []string
-	Fields  []string
 }
 
 var defaultStatusFields = []string{
@@ -92,16 +88,13 @@ func NewCmdStatus(f *factory.Factory) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().IntVar(&opts.Page, "page", 1, "Page number (starting from 1)")
-	cmd.Flags().IntVar(&opts.Limit, "limit", 20, "Number of items per page")
-	cmd.Flags().StringVar(&opts.Sort, "sort", "", `Sort order (e.g. "createdAt,desc")`)
+	opts.ListFlags.Register(cmd)
 	cmd.Flags().StringVar(&opts.Device, "device", "", "Filter by device ID (shows all OTA modules for the device)")
 	cmd.Flags().StringVar(&opts.Product, "product", "", "Filter by product name")
 	cmd.Flags().StringVar(&opts.Module, "module", "", "Filter by module name")
 	cmd.Flags().StringVar(&opts.Status, "status", "", "Filter by status (up_to_date|new_firmware_available|queued|in_progress)")
 	cmd.Flags().StringVar(&opts.Version, "version", "", "Filter by current firmware version")
-	cmd.Flags().StringSliceVar(&opts.Expand, "expand", nil, "Expand related objects (e.g. device)")
-	cmd.Flags().StringSliceVarP(&opts.Fields, "fields", "f", nil, "Fields to return and display")
+	opts.ListFlags.RegisterExpand(cmd)
 
 	return cmd
 }

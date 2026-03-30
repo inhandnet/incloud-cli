@@ -11,14 +11,11 @@ import (
 var defaultDeviceFields = []string{"_id", "deviceName", "serialNumber", "role", "product", "online", "createdAt"}
 
 type devicesOptions struct {
-	Page         int
-	Limit        int
-	Sort         string
+	cmdutil.ListFlags
 	Role         string
 	Name         string
 	SerialNumber string
 	Product      []string
-	Fields       []string
 }
 
 func newCmdDevices(f *factory.Factory) *cobra.Command {
@@ -70,14 +67,11 @@ func newCmdDevices(f *factory.Factory) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().IntVar(&opts.Page, "page", 1, "Page number (starting from 1)")
-	cmd.Flags().IntVar(&opts.Limit, "limit", 20, "Number of items per page")
-	cmd.Flags().StringVar(&opts.Sort, "sort", "", `Sort order (e.g. "createdAt,desc")`)
+	opts.ListFlags.Register(cmd)
 	cmd.Flags().StringVar(&opts.Role, "role", "", "Filter by role: hub or spoke")
 	cmd.Flags().StringVar(&opts.Name, "name", "", "Filter by device name")
 	cmd.Flags().StringVar(&opts.SerialNumber, "serial-number", "", "Filter by serial number")
 	cmd.Flags().StringArrayVar(&opts.Product, "product", nil, "Filter by product model (repeatable)")
-	cmd.Flags().StringSliceVarP(&opts.Fields, "fields", "f", nil, "Fields to return and display")
 
 	return cmd
 }

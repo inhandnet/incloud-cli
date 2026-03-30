@@ -16,13 +16,10 @@ var defaultGroupListFields = []string{"_id", "name", "product", "firmware", "cre
 var defaultGroupListSummaryFields = []string{"_id", "name", "product", "firmware", "online", "offline", "total", "createdAt"}
 
 type GroupListOptions struct {
-	Page     int
-	Limit    int
-	Sort     string
+	cmdutil.ListFlags
 	Name     string
 	Product  []string
 	Firmware string
-	Fields   []string
 	Summary  bool
 }
 
@@ -64,7 +61,7 @@ func newCmdGroupList(f *factory.Factory) *cobra.Command {
 				q.Add("product", p)
 			}
 			output, _ := cmd.Flags().GetString("output")
-			if !cmd.Flags().Changed("fields") && output == "table" {
+			if !cmd.Flags().Changed("fields") && (output == "" || output == "table") {
 				if opts.Summary {
 					q.Set("fields", strings.Join(defaultGroupListSummaryFields, ","))
 				} else {
@@ -90,13 +87,10 @@ func newCmdGroupList(f *factory.Factory) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().IntVar(&opts.Page, "page", 1, "Page number (starting from 1)")
-	cmd.Flags().IntVar(&opts.Limit, "limit", 20, "Number of items per page")
-	cmd.Flags().StringVar(&opts.Sort, "sort", "", `Sort order (e.g. "createdAt,desc")`)
+	opts.ListFlags.Register(cmd)
 	cmd.Flags().StringVar(&opts.Name, "name", "", "Filter by group name (fuzzy match)")
 	cmd.Flags().StringArrayVar(&opts.Product, "product", nil, "Filter by product (can be repeated)")
 	cmd.Flags().StringVar(&opts.Firmware, "firmware", "", "Filter by firmware version (fuzzy match)")
-	cmd.Flags().StringSliceVarP(&opts.Fields, "fields", "f", nil, "Fields to return and display")
 	cmd.Flags().BoolVar(&opts.Summary, "summary", false, "Include device counts (online/offline/total) per group")
 
 	return cmd

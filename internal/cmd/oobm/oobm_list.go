@@ -11,10 +11,7 @@ import (
 type OobmListOptions struct {
 	Name     string
 	DeviceID string
-	Page     int
-	Limit    int
-	Sort     string
-	Fields   []string
+	cmdutil.ListFlags
 }
 
 var defaultOobmListFields = []string{"_id", "name", "deviceId", "clientIp", "services", "idleTime", "connTime", "createdAt"}
@@ -67,10 +64,7 @@ func NewCmdOobmList(f *factory.Factory) *cobra.Command {
 
 	cmd.Flags().StringVar(&opts.Name, "name", "", "Filter by name")
 	cmd.Flags().StringVar(&opts.DeviceID, "device-id", "", "Filter by device ID (use 'incloud device list' to find IDs)")
-	cmd.Flags().IntVar(&opts.Page, "page", 1, "Page number (starting from 1)")
-	cmd.Flags().IntVar(&opts.Limit, "limit", 20, "Number of items per page")
-	cmd.Flags().StringVar(&opts.Sort, "sort", "", `Sort order (e.g. "createdAt,desc")`)
-	cmd.Flags().StringSliceVarP(&opts.Fields, "fields", "f", nil, "Fields to return and display")
+	opts.ListFlags.Register(cmd)
 
 	return cmd
 }
