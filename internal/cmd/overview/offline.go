@@ -13,13 +13,17 @@ import (
 )
 
 type OfflineOptions struct {
-	After  string
-	Before string
-	Group  []string
-	N      int
-	Page   int
-	Limit  int
-	Fields []string
+	After                          string
+	Before                         string
+	Group                          []string
+	N                              int
+	Page                           int
+	Limit                          int
+	Fields                         []string
+	Query                          string
+	OfflineTimesGreaterThan        int
+	MaxOfflineTimesGreaterThan     int
+	MaxOfflineDurationGreaterThan  int
 }
 
 var (
@@ -66,6 +70,10 @@ func NewCmdOffline(f *factory.Factory) *cobra.Command {
 	cmd.Flags().IntVar(&opts.Page, "page", 1, "Statistics list page number (1-based)")
 	cmd.Flags().IntVar(&opts.Limit, "limit", 20, "Statistics list page size")
 	cmd.Flags().StringSliceVarP(&opts.Fields, "fields", "f", nil, "Fields to return and display")
+	cmd.Flags().StringVarP(&opts.Query, "query", "q", "", "Filter by device name or serial number")
+	cmd.Flags().IntVar(&opts.OfflineTimesGreaterThan, "min-offline-times", 0, "Filter devices with total offline times >= N")
+	cmd.Flags().IntVar(&opts.MaxOfflineTimesGreaterThan, "min-max-offline-times", 0, "Filter devices with daily max offline times >= N")
+	cmd.Flags().IntVar(&opts.MaxOfflineDurationGreaterThan, "min-max-offline-duration", 0, "Filter devices with daily max offline duration >= N seconds")
 
 	return cmd
 }
@@ -86,12 +94,25 @@ func runOffline(cmd *cobra.Command, f *factory.Factory, opts *OfflineOptions) er
 	}, opts.Group)
 
 	// Build statistics query (page is 1-based in CLI, 0-based in API)
-	statsQuery := makeQueryWithGroups(map[string]string{
+	statsParams := map[string]string{
 		"page":   strconv.Itoa(opts.Page - 1),
 		"limit":  strconv.Itoa(opts.Limit),
 		"after":  opts.After,
 		"before": opts.Before,
-	}, opts.Group)
+	}
+	if opts.Query != "" {
+		statsParams["q"] = opts.Query
+	}
+	if opts.OfflineTimesGreaterThan > 0 {
+		statsParams["offlineTimesGreaterThan"] = strconv.Itoa(opts.OfflineTimesGreaterThan)
+	}
+	if opts.MaxOfflineTimesGreaterThan > 0 {
+		statsParams["dailyMaxOfflineTimesGreaterThan"] = strconv.Itoa(opts.MaxOfflineTimesGreaterThan)
+	}
+	if opts.MaxOfflineDurationGreaterThan > 0 {
+		statsParams["dailyMaxOfflineDurationGreaterThan"] = strconv.Itoa(opts.MaxOfflineDurationGreaterThan)
+	}
+	statsQuery := makeQueryWithGroups(statsParams, opts.Group)
 
 	// Concurrent fetch
 	var topnBody, statsBody []byte
