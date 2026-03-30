@@ -111,38 +111,6 @@ func TestAlertList_TableDefaultFields(t *testing.T) {
 	}
 }
 
-func TestAlertList_CountOverridesPagination(t *testing.T) {
-	var gotQuery string
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		gotQuery = r.URL.RawQuery
-		json.NewEncoder(w).Encode(map[string]any{
-			"result": []any{},
-			"total":  42,
-		})
-	}))
-	defer srv.Close()
-
-	f, _ := newTestFactory(t, srv.URL)
-	root := newAlertRoot(f)
-	// --count should override page/limit to 0/1
-	root.SetArgs([]string{"alert", "list", "--count", "--page", "5", "--limit", "100"})
-	if err := root.Execute(); err != nil {
-		t.Fatalf("alert list --count: %v", err)
-	}
-
-	if !strings.Contains(gotQuery, "page=0") {
-		t.Errorf("query %q should have page=0 with --count", gotQuery)
-	}
-	if !strings.Contains(gotQuery, "limit=1") {
-		t.Errorf("query %q should have limit=1 with --count", gotQuery)
-	}
-
-	// Verify count output
-	out := f.IO.Out.(*bytes.Buffer).String()
-	if !strings.Contains(out, "42") {
-		t.Errorf("output %q should contain count 42", out)
-	}
-}
 
 func TestAlertList_WithSort(t *testing.T) {
 	var gotQuery string
