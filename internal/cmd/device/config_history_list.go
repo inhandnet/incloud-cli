@@ -10,16 +10,15 @@ import (
 	"github.com/inhandnet/incloud-cli/internal/iostreams"
 )
 
+type configHistoryListOptions struct {
+	cmdutil.ListFlags
+	Module string
+	After  string
+	Before string
+}
+
 func newCmdConfigHistoryList(f *factory.Factory) *cobra.Command {
-	var (
-		module string
-		page   int
-		limit  int
-		sort   string
-		after  string
-		before string
-		fields []string
-	)
+	opts := &configHistoryListOptions{}
 
 	cmd := &cobra.Command{
 		Use:   "list <device-id>",
@@ -47,14 +46,14 @@ Use 'incloud device config snapshots get' to view the full snapshot including me
 			}
 
 			q := cmdutil.NewQuery(cmd, nil)
-			if module != "" {
-				q.Set("module", module)
+			if opts.Module != "" {
+				q.Set("module", opts.Module)
 			}
-			if after != "" {
-				q.Set("after", after)
+			if opts.After != "" {
+				q.Set("after", opts.After)
 			}
-			if before != "" {
-				q.Set("before", before)
+			if opts.Before != "" {
+				q.Set("before", opts.Before)
 			}
 
 			body, err := client.Get("/api/v1/devices/"+deviceID+"/config/history", q)
@@ -72,13 +71,10 @@ Use 'incloud device config snapshots get' to view the full snapshot including me
 		},
 	}
 
-	cmd.Flags().StringVar(&module, "module", "", "Module name (defaults to 'default' on the server)")
-	cmd.Flags().IntVar(&page, "page", 1, "Page number (starting from 1)")
-	cmd.Flags().IntVar(&limit, "limit", 20, "Number of items per page")
-	cmd.Flags().StringVar(&sort, "sort", "", `Sort order (e.g. "createdAt,desc")`)
-	cmd.Flags().StringVar(&after, "after", "", "Filter history after this time (ISO 8601)")
-	cmd.Flags().StringVar(&before, "before", "", "Filter history before this time (ISO 8601)")
-	cmd.Flags().StringSliceVarP(&fields, "fields", "f", nil, "Fields to display in table mode")
+	opts.ListFlags.Register(cmd)
+	cmd.Flags().StringVar(&opts.Module, "module", "", "Module name (defaults to 'default' on the server)")
+	cmd.Flags().StringVar(&opts.After, "after", "", "Filter history after this time (ISO 8601)")
+	cmd.Flags().StringVar(&opts.Before, "before", "", "Filter history before this time (ISO 8601)")
 
 	return cmd
 }
