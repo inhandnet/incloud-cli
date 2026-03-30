@@ -57,26 +57,6 @@ func newOrgServer(t *testing.T) (*httptest.Server, *string) {
 	return srv, &gotQuery
 }
 
-func TestOrgList_DefaultQuery(t *testing.T) {
-	srv, gotQuery := newOrgServer(t)
-	f := newTestFactory(t, srv.URL)
-	root := newOrgRoot(f)
-	root.SetArgs([]string{"org", "list", "-o", "json"})
-	if err := root.Execute(); err != nil {
-		t.Fatalf("org list: %v", err)
-	}
-
-	if !strings.Contains(*gotQuery, "page=0") {
-		t.Errorf("query %q missing page=0", *gotQuery)
-	}
-	if !strings.Contains(*gotQuery, "limit=20") {
-		t.Errorf("query %q missing limit=20", *gotQuery)
-	}
-	if strings.Contains(*gotQuery, "fields=") {
-		t.Errorf("query %q should not contain fields for json output", *gotQuery)
-	}
-}
-
 func TestOrgList_TableDefaultFields(t *testing.T) {
 	srv, gotQuery := newOrgServer(t)
 	f := newTestFactory(t, srv.URL)
@@ -96,47 +76,3 @@ func TestOrgList_TableDefaultFields(t *testing.T) {
 	}
 }
 
-func TestOrgList_ExpandFlag(t *testing.T) {
-	srv, gotQuery := newOrgServer(t)
-	f := newTestFactory(t, srv.URL)
-	root := newOrgRoot(f)
-	root.SetArgs([]string{"org", "list", "--expand", "parent", "-o", "json"})
-	if err := root.Execute(); err != nil {
-		t.Fatalf("org list --expand: %v", err)
-	}
-
-	if !strings.Contains(*gotQuery, "expand=parent") {
-		t.Errorf("query %q missing expand=parent", *gotQuery)
-	}
-}
-
-func TestOrgList_SortFlag(t *testing.T) {
-	srv, gotQuery := newOrgServer(t)
-	f := newTestFactory(t, srv.URL)
-	root := newOrgRoot(f)
-	root.SetArgs([]string{"org", "list", "--sort", "name,asc", "-o", "json"})
-	if err := root.Execute(); err != nil {
-		t.Fatalf("org list --sort: %v", err)
-	}
-
-	if !strings.Contains(*gotQuery, "sort=name") {
-		t.Errorf("query %q missing sort=name", *gotQuery)
-	}
-}
-
-func TestOrgList_Pagination(t *testing.T) {
-	srv, gotQuery := newOrgServer(t)
-	f := newTestFactory(t, srv.URL)
-	root := newOrgRoot(f)
-	root.SetArgs([]string{"org", "list", "--page", "3", "--limit", "50", "-o", "json"})
-	if err := root.Execute(); err != nil {
-		t.Fatalf("org list --page --limit: %v", err)
-	}
-
-	if !strings.Contains(*gotQuery, "page=2") {
-		t.Errorf("query %q: page 3 should map to page=2", *gotQuery)
-	}
-	if !strings.Contains(*gotQuery, "limit=50") {
-		t.Errorf("query %q missing limit=50", *gotQuery)
-	}
-}

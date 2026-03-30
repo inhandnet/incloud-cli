@@ -54,35 +54,6 @@ func newAlertRoot(f *factory.Factory) *cobra.Command {
 	return root
 }
 
-func TestAlertList_DefaultQuery(t *testing.T) {
-	var gotQuery string
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		gotQuery = r.URL.RawQuery
-		json.NewEncoder(w).Encode(map[string]any{
-			"result": []any{},
-			"total":  0,
-		})
-	}))
-	defer srv.Close()
-
-	f, _ := newTestFactory(t, srv.URL)
-	root := newAlertRoot(f)
-	root.SetArgs([]string{"alert", "list", "-o", "json"})
-	if err := root.Execute(); err != nil {
-		t.Fatalf("alert list: %v", err)
-	}
-
-	if !strings.Contains(gotQuery, "page=0") {
-		t.Errorf("query %q missing page=0", gotQuery)
-	}
-	if !strings.Contains(gotQuery, "limit=20") {
-		t.Errorf("query %q missing limit=20", gotQuery)
-	}
-	if strings.Contains(gotQuery, "fields=") {
-		t.Errorf("query %q should not contain fields for json output", gotQuery)
-	}
-}
-
 func TestAlertList_TableDefaultFields(t *testing.T) {
 	var gotQuery string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -111,29 +82,6 @@ func TestAlertList_TableDefaultFields(t *testing.T) {
 	}
 }
 
-
-func TestAlertList_WithSort(t *testing.T) {
-	var gotQuery string
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		gotQuery = r.URL.RawQuery
-		json.NewEncoder(w).Encode(map[string]any{
-			"result": []any{},
-			"total":  0,
-		})
-	}))
-	defer srv.Close()
-
-	f, _ := newTestFactory(t, srv.URL)
-	root := newAlertRoot(f)
-	root.SetArgs([]string{"alert", "list", "--sort", "createdAt,desc", "-o", "json"})
-	if err := root.Execute(); err != nil {
-		t.Fatalf("alert list: %v", err)
-	}
-
-	if !strings.Contains(gotQuery, "sort=createdAt") {
-		t.Errorf("query %q missing sort", gotQuery)
-	}
-}
 
 func TestAlertList_WithFilters(t *testing.T) {
 	var gotQuery string

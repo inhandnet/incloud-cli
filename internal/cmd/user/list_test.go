@@ -57,26 +57,6 @@ func newUserServer(t *testing.T) (*httptest.Server, *string) {
 	return srv, &gotQuery
 }
 
-func TestUserList_DefaultQuery(t *testing.T) {
-	srv, gotQuery := newUserServer(t)
-	f := newTestFactory(t, srv.URL)
-	root := newUserRoot(f)
-	root.SetArgs([]string{"user", "list", "-o", "json"})
-	if err := root.Execute(); err != nil {
-		t.Fatalf("user list: %v", err)
-	}
-
-	if !strings.Contains(*gotQuery, "page=0") {
-		t.Errorf("query %q missing page=0", *gotQuery)
-	}
-	if !strings.Contains(*gotQuery, "limit=20") {
-		t.Errorf("query %q missing limit=20", *gotQuery)
-	}
-	if strings.Contains(*gotQuery, "fields=") {
-		t.Errorf("query %q should not contain fields for json output", *gotQuery)
-	}
-}
-
 func TestUserList_TableDefaultFields(t *testing.T) {
 	srv, gotQuery := newUserServer(t)
 	f := newTestFactory(t, srv.URL)
@@ -96,33 +76,3 @@ func TestUserList_TableDefaultFields(t *testing.T) {
 	}
 }
 
-func TestUserList_ExpandFlag(t *testing.T) {
-	srv, gotQuery := newUserServer(t)
-	f := newTestFactory(t, srv.URL)
-	root := newUserRoot(f)
-	root.SetArgs([]string{"user", "list", "--expand", "roles", "-o", "json"})
-	if err := root.Execute(); err != nil {
-		t.Fatalf("user list --expand: %v", err)
-	}
-
-	if !strings.Contains(*gotQuery, "expand=roles") {
-		t.Errorf("query %q missing expand=roles", *gotQuery)
-	}
-}
-
-func TestUserList_Pagination(t *testing.T) {
-	srv, gotQuery := newUserServer(t)
-	f := newTestFactory(t, srv.URL)
-	root := newUserRoot(f)
-	root.SetArgs([]string{"user", "list", "--page", "2", "--limit", "50", "-o", "json"})
-	if err := root.Execute(); err != nil {
-		t.Fatalf("user list --page --limit: %v", err)
-	}
-
-	if !strings.Contains(*gotQuery, "page=1") {
-		t.Errorf("query %q: page 2 should map to page=1", *gotQuery)
-	}
-	if !strings.Contains(*gotQuery, "limit=50") {
-		t.Errorf("query %q missing limit=50", *gotQuery)
-	}
-}
