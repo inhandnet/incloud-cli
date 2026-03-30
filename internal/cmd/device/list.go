@@ -35,56 +35,14 @@ func NewCmdList(f *factory.Factory) *cobra.Command {
 		Short:   "List devices",
 		Long:    "List devices on the InCloud platform with optional filtering, searching, and pagination.",
 		Aliases: []string{"ls"},
-		Example: `  # List devices with default pagination
-  incloud device list
-
-  # Paginate
-  incloud device list --page 2 --limit 50
-
-  # Filter by online status
-  incloud device list --online true
-
-  # Search by name or serial number
+		Example: `  # Search by name or serial number
   incloud device list -q "router"
 
-  # Filter by product
-  incloud device list --product IR615
+  # Filter by online status, product, org
+  incloud device list --online true --product IR615 --org <org-id>
 
-  # Filter by org
-  incloud device list --org <org-id>
-
-  # Filter by firmware version
-  incloud device list --firmware 2.0.0
-
-  # Filter by device name (exact)
-  incloud device list --name "my-router"
-
-  # Filter by serial number (exact)
-  incloud device list --serial-number IR6151234567890
-
-  # Filter by IP address
-  incloud device list --ip 192.168.1.1
-
-  # Filter by label
-  incloud device list --label env=prod --label region=us
-
-  # Filter by ICCID
-  incloud device list --iccid 89860000000000000000
-
-  # Filter by MAC address
-  incloud device list --mac 00:11:22:33:44:55
-
-  # Sort results
-  incloud device list --sort "name,asc"
-
-  # Expand related resources (e.g. org info, firmware upgrade status)
-  incloud device list --expand org,firmwareUpgradeStatus
-
-  # Table output with selected fields
-  incloud device list -o table -f name -f serialNumber -f online
-
-  # Extract names with jq
-  incloud device list --jq '.result[].name'
+  # Expand related resources and output as JSON
+  incloud device list --expand org,firmwareUpgradeStatus -o json
 
   # Export offline devices as CSV
   incloud device list --online false --jq '.result[] | [.name, .serialNumber] | @csv'`,
