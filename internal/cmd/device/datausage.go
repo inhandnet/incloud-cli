@@ -1,6 +1,7 @@
 package device
 
 import (
+	"fmt"
 	"net/url"
 
 	"github.com/spf13/cobra"
@@ -9,13 +10,48 @@ import (
 	"github.com/inhandnet/incloud-cli/internal/iostreams"
 )
 
+var validIntervals = map[string]bool{
+	"hourly":  true,
+	"daily":   true,
+	"monthly": true,
+}
+
 func NewCmdDatausage(f *factory.Factory) *cobra.Command {
+	opts := &datausageSeriesOptions{}
+	interval := "daily"
+
 	cmd := &cobra.Command{
-		Use:     "datausage",
+		Use:     "datausage [device-id]",
 		Aliases: []string{"du"},
 		Short:   "Device data usage statistics",
 		Long:    "View device data usage (traffic) statistics at hourly, daily, or monthly granularity.",
+		Example: `  # Daily data usage (default interval)
+  incloud device datausage 507f1f77bcf86cd799439011
+
+  # Hourly data usage
+  incloud device datausage 507f1f77bcf86cd799439011 --interval hourly
+
+  # Monthly data usage for a specific year
+  incloud device datausage 507f1f77bcf86cd799439011 --interval monthly --year 2024`,
+		Args: cobra.MaximumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) == 0 {
+				return cmd.Help()
+			}
+			if !validIntervals[interval] {
+				return fmt.Errorf("invalid interval %q: must be hourly, daily, or monthly", interval)
+			}
+			return fetchDatausageSeries(f, cmd, args[0], "datausage-"+interval, opts)
+		},
 	}
+
+	cmd.Flags().StringVar(&interval, "interval", "daily", "Granularity: hourly, daily, monthly")
+	cmd.Flags().StringVar(&opts.Type, "type", "", "Traffic type: cellular (default), wired, wireless, sim, esim, all, etc.")
+	cmd.Flags().StringVar(&opts.After, "after", "", "Start time (ISO 8601, e.g. 2024-01-01T00:00:00Z)")
+	cmd.Flags().StringVar(&opts.Before, "before", "", "End time (ISO 8601, e.g. 2024-01-02T00:00:00Z)")
+	cmd.Flags().StringVar(&opts.Month, "month", "", "Month to query (YYYY-MM, e.g. 2024-03)")
+	cmd.Flags().StringVar(&opts.Year, "year", "", "Year to query (YYYY, e.g. 2024)")
+	cmd.Flags().StringSliceVarP(&opts.Fields, "fields", "f", nil, "Fields to display in table mode")
 
 	cmd.AddCommand(newCmdDatausageHourly(f))
 	cmd.AddCommand(newCmdDatausageDaily(f))
