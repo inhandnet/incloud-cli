@@ -123,7 +123,7 @@ func NewCmdList(f *factory.Factory) *cobra.Command {
 	cmd.Flags().StringArrayVar(&opts.Label, "label", nil, "Filter by label key=value (can be repeated)")
 	cmd.Flags().StringVar(&opts.ICCID, "iccid", "", "Filter by ICCID")
 	cmd.Flags().StringVar(&opts.MAC, "mac", "", "Filter by MAC address")
-	opts.ListFlags.RegisterExpand(cmd)
+	opts.ListFlags.RegisterExpand(cmd, "org", "firmwareUpgradeStatus")
 
 	return cmd
 }

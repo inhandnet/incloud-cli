@@ -75,7 +75,7 @@ list completed executions for a specific device.`,
 	cmd.Flags().StringVar(&opts.JobID, "job", "", "Filter by job ID")
 	cmd.Flags().StringVar(&opts.Status, "status", "", "Filter by status (QUEUED|INPROGRESS|SUCCEEDED|FAILED|CANCELED)")
 	cmd.Flags().StringVar(&opts.SerialNumber, "sn", "", "Filter by device serial number (supports regex)")
-	opts.ListFlags.RegisterExpand(cmd)
+	opts.ListFlags.RegisterExpand(cmd, "job")
 
 	cmd.AddCommand(NewCmdExecCancel(f))
 	cmd.AddCommand(NewCmdExecRetry(f))

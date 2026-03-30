@@ -57,7 +57,7 @@ func NewCmdMe(f *factory.Factory) *cobra.Command {
 	}
 
 	cmd.Flags().StringSliceVarP(&opts.Fields, "fields", "f", nil, "Fields to return and display")
-	cmd.Flags().StringSliceVar(&opts.Expand, "expand", nil, "Expand related objects (e.g. roles)")
+	cmd.Flags().StringSliceVar(&opts.Expand, "expand", nil, cmdutil.ExpandDesc([]string{"roles", "org"}))
 
 	return cmd
 }

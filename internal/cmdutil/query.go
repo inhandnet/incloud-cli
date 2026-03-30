@@ -81,6 +81,6 @@ func (lf *ListFlags) Register(cmd *cobra.Command) {
 
 // RegisterExpand registers the --expand flag on cmd.
 // Call this in addition to Register for commands that support resource expansion.
-func (lf *ListFlags) RegisterExpand(cmd *cobra.Command) {
-	cmd.Flags().StringSliceVar(&lf.Expand, "expand", nil, "Expand related resources")
+func (lf *ListFlags) RegisterExpand(cmd *cobra.Command, supported ...string) {
+	cmd.Flags().StringSliceVar(&lf.Expand, "expand", nil, ExpandDesc(supported))
 }

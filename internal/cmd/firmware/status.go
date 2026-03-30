@@ -94,7 +94,7 @@ func NewCmdStatus(f *factory.Factory) *cobra.Command {
 	cmd.Flags().StringVar(&opts.Module, "module", "", "Filter by module name")
 	cmd.Flags().StringVar(&opts.Status, "status", "", "Filter by status (up_to_date|new_firmware_available|queued|in_progress)")
 	cmd.Flags().StringVar(&opts.Version, "version", "", "Filter by current firmware version")
-	opts.ListFlags.RegisterExpand(cmd)
+	opts.ListFlags.RegisterExpand(cmd, "device")
 
 	return cmd
 }
