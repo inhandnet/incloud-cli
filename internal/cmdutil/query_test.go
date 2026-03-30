@@ -225,3 +225,172 @@ func TestNewQuery_UserFieldsOverrideDefaults(t *testing.T) {
 		t.Errorf("user fields: got %q, want %q", got, "x,y")
 	}
 }
+
+func TestNewQuery_ExplicitTableOutput(t *testing.T) {
+	cmd := newTestCmd(func(cmd *cobra.Command) {
+		cmd.Flags().Int("page", 1, "")
+		cmd.Flags().Int("limit", 20, "")
+		cmd.Flags().StringSlice("fields", nil, "")
+		cmd.Flags().String("output", "", "")
+	})
+	cmd.SetArgs([]string{"--output", "table"})
+	_ = cmd.Execute()
+
+	defaults := []string{"_id", "name"}
+	q := NewQuery(cmd, defaults)
+
+	// explicit --output table should apply default fields
+	if got := q.Get("fields"); got != "_id,name" {
+		t.Errorf("fields with explicit table: got %q, want %q", got, "_id,name")
+	}
+}
+
+func TestNewQuery_YAMLOutputNoDefaultFields(t *testing.T) {
+	cmd := newTestCmd(func(cmd *cobra.Command) {
+		cmd.Flags().Int("page", 1, "")
+		cmd.Flags().Int("limit", 20, "")
+		cmd.Flags().StringSlice("fields", nil, "")
+		cmd.Flags().String("output", "", "")
+	})
+	cmd.SetArgs([]string{"--output", "yaml"})
+	_ = cmd.Execute()
+
+	defaults := []string{"_id", "name"}
+	q := NewQuery(cmd, defaults)
+
+	// yaml output should NOT apply default fields
+	if got := q.Get("fields"); got != "" {
+		t.Errorf("fields with yaml output should be empty, got %q", got)
+	}
+}
+
+func TestNewQuery_NilDefaultFieldsNoFieldsSet(t *testing.T) {
+	cmd := newTestCmd(func(cmd *cobra.Command) {
+		cmd.Flags().Int("page", 1, "")
+		cmd.Flags().Int("limit", 20, "")
+		cmd.Flags().StringSlice("fields", nil, "")
+		cmd.Flags().String("output", "", "")
+	})
+	cmd.SetArgs([]string{})
+	_ = cmd.Execute()
+
+	q := NewQuery(cmd, nil)
+
+	// nil defaults + no user fields = no fields param
+	if _, ok := q["fields"]; ok {
+		t.Error("fields should not be present when defaults are nil and user didn't specify")
+	}
+}
+
+func TestNewQuery_EmptyDefaultFieldsNoFieldsSet(t *testing.T) {
+	cmd := newTestCmd(func(cmd *cobra.Command) {
+		cmd.Flags().Int("page", 1, "")
+		cmd.Flags().Int("limit", 20, "")
+		cmd.Flags().StringSlice("fields", nil, "")
+		cmd.Flags().String("output", "", "")
+	})
+	cmd.SetArgs([]string{})
+	_ = cmd.Execute()
+
+	q := NewQuery(cmd, []string{})
+
+	// empty defaults + no user fields = no fields param
+	if _, ok := q["fields"]; ok {
+		t.Error("fields should not be present when defaults are empty and user didn't specify")
+	}
+}
+
+func TestNewQuery_SortNotSetWhenUnchanged(t *testing.T) {
+	cmd := newTestCmd(func(cmd *cobra.Command) {
+		cmd.Flags().Int("page", 1, "")
+		cmd.Flags().Int("limit", 20, "")
+		cmd.Flags().String("sort", "createdAt,desc", "") // non-empty default
+	})
+	cmd.SetArgs([]string{})
+	_ = cmd.Execute()
+
+	q := NewQuery(cmd, nil)
+
+	// sort has a non-empty default but was not Changed — should NOT be set
+	if got := q.Get("sort"); got != "" {
+		t.Errorf("sort should be empty when not changed, got %q", got)
+	}
+}
+
+func TestNewQuery_NoOutputFlag(t *testing.T) {
+	// Command without --output flag (like some get commands)
+	cmd := newTestCmd(func(cmd *cobra.Command) {
+		cmd.Flags().Int("page", 1, "")
+		cmd.Flags().Int("limit", 20, "")
+		cmd.Flags().StringSlice("fields", nil, "")
+		// No --output flag
+	})
+	cmd.SetArgs([]string{})
+	_ = cmd.Execute()
+
+	defaults := []string{"_id", "name"}
+	q := NewQuery(cmd, defaults)
+
+	// When --output flag is missing, GetString returns error, so output is ""
+	// which is treated as table → default fields should apply
+	if got := q.Get("fields"); got != "_id,name" {
+		t.Errorf("fields without output flag: got %q, want %q", got, "_id,name")
+	}
+}
+
+func TestRegisterListFlags(t *testing.T) {
+	opts := &ListOpts{}
+	cmd := &cobra.Command{Use: "test"}
+	RegisterListFlags(cmd, opts)
+
+	cmd.SetArgs([]string{"--page", "2", "--limit", "50", "--sort", "name,asc", "--fields", "a,b"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+
+	if opts.Page != 2 {
+		t.Errorf("Page: got %d, want 2", opts.Page)
+	}
+	if opts.Limit != 50 {
+		t.Errorf("Limit: got %d, want 50", opts.Limit)
+	}
+	if opts.Sort != "name,asc" {
+		t.Errorf("Sort: got %q, want %q", opts.Sort, "name,asc")
+	}
+	if len(opts.Fields) != 2 || opts.Fields[0] != "a" || opts.Fields[1] != "b" {
+		t.Errorf("Fields: got %v, want [a b]", opts.Fields)
+	}
+}
+
+func TestRegisterListFlags_Defaults(t *testing.T) {
+	opts := &ListOpts{}
+	cmd := &cobra.Command{Use: "test"}
+	RegisterListFlags(cmd, opts)
+
+	cmd.SetArgs([]string{})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+
+	if opts.Page != 1 {
+		t.Errorf("Page default: got %d, want 1", opts.Page)
+	}
+	if opts.Limit != 20 {
+		t.Errorf("Limit default: got %d, want 20", opts.Limit)
+	}
+}
+
+func TestRegisterExpandFlag(t *testing.T) {
+	var expand []string
+	cmd := &cobra.Command{Use: "test"}
+	RegisterExpandFlag(cmd, &expand)
+
+	cmd.SetArgs([]string{"--expand", "org,firmware"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+
+	if len(expand) != 2 || expand[0] != "org" || expand[1] != "firmware" {
+		t.Errorf("Expand: got %v, want [org firmware]", expand)
+	}
+}

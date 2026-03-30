@@ -51,3 +51,34 @@ func NewQuery(cmd *cobra.Command, defaultFields []string) url.Values {
 
 	return q
 }
+
+// ListOpts holds the common pagination/sorting/fields flags for list commands.
+// Embed this struct in your command's options struct:
+//
+//	type MyListOptions struct {
+//	    cmdutil.ListOpts
+//	    MyField string
+//	}
+//
+// Then call RegisterListFlags(cmd, &opts.ListOpts) in NewCmd.
+type ListOpts struct {
+	Page   int
+	Limit  int
+	Sort   string
+	Fields []string
+}
+
+// RegisterListFlags registers the standard list flags (page, limit, sort, fields)
+// on cmd, binding them to opts.
+func RegisterListFlags(cmd *cobra.Command, opts *ListOpts) {
+	cmd.Flags().IntVar(&opts.Page, "page", 1, "Page number (starting from 1)")
+	cmd.Flags().IntVar(&opts.Limit, "limit", 20, "Number of items per page")
+	cmd.Flags().StringVar(&opts.Sort, "sort", "", `Sort order (e.g. "createdAt,desc")`)
+	cmd.Flags().StringSliceVarP(&opts.Fields, "fields", "f", nil, "Fields to return and display")
+}
+
+// RegisterExpandFlag registers the --expand flag on cmd, binding it to expand.
+// Only call this for commands that support resource expansion.
+func RegisterExpandFlag(cmd *cobra.Command, expand *[]string) {
+	cmd.Flags().StringSliceVar(expand, "expand", nil, "Expand related resources")
+}
