@@ -16,6 +16,7 @@ type FormatOption func(*formatOptions)
 type formatOptions struct {
 	transform  TransformFunc
 	formatters ColumnFormatters
+	columns    []string
 }
 
 // WithTransform sets a transform function applied before table rendering.
@@ -31,6 +32,14 @@ func WithTransform(fn TransformFunc) FormatOption {
 func WithFormatters(fmts ColumnFormatters) FormatOption {
 	return func(o *formatOptions) {
 		o.formatters = fmts
+	}
+}
+
+// WithColumns sets the column order for table rendering.
+// Listed columns are shown first in the given order; any remaining columns follow alphabetically.
+func WithColumns(cols ...string) FormatOption {
+	return func(o *formatOptions) {
+		o.columns = cols
 	}
 }
 
@@ -66,7 +75,7 @@ func FormatOutput(body []byte, io *IOStreams, output string, opts ...FormatOptio
 		if len(o.formatters) > 0 {
 			data = applyFormatters(data, o.formatters)
 		}
-		return FormatTable(data, io, nil)
+		return FormatTable(data, io, o.columns)
 	case "yaml":
 		s, err := FormatYAML(unwrapResult(normalizePage(body)))
 		if err != nil {
