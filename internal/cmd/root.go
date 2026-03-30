@@ -81,20 +81,16 @@ func NewCmdRoot(f *factory.Factory) *cobra.Command {
 	return cmd
 }
 
-// SetupSuperAdminFlags hooks into the root help function to unhide
-// super-admin-only flags (e.g. --sudo) when the current user is a super admin.
+// SetupSuperAdminFlags unhides super-admin-only flags (e.g. --sudo)
+// when the current user is a super admin.
 // The result is cached to a file per context with a 1-hour TTL to avoid
 // repeated API calls across CLI invocations.
 func SetupSuperAdminFlags(rootCmd *cobra.Command, f *factory.Factory) {
-	origHelp := rootCmd.HelpFunc()
-	rootCmd.SetHelpFunc(func(cmd *cobra.Command, args []string) {
-		if cmd == rootCmd && isSuperAdmin(f) {
-			if fl := rootCmd.PersistentFlags().Lookup("sudo"); fl != nil {
-				fl.Hidden = false
-			}
+	if isSuperAdmin(f) {
+		if fl := rootCmd.PersistentFlags().Lookup("sudo"); fl != nil {
+			fl.Hidden = false
 		}
-		origHelp(cmd, args)
-	})
+	}
 }
 
 const superAdminCacheTTL = 1 * time.Hour
