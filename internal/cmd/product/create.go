@@ -41,9 +41,10 @@ func NewCmdCreate(f *factory.Factory) *cobra.Command {
 			}
 
 			body := map[string]interface{}{
-				"name":           opts.Name,
-				"productType":    opts.Type,
-				"validatedField": opts.ValidatedField,
+				"name":                opts.Name,
+				"productType":         opts.Type,
+				"validatedField":      opts.ValidatedField,
+				"firmwareVersionRule": "SEM_VER",
 			}
 			if opts.Description != "" {
 				body["description"] = opts.Description
