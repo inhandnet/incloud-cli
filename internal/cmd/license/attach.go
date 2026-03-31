@@ -47,6 +47,12 @@ duration will be added to the existing one (overlay). This operation is irrevers
 
 			if devLic.ID != "" && (devLic.Status == "activated" || devLic.Status == "to_be_expired") {
 				if !yes {
+					if !ui.IsTTY(f) {
+						return fmt.Errorf(
+							"device %s already has an active license (%s). Attaching will overlay (add duration). This is irreversible. Use --yes to confirm",
+							device, devLic.ID,
+						)
+					}
 					confirmed, err := ui.Confirm(f, fmt.Sprintf(
 						"Device %s already has an active license (%s). Attaching will overlay (add duration). This is irreversible. Continue?",
 						device, devLic.ID,
