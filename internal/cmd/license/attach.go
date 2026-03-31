@@ -2,7 +2,6 @@ package license
 
 import (
 	"fmt"
-	"sync"
 
 	"github.com/spf13/cobra"
 
@@ -37,47 +36,13 @@ duration will be added to the existing one (overlay). This operation is irrevers
 				return err
 			}
 
-			var (
-				lic    licenseState
-				devLic deviceLicenseState
-				wg     sync.WaitGroup
-				licErr error
-				devErr error
-			)
-
-			wg.Add(2)
-			go func() {
-				defer wg.Done()
-				resp, err := client.Get("/api/v1/billing/licenses/"+licenseID, nil)
-				if err != nil {
-					licErr = err
-					return
-				}
-				lic, licErr = parseLicenseState(resp)
-			}()
-			go func() {
-				defer wg.Done()
-				resp, err := client.Get("/api/v1/devices/"+device, nil)
-				if err != nil {
-					devErr = err
-					return
-				}
-				devLic, devErr = parseDeviceLicense(resp)
-			}()
-			wg.Wait()
-
-			if licErr != nil {
-				return licErr
+			resp, err := client.Get("/api/v1/devices/"+device, nil)
+			if err != nil {
+				return err
 			}
-			if devErr != nil {
-				return devErr
-			}
-
-			if lic.Status == "expired" {
-				return fmt.Errorf("cannot attach: license %s is expired", licenseID)
-			}
-			if lic.DeviceID != "" && lic.DeviceID != device {
-				return fmt.Errorf("cannot attach: license %s is already attached to device %s", licenseID, lic.DeviceID)
+			devLic, err := parseDeviceLicense(resp)
+			if err != nil {
+				return err
 			}
 
 			if devLic.ID != "" && (devLic.Status == "activated" || devLic.Status == "to_be_expired") {

@@ -70,7 +70,7 @@ func NewCmdOrderList(f *factory.Factory) *cobra.Command {
 	cmd.Flags().StringVar(&opts.Type, "type", "", "Filter by order type (license_purchase/license_renewal)")
 	cmd.Flags().StringVar(&opts.After, "after", "", "Filter orders created after this date (e.g. 2026-01-01)")
 	cmd.Flags().StringVar(&opts.Before, "before", "", "Filter orders created before this date (e.g. 2026-03-31)")
-	opts.ListFlags.RegisterExpand(cmd, "items", "licenseType", "price")
+	opts.ListFlags.RegisterExpand(cmd, "creator", "org")
 
 	return cmd
 }

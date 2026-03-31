@@ -46,7 +46,7 @@ func NewCmdGet(f *factory.Factory) *cobra.Command {
 			if len(opts.Expand) > 0 {
 				q.Set("expand", strings.Join(opts.Expand, ","))
 			} else {
-				q.Set("expand", "licenseType,device,org")
+				q.Set("expand", "org,device")
 			}
 
 			body, err := client.Get("/api/v1/billing/licenses/"+licenseID, q)
@@ -60,7 +60,7 @@ func NewCmdGet(f *factory.Factory) *cobra.Command {
 	}
 
 	cmd.Flags().StringSliceVarP(&opts.Fields, "fields", "f", nil, "Fields to return and display")
-	cmd.Flags().StringSliceVar(&opts.Expand, "expand", nil, "Expand related resources (supported: licenseType, device, org)")
+	cmd.Flags().StringSliceVar(&opts.Expand, "expand", nil, "Expand related resources (supported: device, org)")
 
 	return cmd
 }

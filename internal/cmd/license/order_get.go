@@ -43,7 +43,7 @@ func NewCmdOrderGet(f *factory.Factory) *cobra.Command {
 			if len(opts.Expand) > 0 {
 				q.Set("expand", strings.Join(opts.Expand, ","))
 			} else {
-				q.Set("expand", "items,licenseType,price")
+				q.Set("expand", "org")
 			}
 
 			body, err := client.Get("/api/v1/billing/orders/"+orderID, q)
@@ -57,7 +57,7 @@ func NewCmdOrderGet(f *factory.Factory) *cobra.Command {
 	}
 
 	cmd.Flags().StringSliceVarP(&opts.Fields, "fields", "f", nil, "Fields to return and display")
-	cmd.Flags().StringSliceVar(&opts.Expand, "expand", nil, "Expand related resources (supported: items, licenseType, price)")
+	cmd.Flags().StringSliceVar(&opts.Expand, "expand", nil, "Expand related resources (supported: creator, org)")
 
 	return cmd
 }

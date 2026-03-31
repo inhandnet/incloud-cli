@@ -29,7 +29,7 @@ func NewCmdTypeGet(f *factory.Factory) *cobra.Command {
   incloud license type get professional -o yaml
 
   # Only specific fields
-  incloud license type get professional -f name -f features -f prices`,
+  incloud license type get professional -f name -f premiumServices -f upgrades`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			slug := args[0]
@@ -58,7 +58,7 @@ func NewCmdTypeGet(f *factory.Factory) *cobra.Command {
 	}
 
 	cmd.Flags().StringSliceVarP(&opts.Fields, "fields", "f", nil, "Fields to return and display")
-	cmd.Flags().StringSliceVar(&opts.Expand, "expand", nil, "Expand related resources (e.g. prices)")
+	cmd.Flags().StringSliceVar(&opts.Expand, "expand", nil, "Expand related resources (supported: prices)")
 
 	return cmd
 }
