@@ -58,7 +58,7 @@ func NewCmdList(f *factory.Factory) *cobra.Command {
 				q.Set("attached", opts.Attached)
 			}
 			if opts.OrderID != "" {
-				q.Set("q.orderId", opts.OrderID)
+				q.Set("orderId", opts.OrderID)
 			}
 			if opts.OrgID != "" {
 				q.Set("oid", opts.OrgID)
