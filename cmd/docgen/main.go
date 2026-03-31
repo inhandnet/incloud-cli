@@ -17,6 +17,7 @@ import (
 	deviceCmd "github.com/inhandnet/incloud-cli/internal/cmd/device"
 	feedbackCmd "github.com/inhandnet/incloud-cli/internal/cmd/feedback"
 	firmwareCmd "github.com/inhandnet/incloud-cli/internal/cmd/firmware"
+	licenseCmd "github.com/inhandnet/incloud-cli/internal/cmd/license"
 	oobmCmd "github.com/inhandnet/incloud-cli/internal/cmd/oobm"
 	orgCmd "github.com/inhandnet/incloud-cli/internal/cmd/org"
 	overviewCmd "github.com/inhandnet/incloud-cli/internal/cmd/overview"
@@ -46,6 +47,7 @@ func main() {
 	rootCmd.AddCommand(deviceCmd.NewCmdDevice(f))
 	rootCmd.AddCommand(feedbackCmd.NewCmdFeedback(f))
 	rootCmd.AddCommand(firmwareCmd.NewCmdFirmware(f))
+	rootCmd.AddCommand(licenseCmd.NewCmdLicense(f))
 	rootCmd.AddCommand(oobmCmd.NewCmdOobm(f))
 	rootCmd.AddCommand(orgCmd.NewCmdOrg(f))
 	rootCmd.AddCommand(overviewCmd.NewCmdOverview(f))
