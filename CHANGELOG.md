@@ -1,3 +1,26 @@
+# v0.5.0 (2026-04-01)
+
+## 新功能
+
+### License 管理
+- **`license` 命令组** — 完整的 License 生命周期管理
+  - `license list` / `license get` — 查看 License 列表和详情
+  - `license attach` / `license detach` — 绑定 / 解绑设备 License
+  - `license transfer` — 在设备间转移 License
+  - `license upgrade` — 升级 License 类型
+  - `license align-expiry` — 对齐多个 License 的到期时间
+  - `license history` — 查看 License 操作历史
+- **`license order` 子命令组** — 订单查询（list / get）
+- **`license type` 子命令组** — License 类型查询（list / get）
+
+## 修复
+- 修复 `device config schema validate` 使用 Go 标准正则引擎导致 PCRE 语法（如 `(?!)`）校验失败的问题，改用 PCRE 兼容引擎
+- 修复 `product create` 缺少 `firmwareVersionRule` 字段导致创建产品时无法设置固件版本规则的问题
+- 修复 `license list` 在非 TTY 环境下未指定 `--yes` 时 overlay 操作意外执行的问题
+- 修复 `license order list` 查询参数 `orderId` 名称错误的问题
+
+---
+
 # v0.4.1 (2026-03-30)
 
 ## 新功能
