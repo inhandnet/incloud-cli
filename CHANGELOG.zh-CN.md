@@ -1,133 +1,133 @@
 # v0.5.0 (2026-04-01)
 
-## New Features
+## 新功能
 
-### License Management
-- **`license` command group** — Full license lifecycle management
-  - `license list` / `license get` — View license list and details
-  - `license attach` / `license detach` — Bind / unbind device licenses
-  - `license transfer` — Transfer licenses between devices
-  - `license upgrade` — Upgrade license type
-  - `license align-expiry` — Align expiry dates across multiple licenses
-  - `license history` — View license operation history
-- **`license order` subcommands** — Order queries (list / get)
-- **`license type` subcommands** — License type queries (list / get)
+### License 管理
+- **`license` 命令组** — 完整的 License 生命周期管理
+  - `license list` / `license get` — 查看 License 列表和详情
+  - `license attach` / `license detach` — 绑定 / 解绑设备 License
+  - `license transfer` — 在设备间转移 License
+  - `license upgrade` — 升级 License 类型
+  - `license align-expiry` — 对齐多个 License 的到期时间
+  - `license history` — 查看 License 操作历史
+- **`license order` 子命令组** — 订单查询（list / get）
+- **`license type` 子命令组** — License 类型查询（list / get）
 
-## Bug Fixes
-- Fix `device config schema validate` failing on PCRE syntax (e.g. `(?!)`) by switching from Go's standard regexp engine to a PCRE-compatible engine
-- Fix `product create` missing `firmwareVersionRule` field, preventing firmware version rules from being set during product creation
-- Fix `license list` overlay operation executing unexpectedly in non-TTY environments without `--yes`
-- Fix incorrect `orderId` query parameter name in `license order list`
+## 修复
+- 修复 `device config schema validate` 使用 Go 标准正则引擎导致 PCRE 语法（如 `(?!)`）校验失败的问题，改用 PCRE 兼容引擎
+- 修复 `product create` 缺少 `firmwareVersionRule` 字段导致创建产品时无法设置固件版本规则的问题
+- 修复 `license list` 在非 TTY 环境下未指定 `--yes` 时 overlay 操作意外执行的问题
+- 修复 `license order list` 查询参数 `orderId` 名称错误的问题
 
 ---
 
 # v0.4.1 (2026-03-30)
 
-## New Features
+## 新功能
 
-### Feedback
-- **`feedback resolve`** — Update feedback ticket resolution status
+### 反馈管理
+- **`feedback resolve`** — 更新反馈工单的解决状态
 
-### Device Data
-- **`device datausage --interval`** — Device traffic statistics now support `--interval` to specify aggregation interval
-- **`device list` filter enhancements** — Add missing filter parameters to device list, consistent with other list commands
+### 设备数据
+- **`device datausage --interval`** — 设备流量统计支持 `--interval` 参数指定统计间隔
+- **`device list` 过滤增强** — 补全设备列表缺失的过滤参数，与其他列表命令保持一致
 
-### Query Enhancements
-- **`--expand` flag** — Multiple commands (device list, device group list, etc.) now support `--expand` to include related fields
-- **`--sort` flag** — Multiple list commands now support `--sort` for ordering results
-- **`device group list --org`** — Device group list supports filtering by organization
-- **Offline statistics filtering** — `overview offline` command supports conditional filtering
+### 查询增强
+- **`--expand` 参数** — 设备列表、设备组列表等多个命令新增 `--expand`，支持展开关联字段
+- **`--sort` 参数** — 多个列表命令新增 `--sort` 排序支持
+- **`device group list --org`** — 设备组列表支持按组织过滤
+- **离线统计过滤** — `overview offline` 命令支持按条件过滤统计结果
 
-### Super Admin
-- **`--sudo` flag visibility** — Super admins can now see the `--sudo` flag in all subcommand help text
+### 超级管理员
+- **`--sudo` 参数可见性** — 超级管理员在所有子命令的帮助信息中均可看到 `--sudo` 参数
 
-## Bug Fixes
-- Fix `feedback list` not displaying reply content in default output
-- Fix traffic statistics table output fields inconsistent with JSON output
-- Fix `--expand` parameter values not matching backend API
+## 修复
+- 修复 `feedback list` 默认输出不显示回复内容的问题
+- 修复流量统计表格输出与 JSON 输出字段不一致的问题
+- 修复 `--expand` 参数值与后端 API 不匹配的问题
 
-## Changes
-- Remove `--count` flag from `activity`, `alert`, and `feedback` list commands
+## 调整
+- 移除 `activity`、`alert`、`feedback` 列表命令的 `--count` 参数
 
 ---
 
 # v0.4.0 (2026-03-27)
 
-## New Features
+## 新功能
 
-### Remote Tunnels
-- **`tunnel` command group** — Manage device remote access tunnels (list/get/create/delete), view tunnel connection status and details
-- **`tunnel forward`** — Forward device ports to localhost via tunnel, using smux multiplexing for efficient TCP forwarding
-- **`tunnel exec`** — Execute CLI commands on devices via tunnel, without direct SSH access
+### 远程隧道
+- **`tunnel` 命令组** — 管理设备远程访问隧道（list/get/create/delete），查看隧道连接状态和详情
+- **`tunnel forward`** — 通过隧道将设备端口转发到本地，基于 smux 多路复用实现高效 TCP 转发
+- **`tunnel exec`** — 通过隧道在设备上执行 CLI 命令，无需 SSH 直连设备
 
-### Webhook Management
-- **`webhook` command group** — Full webhook lifecycle management (list/get/create/update/delete)
-- **`webhook test`** — Test webhook connectivity, supports testing by ID or generic provider test
+### Webhook 管理
+- **`webhook` 命令组** — 消息 Webhook 全生命周期管理（list/get/create/update/delete）
+- **`webhook test`** — 测试 Webhook 连通性，支持按 ID 测试和通用 provider 测试
 
-### Device Assets
-- **`device asset` command group** — Device asset CRUD management (list/get/create/update/delete)
-- **`client mark-asset`** — Mark a client as an asset
+### 设备资产
+- **`device asset` 命令组** — 设备资产 CRUD 管理（list/get/create/update/delete）
+- **`client mark-asset`** — 将客户端标记为资产
 
-### Client Management
-- **`client set-pos-ready`** — Set client POS ready status
+### 客户端管理
+- **`client set-pos-ready`** — 设置客户端 POS 就绪状态
 
-### Overview
-- **`overview trend`** — Query daily device online count / total count trends
+### 数据概览
+- **`overview trend`** — 查询每日设备在线数/总数趋势
 
-### Query Enhancements
-- **`--order` flag** — `device log mqtt` and `signal list` support `--order` to specify sort direction
-- **`--timeout` flag** — `device log syslog --fetch` supports custom timeout duration
+### 查询增强
+- **`--order` 排序参数** — `device log mqtt` 和 `signal list` 支持 `--order` 指定排序方式
+- **`--timeout` 超时参数** — `device log syslog --fetch` 支持自定义超时时间
 
-### Other
-- **User-Agent header** — All CLI requests now include a User-Agent header for server-side traffic identification
-- **Windows installation docs** — INSTALL.md now includes Windows installation steps
+### 其他
+- **User-Agent 请求头** — 所有 CLI 请求自动携带 User-Agent，便于服务端识别 CLI 流量
+- **Windows 安装文档** — INSTALL.md 新增 Windows 安装步骤
 
-## Bug Fixes
-- Fix `api` command printing error messages twice
-- Fix 0-based page numbers not converted to 1-based in JSON/YAML/JQ output modes
-- Fix pagination query parameter using `size` instead of `limit`
-- Fix syslog timestamp parameter appending duplicate `Z` suffix
-- Fix timestamp parameters not properly normalized
+## 修复
+- 修复 `api` 命令错误信息重复输出的问题
+- 修复 JSON/YAML/JQ 输出模式下 0-based 页码未转换为 1-based 的问题
+- 修复分页查询参数误用 `size` 而非 `limit` 的问题
+- 修复 syslog 时间戳参数重复追加 `Z` 后缀的问题
+- 修复时间戳参数未正确归一化的问题
 
-## Changes
-- Remove `--forward` flag from `open-web`, port forwarding consolidated into `tunnel forward`
+## 调整
+- `open-web` 移除 `--forward` 参数，端口转发功能统一到 `tunnel forward` 命令
 
 ---
 
 # v0.3.0 (2026-03-26)
 
-## New Features
+## 新功能
 
-### Self-Update
-- **`incloud update` command** — Check and install new versions from GitHub Releases. Supports `--check` (check only), `--version` (specific version), `--yes` (skip confirmation). Auto-fallback to S3 China mirror when GitHub is unreachable
+### 自更新
+- **`incloud update` 命令** — 从 GitHub Releases 检查并安装新版本，支持 `--check` 仅检查、`--version` 指定版本、`--yes` 跳过确认。GitHub 不可达时自动回退到 S3 国内镜像源
 
-### Feedback
-- **`feedback create`** — Submit feedback tickets, supports `--file` for attachments
-- **`feedback list`** — View feedback list with attachment info
-- **`feedback download`** — Download feedback attachments
+### 反馈管理
+- **`feedback create`** — 提交反馈工单，支持 `--file` 上传附件
+- **`feedback list`** — 查看反馈列表，显示附件信息
+- **`feedback download`** — 下载反馈附件
 
-### Authentication
-- **Zero-config login** — `incloud login` works with no arguments (defaults to global region, default context)
-- **Region shorthand** — `--host` accepts `global`, `cn`, `dev`, `beta` etc. instead of full domain names
-- **Top-level login alias** — `incloud login` as shortcut for `incloud auth login`
-- **401 auto-prompt** — Prompts re-login on 401 errors
-- **Remove stored credentials** — OAuth client credentials no longer saved to config file, fetched dynamically to reduce sensitive data on disk
+### 认证优化
+- **零配置登录** — `incloud login` 无需任何参数即可登录（默认 global 区域、default context）
+- **区域简写** — `--host` 支持 `global`、`cn`、`dev`、`beta` 等区域名称，无需输入完整域名
+- **顶层 login 别名** — `incloud login` 作为 `incloud auth login` 的快捷方式
+- **401 自动提示** — 收到 401 错误时提示重新登录
+- **移除本地存储凭证** — OAuth client credentials 不再保存到配置文件，改为动态获取，减少磁盘上的敏感数据
 
-### Device Management
-- **Batch import enhancements** — `device import` adds `--group` and `--org` flags to specify group and sub-organization during import
-- **`device import-status` command** — Query import task status, displays per-line error details on failure (serial number, failure reason)
-- **Diagnostic log auto-decryption** — `device log diagnostic` auto-detects AES encryption on download and decrypts, outputting .tar.gz directly
+### 设备管理
+- **批量导入增强** — `device import` 新增 `--group` 和 `--org` 参数，导入时直接指定分组和子组织
+- **`device import-status` 命令** — 查询导入任务状态，失败时显示逐行错误详情（序列号、失败原因）
+- **诊断日志自动解密** — `device log diagnostic` 下载时自动检测 AES 加密并解密，直接输出 .tar.gz 文件
 
-### Users & Organizations
-- **`user identity list`** — View current user's roles across all accessible organizations, supports filtering by org name
-- **`--tenant` global flag** — Switch organization context per-request, multi-org users can operate on external organizations without admin privileges
+### 用户与组织
+- **`user identity list`** — 查看当前用户在所有可访问组织中的身份角色，支持按组织名筛选
+- **`--tenant` 全局参数** — 按请求切换组织上下文，多组织用户无需管理员权限即可操作外部组织
 
-### Architecture
-- **API/Auth URL separation** — Host config split into API address (star.*) and auth address (portal.*), supports direct IP connections
+### 架构改进
+- **API/Auth URL 分离** — 主机配置拆分为 API 地址（star.*）和认证地址（portal.*），支持 IP 地址直连
 
-## Bug Fixes
-- Add `--yes` confirmation prompt to `alert rule delete` and `user unlock` to prevent accidental operations
-- `device log syslog` always outputs plain text lines, ignoring `-o json` to stay grep-friendly
+## 修复
+- `alert rule delete` 和 `user unlock` 增加 `--yes` 确认提示，防止误操作
+- `device log syslog` 始终输出纯文本行，忽略 `-o json` 参数，保持 grep 友好
 
 ---
 
