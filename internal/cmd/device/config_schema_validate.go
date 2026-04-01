@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/dlclark/regexp2"
 	"github.com/santhosh-tekuri/jsonschema/v6"
 	"github.com/spf13/cobra"
 	"github.com/tidwall/gjson"
@@ -101,6 +102,7 @@ validation failure. Useful for AI tools to pre-check generated config.`,
 			}
 
 			compiler := jsonschema.NewCompiler()
+			compiler.UseRegexpEngine(regexp2Engine)
 			if err := compiler.AddResource("schema.json", schemaObj); err != nil {
 				return fmt.Errorf("loading schema: %w", err)
 			}
@@ -163,4 +165,28 @@ func flattenVE(ve *jsonschema.ValidationError, out *[]validationError) {
 	for _, cause := range ve.Causes {
 		flattenVE(cause, out)
 	}
+}
+
+// regexp2Engine is a jsonschema.RegexpEngine that uses regexp2 (PCRE-compatible)
+// instead of Go's RE2. This supports Unicode escapes (\u4e00) and lookaheads
+// (?!...) found in JSON Schema patterns from the backend.
+func regexp2Engine(pattern string) (jsonschema.Regexp, error) {
+	re, err := regexp2.Compile(pattern, regexp2.None)
+	if err != nil {
+		return nil, err
+	}
+	return &regexp2Regexp{re: re}, nil
+}
+
+type regexp2Regexp struct {
+	re *regexp2.Regexp
+}
+
+func (r *regexp2Regexp) MatchString(s string) bool {
+	matched, _ := r.re.MatchString(s)
+	return matched
+}
+
+func (r *regexp2Regexp) String() string {
+	return r.re.String()
 }
