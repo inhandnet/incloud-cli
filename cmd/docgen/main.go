@@ -33,7 +33,7 @@ import (
 )
 
 func main() {
-	outputDir := flag.String("output", "../incloud-skills/skills/incloud/commands", "Output directory for generated docs")
+	outputDir := flag.String("output", "../incloud-skills/skills/incloud/references/commands", "Output directory for generated docs")
 	flag.Parse()
 
 	f := factory.New()
