@@ -8,6 +8,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/inhandnet/incloud-cli/internal/cmdutil"
 	"github.com/inhandnet/incloud-cli/internal/factory"
 	"github.com/inhandnet/incloud-cli/internal/iostreams"
 )
@@ -53,8 +54,8 @@ func newCmdDatausageList(f *factory.Factory) *cobra.Command {
 			}
 
 			q := url.Values{
-				"after":  {opts.After},
-				"before": {opts.Before},
+				"after":  {cmdutil.ParseTimeFlag(opts.After)},
+				"before": {cmdutil.ParseTimeFlag(opts.Before)},
 			}
 			for _, g := range opts.Groups {
 				q.Add("groups", g)
@@ -73,8 +74,8 @@ func newCmdDatausageList(f *factory.Factory) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&opts.After, "after", "", "Start date (e.g. 2024-03-01)")
-	cmd.Flags().StringVar(&opts.Before, "before", "", "End date (e.g. 2024-03-31)")
+	cmd.Flags().StringVar(&opts.After, "after", "", "Start date (e.g. 2025-01-01)")
+	cmd.Flags().StringVar(&opts.Before, "before", "", "End date (e.g. 2025-01-31)")
 	cmd.Flags().StringSliceVar(&opts.Groups, "groups", nil, "Filter by device group IDs")
 	cmd.Flags().StringSliceVarP(&opts.Fields, "fields", "f", nil, "Fields to display in table mode")
 

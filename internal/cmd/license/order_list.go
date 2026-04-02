@@ -48,10 +48,10 @@ func NewCmdOrderList(f *factory.Factory) *cobra.Command {
 				q.Set("type", opts.Type)
 			}
 			if opts.After != "" {
-				q.Set("after", opts.After)
+				q.Set("after", cmdutil.ParseTimeFlag(opts.After))
 			}
 			if opts.Before != "" {
-				q.Set("before", opts.Before)
+				q.Set("before", cmdutil.ParseTimeFlag(opts.Before))
 			}
 
 			output, _ := cmd.Flags().GetString("output")
@@ -68,8 +68,8 @@ func NewCmdOrderList(f *factory.Factory) *cobra.Command {
 	opts.ListFlags.Register(cmd)
 	cmd.Flags().StringVar(&opts.Status, "status", "", "Filter by status (open/complete/cancelled)")
 	cmd.Flags().StringVar(&opts.Type, "type", "", "Filter by order type (license_purchase/license_renewal/sim_bill/service_purchase/service_renewal/service_upgrade)")
-	cmd.Flags().StringVar(&opts.After, "after", "", "Filter orders created after this date (e.g. 2026-01-01)")
-	cmd.Flags().StringVar(&opts.Before, "before", "", "Filter orders created before this date (e.g. 2026-03-31)")
+	cmd.Flags().StringVar(&opts.After, "after", "", "Start date (e.g. 2025-01-01)")
+	cmd.Flags().StringVar(&opts.Before, "before", "", "End date (e.g. 2025-01-31)")
 	opts.ListFlags.RegisterExpand(cmd, "creator", "org")
 
 	return cmd

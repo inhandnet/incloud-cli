@@ -9,6 +9,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/inhandnet/incloud-cli/internal/cmdutil"
 	"github.com/inhandnet/incloud-cli/internal/factory"
 )
 
@@ -89,8 +90,8 @@ start of today (UTC) and --before defaults to now if not specified.`,
 			}
 
 			q := url.Values{}
-			q.Set("startTimestamp", after)
-			q.Set("endTimestamp", before)
+			q.Set("startTimestamp", cmdutil.ParseTimeFlag(after))
+			q.Set("endTimestamp", cmdutil.ParseTimeFlag(before))
 			q.Set("limit", strconv.Itoa(opts.Limit))
 			q.Set("index", "0")
 			for _, kw := range opts.Keywords {
@@ -121,8 +122,8 @@ start of today (UTC) and --before defaults to now if not specified.`,
 		},
 	}
 
-	cmd.Flags().StringVar(&opts.After, "after", "", "Start time in ISO 8601 format (required without --fetch)")
-	cmd.Flags().StringVar(&opts.Before, "before", "", "End time in ISO 8601 format (required without --fetch)")
+	cmd.Flags().StringVar(&opts.After, "after", "", "Start time (e.g. 2025-01-01, 2025-01-01T08:00:00, 2025-01-01T00:00:00Z; required without --fetch)")
+	cmd.Flags().StringVar(&opts.Before, "before", "", "End time (e.g. 2025-01-31, 2025-01-31T08:00:00, 2025-01-31T23:59:59Z; required without --fetch)")
 	cmd.Flags().StringSliceVar(&opts.Keywords, "keywords", nil, "Filter by keywords")
 	cmd.Flags().IntVar(&opts.Limit, "limit", 10000, "Maximum number of log lines")
 	cmd.Flags().BoolVar(&opts.Fetch, "fetch", false, "Actively request syslog from device (--after defaults to start of today)")

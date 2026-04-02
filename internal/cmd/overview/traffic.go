@@ -10,6 +10,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/inhandnet/incloud-cli/internal/cmdutil"
 	"github.com/inhandnet/incloud-cli/internal/factory"
 	"github.com/inhandnet/incloud-cli/internal/iostreams"
 )
@@ -54,8 +55,8 @@ func NewCmdTraffic(f *factory.Factory) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&opts.After, "after", "", "Start date (e.g. 2024-01-01)")
-	cmd.Flags().StringVar(&opts.Before, "before", "", "End date (e.g. 2024-01-31)")
+	cmd.Flags().StringVar(&opts.After, "after", "", "Start date (e.g. 2025-01-01)")
+	cmd.Flags().StringVar(&opts.Before, "before", "", "End date (e.g. 2025-01-31)")
 	cmd.Flags().StringVar(&opts.Type, "type", "", "Traffic type: cellular|wifi|wired|all")
 	cmd.Flags().IntVar(&opts.N, "n", 10, "Number of top devices to return")
 	cmd.Flags().StringSliceVarP(&opts.Fields, "fields", "f", nil, "Fields to display in table output")
@@ -79,8 +80,8 @@ func runTraffic(cmd *cobra.Command, f *factory.Factory, opts *TrafficOptions) er
 	}
 
 	overviewQuery := makeQuery(map[string]string{
-		"after":  opts.After,
-		"before": opts.Before,
+		"after":  cmdutil.ParseTimeFlag(opts.After),
+		"before": cmdutil.ParseTimeFlag(opts.Before),
 	})
 
 	topkQuery := makeQuery(map[string]string{

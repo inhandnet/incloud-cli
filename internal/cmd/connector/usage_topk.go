@@ -7,6 +7,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/inhandnet/incloud-cli/internal/cmdutil"
 	"github.com/inhandnet/incloud-cli/internal/factory"
 	"github.com/inhandnet/incloud-cli/internal/iostreams"
 )
@@ -34,8 +35,8 @@ func newCmdUsageTopK(f *factory.Factory) *cobra.Command {
 			}
 
 			q := url.Values{}
-			q.Set("after", after)
-			q.Set("before", before)
+			q.Set("after", cmdutil.ParseTimeFlag(after))
+			q.Set("before", cmdutil.ParseTimeFlag(before))
 			q.Set("n", strconv.Itoa(n))
 			if typ != "" {
 				q.Set("type", typ)
@@ -51,8 +52,8 @@ func newCmdUsageTopK(f *factory.Factory) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&after, "after", "", "Start date (YYYY-MM-DD, required)")
-	cmd.Flags().StringVar(&before, "before", "", "End date (YYYY-MM-DD, required)")
+	cmd.Flags().StringVar(&after, "after", "", "Start date (e.g. 2025-01-01, required)")
+	cmd.Flags().StringVar(&before, "before", "", "End date (e.g. 2025-01-31, required)")
 	cmd.Flags().IntVar(&n, "n", 10, "Number of top results to return")
 	cmd.Flags().StringVar(&typ, "type", "", "Filter by type: DEVICE or ACCOUNT (default: DEVICE)")
 	_ = cmd.MarkFlagRequired("after")

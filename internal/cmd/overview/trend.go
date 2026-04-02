@@ -9,6 +9,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/inhandnet/incloud-cli/internal/cmdutil"
 	"github.com/inhandnet/incloud-cli/internal/factory"
 	"github.com/inhandnet/incloud-cli/internal/iostreams"
 )
@@ -42,8 +43,8 @@ func NewCmdTrend(f *factory.Factory) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&opts.After, "after", "", "Start date (e.g. 2024-01-01 or 2024-01-01T00:00:00Z)")
-	cmd.Flags().StringVar(&opts.Before, "before", "", "End date (e.g. 2024-03-31 or 2024-03-31T23:59:59Z)")
+	cmd.Flags().StringVar(&opts.After, "after", "", "Start time (e.g. 2025-01-01, 2025-01-01T08:00:00, 2025-01-01T00:00:00Z)")
+	cmd.Flags().StringVar(&opts.Before, "before", "", "End time (e.g. 2025-01-31, 2025-01-31T08:00:00, 2025-01-31T23:59:59Z)")
 	cmd.Flags().StringSliceVarP(&opts.Fields, "fields", "f", nil, "Fields to return and display")
 
 	return cmd
@@ -63,8 +64,8 @@ func runTrend(cmd *cobra.Command, f *factory.Factory, opts *TrendOptions) error 
 	var wg sync.WaitGroup
 
 	q := makeQuery(map[string]string{
-		"after":      opts.After,
-		"before":     opts.Before,
+		"after":      cmdutil.ParseTimeFlag(opts.After),
+		"before":     cmdutil.ParseTimeFlag(opts.Before),
 		"aggregator": "LAST",
 		"interval":   "1d",
 		"fill":       "zero",

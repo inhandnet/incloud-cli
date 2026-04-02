@@ -54,8 +54,8 @@ Use --daily to show daily offline statistics instead (last 30 days).`,
 	cmd.Flags().BoolVar(&opts.Daily, "daily", false, "Show daily offline statistics instead of individual events")
 	cmd.Flags().IntVar(&opts.Page, "page", 1, "Page number, starting from 1 (events mode only)")
 	cmd.Flags().IntVar(&opts.Limit, "limit", 20, "Number of items per page (events mode only)")
-	cmd.Flags().StringVar(&opts.After, "after", "", "Start time (ISO 8601, e.g. 2025-01-01T00:00:00Z)")
-	cmd.Flags().StringVar(&opts.Before, "before", "", "End time (ISO 8601, e.g. 2025-01-31T23:59:59Z)")
+	cmd.Flags().StringVar(&opts.After, "after", "", "Start time (e.g. 2025-01-01, 2025-01-01T08:00:00, 2025-01-01T00:00:00Z)")
+	cmd.Flags().StringVar(&opts.Before, "before", "", "End time (e.g. 2025-01-31, 2025-01-31T08:00:00, 2025-01-31T23:59:59Z)")
 	cmd.Flags().StringSliceVarP(&opts.Fields, "fields", "f", nil, "Fields to display in table mode")
 
 	return cmd
@@ -69,10 +69,10 @@ func runOnlineEvents(f *factory.Factory, deviceID string, opts *onlineOptions, c
 
 	q := cmdutil.NewQuery(cmd, defaultOnlineEventFields)
 	if opts.After != "" {
-		q.Set("from", opts.After)
+		q.Set("from", cmdutil.ParseTimeFlag(opts.After))
 	}
 	if opts.Before != "" {
-		q.Set("to", opts.Before)
+		q.Set("to", cmdutil.ParseTimeFlag(opts.Before))
 	}
 
 	output, _ := cmd.Flags().GetString("output")
@@ -92,10 +92,10 @@ func runOnlineDaily(f *factory.Factory, deviceID string, opts *onlineOptions, cm
 
 	q := url.Values{}
 	if opts.After != "" {
-		q.Set("after", opts.After)
+		q.Set("after", cmdutil.ParseTimeFlag(opts.After))
 	}
 	if opts.Before != "" {
-		q.Set("before", opts.Before)
+		q.Set("before", cmdutil.ParseTimeFlag(opts.Before))
 	}
 
 	output, _ := cmd.Flags().GetString("output")

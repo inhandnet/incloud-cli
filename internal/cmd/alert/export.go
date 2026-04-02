@@ -75,8 +75,8 @@ func NewCmdExport(f *factory.Factory) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&opts.After, "after", "", "Filter alerts after this time (e.g. 2024-01-01T00:00:00Z)")
-	cmd.Flags().StringVar(&opts.Before, "before", "", "Filter alerts before this time (e.g. 2024-01-31T23:59:59Z)")
+	cmd.Flags().StringVar(&opts.After, "after", "", "Start time (e.g. 2025-01-01, 2025-01-01T08:00:00, 2025-01-01T00:00:00Z)")
+	cmd.Flags().StringVar(&opts.Before, "before", "", "End time (e.g. 2025-01-31, 2025-01-31T08:00:00, 2025-01-31T23:59:59Z)")
 	cmd.Flags().StringVar(&opts.Status, "status", "", "Filter by status (ACTIVE/CLOSED)")
 	cmd.Flags().IntVar(&opts.Priority, "priority", 0, "Filter by priority level")
 	cmd.Flags().StringVar(&opts.Device, "device", "", "Filter by device ID")

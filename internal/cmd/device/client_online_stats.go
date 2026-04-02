@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/tidwall/gjson"
 
+	"github.com/inhandnet/incloud-cli/internal/cmdutil"
 	"github.com/inhandnet/incloud-cli/internal/factory"
 	"github.com/inhandnet/incloud-cli/internal/iostreams"
 )
@@ -30,10 +31,10 @@ func newCmdClientOnlineStats(f *factory.Factory) *cobra.Command {
 
 			q := url.Values{}
 			if after != "" {
-				q.Set("after", after)
+				q.Set("after", cmdutil.ParseTimeFlag(after))
 			}
 			if before != "" {
-				q.Set("before", before)
+				q.Set("before", cmdutil.ParseTimeFlag(before))
 			}
 
 			body, err := client.Get("/api/v1/network/clients/"+args[0]+"/online-events-chart/statistics", q)
@@ -50,8 +51,8 @@ func newCmdClientOnlineStats(f *factory.Factory) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&after, "after", "", "Start time (ISO 8601)")
-	cmd.Flags().StringVar(&before, "before", "", "End time (ISO 8601)")
+	cmd.Flags().StringVar(&after, "after", "", "Start time (e.g. 2025-01-01, 2025-01-01T08:00:00, 2025-01-01T00:00:00Z)")
+	cmd.Flags().StringVar(&before, "before", "", "End time (e.g. 2025-01-31, 2025-01-31T08:00:00, 2025-01-31T23:59:59Z)")
 
 	return cmd
 }

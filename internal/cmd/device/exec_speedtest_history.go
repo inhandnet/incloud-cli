@@ -36,10 +36,10 @@ func NewCmdExecSpeedtestHistory(f *factory.Factory) *cobra.Command {
 
 			q := cmdutil.NewQuery(cmd, nil)
 			if after != "" {
-				q.Set("from", after)
+				q.Set("from", cmdutil.ParseTimeFlag(after))
 			}
 			if before != "" {
-				q.Set("to", before)
+				q.Set("to", cmdutil.ParseTimeFlag(before))
 			}
 
 			body, err := client.Get("/api/v1/devices/"+deviceID+"/diagnosis/speed-test-histories", q)

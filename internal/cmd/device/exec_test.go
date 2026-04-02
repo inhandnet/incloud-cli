@@ -353,7 +353,7 @@ func TestExecSpeedtestHistory(t *testing.T) {
 	f, _ := newTestFactory(t, server.URL)
 
 	cmd := NewCmdExec(f)
-	cmd.SetArgs([]string{"speedtest-history", "device123", "--page", "2", "--limit", "5", "--after", "2024-01-01"})
+	cmd.SetArgs([]string{"speedtest-history", "device123", "--page", "2", "--limit", "5", "--after", "2024-01-01T00:00:00Z"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -367,8 +367,8 @@ func TestExecSpeedtestHistory(t *testing.T) {
 	if gotLimit != "5" {
 		t.Errorf("expected limit=5, got %s", gotLimit)
 	}
-	if gotFrom != "2024-01-01" {
-		t.Errorf("expected from=2024-01-01, got %s", gotFrom)
+	if gotFrom != "2024-01-01T00:00:00Z" {
+		t.Errorf("expected from=2024-01-01T00:00:00Z, got %s", gotFrom)
 	}
 }
 

@@ -32,10 +32,10 @@ func newCmdClientOnlineEvents(f *factory.Factory) *cobra.Command {
 
 			q := cmdutil.NewQuery(cmd, nil)
 			if opts.After != "" {
-				q.Set("after", opts.After)
+				q.Set("after", cmdutil.ParseTimeFlag(opts.After))
 			}
 			if opts.Before != "" {
-				q.Set("before", opts.Before)
+				q.Set("before", cmdutil.ParseTimeFlag(opts.Before))
 			}
 
 			body, err := client.Get("/api/v1/network/clients/"+args[0]+"/online-events-list", q)
@@ -50,8 +50,8 @@ func newCmdClientOnlineEvents(f *factory.Factory) *cobra.Command {
 
 	cmd.Flags().IntVar(&opts.Page, "page", 1, "Page number (starting from 1)")
 	cmd.Flags().IntVar(&opts.Limit, "limit", 20, "Number of items per page")
-	cmd.Flags().StringVar(&opts.After, "after", "", "Start time (ISO 8601)")
-	cmd.Flags().StringVar(&opts.Before, "before", "", "End time (ISO 8601)")
+	cmd.Flags().StringVar(&opts.After, "after", "", "Start time (e.g. 2025-01-01, 2025-01-01T08:00:00, 2025-01-01T00:00:00Z)")
+	cmd.Flags().StringVar(&opts.Before, "before", "", "End time (e.g. 2025-01-31, 2025-01-31T08:00:00, 2025-01-31T23:59:59Z)")
 	cmd.Flags().StringSliceVarP(&opts.Fields, "fields", "f", nil, "Fields to display in table mode")
 
 	return cmd

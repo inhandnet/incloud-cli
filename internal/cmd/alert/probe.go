@@ -3,15 +3,17 @@ package alert
 import (
 	"net/url"
 	"strconv"
+
+	"github.com/inhandnet/incloud-cli/internal/cmdutil"
 )
 
 // applyProbeParams adds AlertProbe filter parameters to the query string.
 func applyProbeParams(q url.Values, after, before, status string, priority *int, device, group string, types []string, ack, query string) {
 	if after != "" {
-		q.Set("from", after)
+		q.Set("from", cmdutil.ParseTimeFlag(after))
 	}
 	if before != "" {
-		q.Set("to", before)
+		q.Set("to", cmdutil.ParseTimeFlag(before))
 	}
 	if status != "" {
 		q.Set("status", status)

@@ -61,10 +61,10 @@ func NewCmdLogMqtt(f *factory.Factory) *cobra.Command {
 
 			q := cmdutil.NewQuery(cmd, nil)
 			if opts.After != "" {
-				q.Set("after", opts.After)
+				q.Set("after", cmdutil.ParseTimeFlag(opts.After))
 			}
 			if opts.Before != "" {
-				q.Set("before", opts.Before)
+				q.Set("before", cmdutil.ParseTimeFlag(opts.Before))
 			}
 			if opts.Type != "" {
 				q.Set("type", opts.Type)
@@ -99,8 +99,8 @@ func NewCmdLogMqtt(f *factory.Factory) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&opts.After, "after", "", "Start time (ISO 8601, e.g. 2024-01-01T00:00:00Z)")
-	cmd.Flags().StringVar(&opts.Before, "before", "", "End time (ISO 8601, e.g. 2024-01-02T00:00:00Z)")
+	cmd.Flags().StringVar(&opts.After, "after", "", "Start time (e.g. 2025-01-01, 2025-01-01T08:00:00, 2025-01-01T00:00:00Z)")
+	cmd.Flags().StringVar(&opts.Before, "before", "", "End time (e.g. 2025-01-31, 2025-01-31T08:00:00, 2025-01-31T23:59:59Z)")
 	cmd.Flags().StringVar(&opts.Type, "type", "", "Filter by log type: publish, connected, disconnected")
 	cmd.Flags().StringVar(&opts.Topic, "topic", "", "Filter by MQTT topic (regex)")
 	cmd.Flags().IntVar(&opts.Limit, "limit", 20, "Number of results per page")

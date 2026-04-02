@@ -50,10 +50,10 @@ Use 'incloud device config snapshots get' to view the full snapshot including me
 				q.Set("module", opts.Module)
 			}
 			if opts.After != "" {
-				q.Set("after", opts.After)
+				q.Set("after", cmdutil.ParseTimeFlag(opts.After))
 			}
 			if opts.Before != "" {
-				q.Set("before", opts.Before)
+				q.Set("before", cmdutil.ParseTimeFlag(opts.Before))
 			}
 
 			body, err := client.Get("/api/v1/devices/"+deviceID+"/config/history", q)
@@ -73,8 +73,8 @@ Use 'incloud device config snapshots get' to view the full snapshot including me
 
 	opts.ListFlags.Register(cmd)
 	cmd.Flags().StringVar(&opts.Module, "module", "", "Module name (defaults to 'default' on the server)")
-	cmd.Flags().StringVar(&opts.After, "after", "", "Filter history after this time (ISO 8601)")
-	cmd.Flags().StringVar(&opts.Before, "before", "", "Filter history before this time (ISO 8601)")
+	cmd.Flags().StringVar(&opts.After, "after", "", "Start time (e.g. 2025-01-01, 2025-01-01T08:00:00, 2025-01-01T00:00:00Z)")
+	cmd.Flags().StringVar(&opts.Before, "before", "", "End time (e.g. 2025-01-31, 2025-01-31T08:00:00, 2025-01-31T23:59:59Z)")
 
 	return cmd
 }

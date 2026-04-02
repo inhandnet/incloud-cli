@@ -5,6 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/inhandnet/incloud-cli/internal/cmdutil"
 	"github.com/inhandnet/incloud-cli/internal/factory"
 	"github.com/inhandnet/incloud-cli/internal/iostreams"
 )
@@ -24,8 +25,8 @@ func newCmdUsageTrend(f *factory.Factory) *cobra.Command {
 			}
 
 			q := url.Values{}
-			q.Set("after", after)
-			q.Set("before", before)
+			q.Set("after", cmdutil.ParseTimeFlag(after))
+			q.Set("before", cmdutil.ParseTimeFlag(before))
 
 			body, err := client.Get("/api/v1/connectors/usage/tendency", q)
 			if err != nil {
@@ -41,8 +42,8 @@ func newCmdUsageTrend(f *factory.Factory) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&after, "after", "", "Start date (YYYY-MM-DD, required)")
-	cmd.Flags().StringVar(&before, "before", "", "End date (YYYY-MM-DD, required)")
+	cmd.Flags().StringVar(&after, "after", "", "Start date (e.g. 2025-01-01, required)")
+	cmd.Flags().StringVar(&before, "before", "", "End date (e.g. 2025-01-31, required)")
 	_ = cmd.MarkFlagRequired("after")
 	_ = cmd.MarkFlagRequired("before")
 

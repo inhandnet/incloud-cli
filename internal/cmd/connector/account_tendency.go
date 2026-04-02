@@ -5,6 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/inhandnet/incloud-cli/internal/cmdutil"
 	"github.com/inhandnet/incloud-cli/internal/factory"
 	"github.com/inhandnet/incloud-cli/internal/iostreams"
 )
@@ -32,8 +33,8 @@ func newCmdAccountTendency(f *factory.Factory) *cobra.Command {
 			}
 
 			q := url.Values{}
-			q.Set("after", opts.After)
-			q.Set("before", opts.Before)
+			q.Set("after", cmdutil.ParseTimeFlag(opts.After))
+			q.Set("before", cmdutil.ParseTimeFlag(opts.Before))
 
 			body, err := client.Get("/api/v1/connectors/"+networkID+"/accounts/"+accountID+"/online-tendency", q)
 			if err != nil {
@@ -49,8 +50,8 @@ func newCmdAccountTendency(f *factory.Factory) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&opts.After, "after", "", "Start time (ISO 8601, required)")
-	cmd.Flags().StringVar(&opts.Before, "before", "", "End time (ISO 8601, required)")
+	cmd.Flags().StringVar(&opts.After, "after", "", "Start time (e.g. 2025-01-01, 2025-01-01T08:00:00, 2025-01-01T00:00:00Z)")
+	cmd.Flags().StringVar(&opts.Before, "before", "", "End time (e.g. 2025-01-31, 2025-01-31T08:00:00, 2025-01-31T23:59:59Z)")
 	_ = cmd.MarkFlagRequired("after")
 	_ = cmd.MarkFlagRequired("before")
 

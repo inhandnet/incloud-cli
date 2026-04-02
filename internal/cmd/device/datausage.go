@@ -6,6 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/inhandnet/incloud-cli/internal/cmdutil"
 	"github.com/inhandnet/incloud-cli/internal/factory"
 	"github.com/inhandnet/incloud-cli/internal/iostreams"
 )
@@ -47,8 +48,8 @@ func NewCmdDatausage(f *factory.Factory) *cobra.Command {
 
 	cmd.Flags().StringVar(&interval, "interval", "daily", "Granularity: hourly, daily, monthly")
 	cmd.Flags().StringVar(&opts.Type, "type", "", "Traffic type: cellular (default), wired, wireless, sim, esim, all, etc.")
-	cmd.Flags().StringVar(&opts.After, "after", "", "Start time (ISO 8601, e.g. 2024-01-01T00:00:00Z)")
-	cmd.Flags().StringVar(&opts.Before, "before", "", "End time (ISO 8601, e.g. 2024-01-02T00:00:00Z)")
+	cmd.Flags().StringVar(&opts.After, "after", "", "Start time (e.g. 2025-01-01, 2025-01-01T08:00:00, 2025-01-01T00:00:00Z)")
+	cmd.Flags().StringVar(&opts.Before, "before", "", "End time (e.g. 2025-01-31, 2025-01-31T08:00:00, 2025-01-31T23:59:59Z)")
 	cmd.Flags().StringVar(&opts.Month, "month", "", "Month to query (YYYY-MM, e.g. 2024-03)")
 	cmd.Flags().StringVar(&opts.Year, "year", "", "Year to query (YYYY, e.g. 2024)")
 	cmd.Flags().StringSliceVarP(&opts.Fields, "fields", "f", nil, "Fields to display in table mode")
@@ -83,8 +84,8 @@ func fetchDatausageSeries(f *factory.Factory, cmd *cobra.Command, deviceID, endp
 
 	body, err := client.Get("/api/v1/devices/"+deviceID+"/"+endpoint, url.Values{
 		"type":   {opts.Type},
-		"after":  {opts.After},
-		"before": {opts.Before},
+		"after":  {cmdutil.ParseTimeFlag(opts.After)},
+		"before": {cmdutil.ParseTimeFlag(opts.Before)},
 		"month":  {opts.Month},
 		"year":   {opts.Year},
 	})

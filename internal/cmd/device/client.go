@@ -5,6 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/inhandnet/incloud-cli/internal/cmdutil"
 	"github.com/inhandnet/incloud-cli/internal/factory"
 	"github.com/inhandnet/incloud-cli/internal/iostreams"
 )
@@ -51,10 +52,10 @@ func fetchClientSeries(f *factory.Factory, cmd *cobra.Command, clientID, endpoin
 
 	q := url.Values{}
 	if opts.After != "" {
-		q.Set("after", opts.After)
+		q.Set("after", cmdutil.ParseTimeFlag(opts.After))
 	}
 	if opts.Before != "" {
-		q.Set("before", opts.Before)
+		q.Set("before", cmdutil.ParseTimeFlag(opts.Before))
 	}
 	if opts.Month != "" {
 		q.Set("month", opts.Month)

@@ -6,6 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/inhandnet/incloud-cli/internal/cmdutil"
 	"github.com/inhandnet/incloud-cli/internal/factory"
 	"github.com/inhandnet/incloud-cli/internal/iostreams"
 )
@@ -49,10 +50,10 @@ func newCmdSignalList(f *factory.Factory) *cobra.Command {
 
 			q := url.Values{}
 			if opts.After != "" {
-				q.Set("after", opts.After)
+				q.Set("after", cmdutil.ParseTimeFlag(opts.After))
 			}
 			if opts.Before != "" {
-				q.Set("before", opts.Before)
+				q.Set("before", cmdutil.ParseTimeFlag(opts.Before))
 			}
 
 			body, err := client.Get("/api/v1/devices/"+deviceID+"/signal", q)
@@ -72,8 +73,8 @@ func newCmdSignalList(f *factory.Factory) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&opts.After, "after", "", "Start time (ISO 8601, e.g. 2024-01-01T00:00:00Z)")
-	cmd.Flags().StringVar(&opts.Before, "before", "", "End time (ISO 8601, e.g. 2024-01-02T00:00:00Z)")
+	cmd.Flags().StringVar(&opts.After, "after", "", "Start time (e.g. 2025-01-01, 2025-01-01T08:00:00, 2025-01-01T00:00:00Z)")
+	cmd.Flags().StringVar(&opts.Before, "before", "", "End time (e.g. 2025-01-31, 2025-01-31T08:00:00, 2025-01-31T23:59:59Z)")
 	cmd.Flags().StringVar(&opts.Order, "order", "desc", "Sort order: asc (oldest first) or desc (newest first)")
 	_ = cmd.RegisterFlagCompletionFunc("order", func(_ *cobra.Command, _ []string, _ string) ([]string, cobra.ShellCompDirective) {
 		return []string{"asc", "desc"}, cobra.ShellCompDirectiveNoFileComp
