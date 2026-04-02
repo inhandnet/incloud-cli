@@ -82,7 +82,6 @@ func TestAlertList_TableDefaultFields(t *testing.T) {
 	}
 }
 
-
 func TestAlertList_WithFilters(t *testing.T) {
 	var gotQuery string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

@@ -14,17 +14,17 @@ import (
 )
 
 type OfflineOptions struct {
-	After                          string
-	Before                         string
-	Group                          []string
-	N                              int
-	Page                           int
-	Limit                          int
-	Fields                         []string
-	Query                          string
-	OfflineTimesGreaterThan        int
-	MaxOfflineTimesGreaterThan     int
-	MaxOfflineDurationGreaterThan  int
+	After                         string
+	Before                        string
+	Group                         []string
+	N                             int
+	Page                          int
+	Limit                         int
+	Fields                        []string
+	Query                         string
+	OfflineTimesGreaterThan       int
+	MaxOfflineTimesGreaterThan    int
+	MaxOfflineDurationGreaterThan int
 }
 
 var (

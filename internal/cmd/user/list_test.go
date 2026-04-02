@@ -75,4 +75,3 @@ func TestUserList_TableDefaultFields(t *testing.T) {
 		}
 	}
 }
-

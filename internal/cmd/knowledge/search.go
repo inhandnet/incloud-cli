@@ -35,7 +35,6 @@ type searchResult struct {
 
 var collapseWS = regexp.MustCompile(`\s+`)
 
-
 func NewCmdSearch(f *factory.Factory) *cobra.Command {
 	var (
 		model   string

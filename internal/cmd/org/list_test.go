@@ -75,4 +75,3 @@ func TestOrgList_TableDefaultFields(t *testing.T) {
 		}
 	}
 }
-

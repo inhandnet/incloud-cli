@@ -12,7 +12,7 @@ var defaultNetworkFields = []string{"_id", "name", "type", "tunnelCreationMode",
 
 type networkListOptions struct {
 	cmdutil.ListFlags
-	Name   string
+	Name string
 }
 
 func newCmdNetworkList(f *factory.Factory) *cobra.Command {

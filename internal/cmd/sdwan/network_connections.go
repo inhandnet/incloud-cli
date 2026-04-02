@@ -12,7 +12,7 @@ var defaultConnectionFields = []string{"_id", "source", "target", "status"}
 
 type networkConnectionsOptions struct {
 	cmdutil.ListFlags
-	Name   string
+	Name string
 }
 
 func newCmdNetworkConnections(f *factory.Factory) *cobra.Command {

@@ -10,10 +10,10 @@ import (
 
 type ListOptions struct {
 	cmdutil.ListFlags
-	Email  string
-	Name   string
-	Q      string
-	Type   string
+	Email string
+	Name  string
+	Q     string
+	Type  string
 }
 
 var defaultListFields = []string{"_id", "username", "name", "email", "blocked", "lastLogin"}

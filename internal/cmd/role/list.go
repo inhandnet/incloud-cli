@@ -10,7 +10,7 @@ import (
 
 type ListOptions struct {
 	cmdutil.ListFlags
-	App    string
+	App string
 }
 
 var defaultListFields = []string{"_id", "name", "description", "builtInRole", "subOrgVisible"}
