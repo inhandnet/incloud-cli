@@ -97,13 +97,13 @@ func newCmdGroupList(f *factory.Factory) *cobra.Command {
 		},
 	}
 
-	opts.ListFlags.Register(cmd)
+	opts.Register(cmd)
 	cmd.Flags().StringVar(&opts.Name, "name", "", "Filter by group name (fuzzy match)")
 	cmd.Flags().StringArrayVar(&opts.Product, "product", nil, "Filter by product (can be repeated)")
 	cmd.Flags().StringVar(&opts.Firmware, "firmware", "", "Filter by firmware version (fuzzy match)")
 	cmd.Flags().StringVar(&opts.Org, "org", "", "Filter by organization ID")
 	cmd.Flags().BoolVar(&opts.Summary, "summary", false, "Include device counts (online/offline/total) per group")
-	opts.ListFlags.RegisterExpand(cmd, "org", "nezha-iot-device-summary")
+	opts.RegisterExpand(cmd, "org", "nezha-iot-device-summary")
 
 	return cmd
 }

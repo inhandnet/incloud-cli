@@ -88,7 +88,7 @@ func NewCmdStatus(f *factory.Factory) *cobra.Command {
 		},
 	}
 
-	opts.ListFlags.Register(cmd)
+	opts.Register(cmd)
 	cmd.Flags().StringVar(&opts.Device, "device", "", "Filter by device ID (shows all OTA modules for the device)")
 	cmd.Flags().StringVar(&opts.Product, "product", "", "Filter by product name")
 	cmd.Flags().StringVar(&opts.Module, "module", "", "Filter by module name")

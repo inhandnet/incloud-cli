@@ -109,7 +109,7 @@ func NewCmdList(f *factory.Factory) *cobra.Command {
 		},
 	}
 
-	opts.ListFlags.Register(cmd)
+	opts.Register(cmd)
 	cmd.Flags().StringVarP(&opts.Query, "query", "q", "", "Search by name or serial number")
 	cmd.Flags().StringVar(&opts.Online, "online", "", "Filter by online status (true/false)")
 	cmd.Flags().StringVar(&opts.Status, "status", "", "Filter by status (online/offline)")
@@ -123,7 +123,7 @@ func NewCmdList(f *factory.Factory) *cobra.Command {
 	cmd.Flags().StringArrayVar(&opts.Label, "label", nil, "Filter by label key=value (can be repeated)")
 	cmd.Flags().StringVar(&opts.ICCID, "iccid", "", "Filter by ICCID")
 	cmd.Flags().StringVar(&opts.MAC, "mac", "", "Filter by MAC address")
-	opts.ListFlags.RegisterExpand(cmd, "org", "license", "licenseType")
+	opts.RegisterExpand(cmd, "org", "license", "licenseType")
 
 	return cmd
 }

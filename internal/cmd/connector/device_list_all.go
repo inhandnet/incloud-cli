@@ -54,7 +54,7 @@ func newCmdDeviceListAll(f *factory.Factory) *cobra.Command {
 		},
 	}
 
-	opts.ListFlags.Register(cmd)
+	opts.Register(cmd)
 	cmd.Flags().StringVar(&opts.NetworkID, "network", "", "Filter by network ID (use 'incloud connector network list' to find IDs)")
 	cmd.Flags().StringVar(&opts.Connected, "connected", "", "Filter by connected status (true/false)")
 	cmd.Flags().StringVarP(&opts.Search, "search", "q", "", "Search by name or serial number")

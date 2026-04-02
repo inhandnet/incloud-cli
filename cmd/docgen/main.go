@@ -62,7 +62,7 @@ func main() {
 
 	rootCmd.DisableAutoGenTag = true
 
-	if err := os.MkdirAll(*outputDir, 0755); err != nil {
+	if err := os.MkdirAll(*outputDir, 0o750); err != nil {
 		fmt.Fprintf(os.Stderr, "failed to create output directory: %v\n", err)
 		os.Exit(1)
 	}

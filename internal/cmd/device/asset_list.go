@@ -75,7 +75,7 @@ func newCmdAssetList(f *factory.Factory) *cobra.Command {
 		},
 	}
 
-	opts.ListFlags.Register(cmd)
+	opts.Register(cmd)
 	cmd.Flags().StringVar(&opts.Name, "name", "", "Filter by asset name (partial match)")
 	cmd.Flags().StringVar(&opts.MAC, "mac", "", "Filter by MAC address (partial match)")
 	cmd.Flags().StringVar(&opts.Number, "number", "", "Filter by asset number (partial match)")

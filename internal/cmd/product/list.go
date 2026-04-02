@@ -70,7 +70,7 @@ func NewCmdList(f *factory.Factory) *cobra.Command {
 		},
 	}
 
-	opts.ListFlags.Register(cmd)
+	opts.Register(cmd)
 	cmd.Flags().StringVar(&opts.Name, "name", "", "Filter by name (LIKE search)")
 	cmd.Flags().StringVar(&opts.Type, "type", "", "Filter by product type")
 	cmd.Flags().StringVar(&opts.Status, "status", "", "Filter by status (INDEVELOPMENT|PUBLISHED)")

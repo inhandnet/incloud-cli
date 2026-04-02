@@ -79,11 +79,11 @@ func NewCmdFeedbackList(f *factory.Factory) *cobra.Command {
 		},
 	}
 
-	opts.ListFlags.Register(cmd)
+	opts.Register(cmd)
 	cmd.Flags().StringVar(&opts.App, "app", "", "Filter by app (e.g. star, portal)")
 	cmd.Flags().StringVar(&opts.Resolution, "resolution", "", "Filter by resolution status (new, resolved)")
 	cmd.Flags().StringVar(&opts.Type, "type", "", "Filter by feedback type (issue, question, comment, suggestion)")
-	opts.ListFlags.RegisterExpand(cmd, "user", "org")
+	opts.RegisterExpand(cmd, "user", "org")
 
 	return cmd
 }

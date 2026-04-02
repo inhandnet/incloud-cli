@@ -83,7 +83,7 @@ func newCmdClientList(f *factory.Factory) *cobra.Command {
 		},
 	}
 
-	opts.ListFlags.Register(cmd)
+	opts.Register(cmd)
 	cmd.Flags().StringVarP(&opts.Query, "query", "q", "", "Search by client name")
 	cmd.Flags().StringVar(&opts.Type, "type", "", "Filter by type (wireless/wired)")
 	cmd.Flags().StringVar(&opts.Online, "online", "", "Filter by online status (true/false)")

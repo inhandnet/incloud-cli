@@ -56,7 +56,7 @@ func newCmdNetworkTunnels(f *factory.Factory) *cobra.Command {
 		},
 	}
 
-	opts.ListFlags.Register(cmd)
+	opts.Register(cmd)
 	cmd.Flags().StringVar(&opts.Name, "name", "", "Filter by device name")
 	cmd.Flags().StringVar(&opts.DeviceID, "device-id", "", "Filter by device ID")
 

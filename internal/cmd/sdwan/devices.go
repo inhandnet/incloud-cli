@@ -67,7 +67,7 @@ func newCmdDevices(f *factory.Factory) *cobra.Command {
 		},
 	}
 
-	opts.ListFlags.Register(cmd)
+	opts.Register(cmd)
 	cmd.Flags().StringVar(&opts.Role, "role", "", "Filter by role: hub or spoke")
 	cmd.Flags().StringVar(&opts.Name, "name", "", "Filter by device name")
 	cmd.Flags().StringVar(&opts.SerialNumber, "serial-number", "", "Filter by serial number")

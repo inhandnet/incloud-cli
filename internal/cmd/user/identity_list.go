@@ -61,9 +61,9 @@ the assigned roles and optional expiration date for external organizations.`,
 		},
 	}
 
-	opts.ListFlags.Register(cmd)
+	opts.Register(cmd)
 	cmd.Flags().StringVar(&opts.OrgName, "org-name", "", "Filter by organization name")
-	opts.ListFlags.RegisterExpand(cmd)
+	opts.RegisterExpand(cmd)
 
 	return cmd
 }

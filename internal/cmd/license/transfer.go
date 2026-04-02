@@ -52,7 +52,7 @@ Maximum 1000 licenses per operation.`,
 				}
 				if err := json.Unmarshal(resp, &parsed); err == nil && parsed.Result != nil {
 					var item any
-					json.Unmarshal(parsed.Result, &item)
+					_ = json.Unmarshal(parsed.Result, &item)
 					previews = append(previews, item)
 				}
 			}

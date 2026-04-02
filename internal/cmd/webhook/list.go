@@ -53,9 +53,9 @@ func NewCmdList(f *factory.Factory) *cobra.Command {
 		},
 	}
 
-	opts.ListFlags.Register(cmd)
+	opts.Register(cmd)
 	cmd.Flags().StringVar(&opts.Provider, "provider", "", "Filter by provider (supported: wechat)")
-	opts.ListFlags.RegisterExpand(cmd)
+	opts.RegisterExpand(cmd)
 
 	return cmd
 }

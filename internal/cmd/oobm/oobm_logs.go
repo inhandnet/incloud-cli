@@ -74,7 +74,7 @@ func NewCmdOobmLogs(f *factory.Factory) *cobra.Command {
 	cmd.Flags().StringVar(&opts.Type, "type", "", "Tunnel type filter")
 	cmd.Flags().StringSliceVar(&opts.Protocols, "protocol", nil, "Protocol filter (can be repeated)")
 	cmd.Flags().StringVar(&opts.BusinessID, "business-id", "", "Business resource ID filter")
-	opts.ListFlags.Register(cmd)
+	opts.Register(cmd)
 
 	return cmd
 }

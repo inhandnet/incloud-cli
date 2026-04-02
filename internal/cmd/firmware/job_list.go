@@ -112,11 +112,11 @@ func NewCmdJobList(f *factory.Factory) *cobra.Command {
 		},
 	}
 
-	opts.ListFlags.Register(cmd)
+	opts.Register(cmd)
 	cmd.Flags().StringVar(&opts.Firmware, "firmware", "", "Filter by firmware ID")
 	cmd.Flags().StringVar(&opts.Module, "module", "", "Filter by module name")
 	cmd.Flags().StringVar(&opts.Status, "status", "", "Filter by status (queued|inprogress|succeeded|canceled)")
-	opts.ListFlags.RegisterExpand(cmd)
+	opts.RegisterExpand(cmd)
 
 	return cmd
 }

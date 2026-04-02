@@ -53,7 +53,7 @@ func NewCmdList(f *factory.Factory) *cobra.Command {
 		},
 	}
 
-	opts.ListFlags.Register(cmd)
+	opts.Register(cmd)
 	cmd.Flags().StringVar(&opts.App, "app", "", "Filter by application (e.g. portal, console)")
 
 	return cmd

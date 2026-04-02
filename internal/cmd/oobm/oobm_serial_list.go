@@ -60,7 +60,7 @@ func NewCmdOobmSerialList(f *factory.Factory) *cobra.Command {
 
 	cmd.Flags().StringVar(&opts.Name, "name", "", "Filter by name")
 	cmd.Flags().StringVar(&opts.DeviceID, "device-id", "", "Filter by device ID (use 'incloud device list' to find IDs)")
-	opts.ListFlags.Register(cmd)
+	opts.Register(cmd)
 
 	return cmd
 }

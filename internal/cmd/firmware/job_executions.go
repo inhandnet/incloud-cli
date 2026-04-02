@@ -68,14 +68,14 @@ list completed executions for a specific device.`,
 		},
 	}
 
-	opts.ListFlags.Register(cmd)
+	opts.Register(cmd)
 	cmd.Flags().StringVar(&opts.Firmware, "firmware", "", "Filter by firmware ID (uses /firmwares/{id}/job/executions)")
 	cmd.Flags().StringVar(&opts.Device, "device", "", "Filter by device ID (uses /devices/{id}/ota/jobs/completed)")
 	cmd.Flags().StringVar(&opts.Module, "module", "", "Filter by OTA module name (default: \"default\")")
 	cmd.Flags().StringVar(&opts.JobID, "job", "", "Filter by job ID")
 	cmd.Flags().StringVar(&opts.Status, "status", "", "Filter by status (QUEUED|INPROGRESS|SUCCEEDED|FAILED|CANCELED)")
 	cmd.Flags().StringVar(&opts.SerialNumber, "sn", "", "Filter by device serial number (supports regex)")
-	opts.ListFlags.RegisterExpand(cmd, "creator", "org", "job", "nezha-device-manager-device")
+	opts.RegisterExpand(cmd, "creator", "org", "job", "nezha-device-manager-device")
 
 	cmd.AddCommand(NewCmdExecCancel(f))
 	cmd.AddCommand(NewCmdExecRetry(f))

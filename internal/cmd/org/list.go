@@ -79,14 +79,14 @@ func NewCmdList(f *factory.Factory) *cobra.Command {
 		},
 	}
 
-	opts.ListFlags.Register(cmd)
+	opts.Register(cmd)
 	cmd.Flags().StringVar(&opts.Name, "name", "", "Filter by name (LIKE search)")
 	cmd.Flags().StringVar(&opts.Email, "email", "", "Filter by email (LIKE search)")
 	cmd.Flags().StringVar(&opts.ContactEmail, "contact-email", "", "Filter by contact email (LIKE search)")
 	cmd.Flags().StringVarP(&opts.Q, "search", "q", "", "General search query")
 	cmd.Flags().StringVar(&opts.Ancestor, "ancestor", "", "Filter by ancestor organization ID (use 'incloud org list' or 'incloud org self' to find IDs)")
 	cmd.Flags().IntVar(&opts.Depth, "depth", 0, "Organization tree depth (default: API returns depth 1)")
-	opts.ListFlags.RegisterExpand(cmd)
+	opts.RegisterExpand(cmd)
 
 	return cmd
 }

@@ -70,7 +70,7 @@ func newCmdEndpointList(f *factory.Factory) *cobra.Command {
 		},
 	}
 
-	opts.ListFlags.Register(cmd)
+	opts.Register(cmd)
 	cmd.Flags().StringVar(&opts.Name, "name", "", "Filter by name")
 	cmd.Flags().StringVar(&opts.LanIP, "lan-ip", "", "Filter by LAN IP")
 	cmd.Flags().StringVar(&opts.DeviceID, "device-id", "", "Filter by device ID (use 'incloud connector device list <network-id>' to find IDs)")

@@ -80,12 +80,12 @@ func NewCmdList(f *factory.Factory) *cobra.Command {
 		},
 	}
 
-	opts.ListFlags.Register(cmd)
+	opts.Register(cmd)
 	cmd.Flags().StringVar(&opts.Email, "email", "", "Filter by email (LIKE search)")
 	cmd.Flags().StringVar(&opts.Name, "name", "", "Filter by name (LIKE search)")
 	cmd.Flags().StringVarP(&opts.Q, "search", "q", "", "General search query")
 	cmd.Flags().StringVar(&opts.Type, "type", "", "Filter by user type (INTERNAL=org members, EXTERNAL=collaborators)")
-	opts.ListFlags.RegisterExpand(cmd, "roles", "org")
+	opts.RegisterExpand(cmd, "roles", "org")
 
 	return cmd
 }

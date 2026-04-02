@@ -60,10 +60,10 @@ func NewCmdTypeList(f *factory.Factory) *cobra.Command {
 		},
 	}
 
-	opts.ListFlags.Register(cmd)
+	opts.Register(cmd)
 	cmd.Flags().StringVar(&opts.Product, "product", "", "Filter by product name")
 	cmd.Flags().StringVar(&opts.Status, "status", "", "Filter by status (published/unpublished, default: published)")
-	opts.ListFlags.RegisterExpand(cmd, "prices")
+	opts.RegisterExpand(cmd, "prices")
 
 	return cmd
 }

@@ -52,7 +52,7 @@ func NewCmdRuleList(f *factory.Factory) *cobra.Command {
 		},
 	}
 
-	opts.ListFlags.Register(cmd)
+	opts.Register(cmd)
 
 	return cmd
 }

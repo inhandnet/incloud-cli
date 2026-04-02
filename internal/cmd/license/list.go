@@ -75,13 +75,13 @@ func NewCmdList(f *factory.Factory) *cobra.Command {
 		},
 	}
 
-	opts.ListFlags.Register(cmd)
+	opts.Register(cmd)
 	cmd.Flags().StringVar(&opts.Status, "status", "", "Filter by status (activated/inactivated/to_be_expired/expired)")
 	cmd.Flags().StringVar(&opts.Type, "type", "", "Filter by license type slug")
 	cmd.Flags().StringVar(&opts.Attached, "attached", "", "Filter by attachment status (true/false)")
 	cmd.Flags().StringVar(&opts.OrderID, "order-id", "", "Filter by order ID")
 	cmd.Flags().StringVar(&opts.OrgID, "org-id", "", "Filter by organization ID")
-	opts.ListFlags.RegisterExpand(cmd, "type", "device", "org")
+	opts.RegisterExpand(cmd, "type", "device", "org")
 
 	return cmd
 }
