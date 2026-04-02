@@ -72,11 +72,19 @@ type ListFlags struct {
 }
 
 // Register registers the standard list flags (page, limit, sort, fields) on cmd.
+// Hidden aliases (--page-size, --per-page, --size, --count) are registered so that
+// AI agents that guess alternative names still get the intended behavior.
 func (lf *ListFlags) Register(cmd *cobra.Command) {
 	cmd.Flags().IntVar(&lf.Page, "page", 1, "Page number (starting from 1)")
 	cmd.Flags().IntVar(&lf.Limit, "limit", 20, "Number of items per page")
 	cmd.Flags().StringVar(&lf.Sort, "sort", "", `Sort order (e.g. "createdAt,desc")`)
 	cmd.Flags().StringSliceVarP(&lf.Fields, "fields", "f", nil, "Fields to return and display")
+
+	// AI-friendly aliases for --limit
+	for _, alias := range []string{"page-size", "per-page", "size", "count"} {
+		cmd.Flags().IntVar(&lf.Limit, alias, 20, "Alias for --limit")
+		_ = cmd.Flags().MarkHidden(alias)
+	}
 }
 
 // RegisterExpand registers the --expand flag on cmd.
