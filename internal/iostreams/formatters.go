@@ -162,3 +162,12 @@ func FormatRelativeTime(s string) string {
 
 	return humanize.Time(t)
 }
+
+// TruncateRunes truncates s to maxLen runes and appends "..." if it was longer.
+func TruncateRunes(s string, maxLen int) string {
+	runes := []rune(s)
+	if len(runes) <= maxLen {
+		return s
+	}
+	return string(runes[:maxLen]) + "..."
+}
