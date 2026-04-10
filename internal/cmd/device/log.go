@@ -13,6 +13,7 @@ func NewCmdLog(f *factory.Factory) *cobra.Command {
 		Long:  "View and download device logs from the InCloud platform.",
 	}
 
+	cmd.AddCommand(NewCmdLogLocal(f))
 	cmd.AddCommand(NewCmdLogSyslog(f))
 	cmd.AddCommand(NewCmdLogDiagnostic(f))
 	cmd.AddCommand(NewCmdLogMqtt(f))
