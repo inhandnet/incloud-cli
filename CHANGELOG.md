@@ -1,3 +1,22 @@
+# v0.6.0 (2026-04-16)
+
+## New Features
+
+### Knowledge Base
+- **`knowledge` command group** — Search device documentation and get AI-generated answers
+  - `knowledge search` — Search the knowledge base with optional model filter and query rewriting
+  - `knowledge ask` — Get AI-generated answers from device documentation
+
+### Device Logs
+- **`device log local`** — Retrieve logs stored locally on the device (complements existing `device log remote`)
+
+## Improvements
+
+- **Time flag flexibility** — `--after` / `--before` flags now accept local time (`2025-01-01T08:00:00`) and date-only (`2025-01-01`) formats in addition to UTC RFC 3339; values are automatically converted to UTC before being sent to the API
+- **AI agent compatibility** — `--limit` flag now accepts `--size` as a hidden alias for better compatibility with AI agents that use the API parameter name directly
+
+---
+
 # v0.5.0 (2026-04-01)
 
 ## New Features
