@@ -277,3 +277,146 @@ func TestSchemaValidate_PayloadFileMutualExclusion(t *testing.T) {
 		t.Errorf("expected 'mutually exclusive' in error, got: %v", err)
 	}
 }
+
+func TestSchemaProducts_Table(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/v1/config-documents/overviews" {
+			t.Errorf("unexpected path: %s", r.URL.Path)
+		}
+		if r.URL.Query().Get("module") != "default" {
+			t.Errorf("expected module=default, got %s", r.URL.Query().Get("module"))
+		}
+		// Include duplicates to test deduplication
+		_, _ = w.Write([]byte(`{"result":[
+			{"product":"MR805","version":"V2.0.16","module":"default"},
+			{"product":"CPE02","version":"V2.0.8","module":"default"},
+			{"product":"MR805","version":"V2.0.15-111","module":"default"},
+			{"product":"MR805","version":"V2.0.16","module":"default"}
+		],"total":4}`))
+	}))
+	defer server.Close()
+
+	f, _ := newTestFactory(t, server.URL)
+	out := f.IO.Out.(*bytes.Buffer)
+
+	root := newSchemaRoot(f)
+	root.SetArgs([]string{"schema", "products", "-o", "table"})
+	if err := root.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	output := out.String()
+	// Should be sorted: CPE02 first, then MR805 versions
+	if !strings.Contains(output, "CPE02") {
+		t.Errorf("expected 'CPE02' in output, got: %s", output)
+	}
+	if !strings.Contains(output, "MR805") {
+		t.Errorf("expected 'MR805' in output, got: %s", output)
+	}
+	if !strings.Contains(output, "V2.0.15-111") {
+		t.Errorf("expected 'V2.0.15-111' in output, got: %s", output)
+	}
+	if !strings.Contains(output, "V2.0.16") {
+		t.Errorf("expected 'V2.0.16' in output, got: %s", output)
+	}
+}
+
+func TestSchemaProducts_JSON(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{"result":[
+			{"product":"MR805","version":"V2.0.15-111","module":"default"}
+		],"total":1,"page":0,"pageSize":20}`))
+	}))
+	defer server.Close()
+
+	f, _ := newTestFactory(t, server.URL)
+	out := f.IO.Out.(*bytes.Buffer)
+
+	root := newSchemaRoot(f)
+	root.SetArgs([]string{"schema", "products", "-o", "json"})
+	if err := root.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	// JSON output should preserve the full PageResult envelope
+	if !strings.Contains(out.String(), "total") {
+		t.Errorf("expected 'total' in json output, got: %s", out.String())
+	}
+	if !strings.Contains(out.String(), "MR805") {
+		t.Errorf("expected 'MR805' in json output, got: %s", out.String())
+	}
+}
+
+func TestSchemaProducts_Filter(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		q := r.URL.Query()
+		if q.Get("product") != "MR805" {
+			t.Errorf("expected product=MR805, got %s", q.Get("product"))
+		}
+		if q.Get("version") != "V2.0.15-111" {
+			t.Errorf("expected version=V2.0.15-111, got %s", q.Get("version"))
+		}
+		_, _ = w.Write([]byte(`{"result":[{"product":"MR805","version":"V2.0.15-111"}],"total":1}`))
+	}))
+	defer server.Close()
+
+	f, _ := newTestFactory(t, server.URL)
+
+	root := newSchemaRoot(f)
+	root.SetArgs([]string{"schema", "products", "--product", "MR805", "--version", "V2.0.15-111"})
+	if err := root.Execute(); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestSchemaProducts_Empty(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{"result":[],"total":0}`))
+	}))
+	defer server.Close()
+
+	f, _ := newTestFactory(t, server.URL)
+	out := f.IO.Out.(*bytes.Buffer)
+
+	root := newSchemaRoot(f)
+	root.SetArgs([]string{"schema", "products", "-o", "table"})
+	if err := root.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out.String(), "No results") {
+		t.Errorf("expected 'No results' in output, got: %s", out.String())
+	}
+}
+
+func TestTransformSchemaProducts_Deduplicate(t *testing.T) {
+	body := []byte(`{"result":[
+		{"product":"A","version":"V1"},
+		{"product":"B","version":"V2"},
+		{"product":"A","version":"V1"},
+		{"product":"A","version":"V3"}
+	]}`)
+
+	out, err := transformSchemaProducts(body)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Parse result and verify deduplication + sorting
+	root := newSchemaRoot(nil)
+	_ = root
+
+	// Use simple string checks on the JSON output
+	outStr := string(out)
+	countV1 := strings.Count(outStr, `"V1"`)
+	if countV1 != 1 {
+		t.Errorf("expected V1 to appear exactly once after dedup, got %d", countV1)
+	}
+	// A/V1 should come before A/V3, which should come before B/V2
+	idxA1 := strings.Index(outStr, `"V1"`)
+	idxA3 := strings.Index(outStr, `"V3"`)
+	idxB2 := strings.Index(outStr, `"V2"`)
+	if idxA1 == -1 || idxA3 == -1 || idxB2 == -1 {
+		t.Fatalf("missing entries in output: %s", outStr)
+	}
+	if !(idxA1 < idxA3 && idxA3 < idxB2) {
+		t.Errorf("expected sorted order A/V1, A/V3, B/V2; got positions %d, %d, %d", idxA1, idxA3, idxB2)
+	}
+}
