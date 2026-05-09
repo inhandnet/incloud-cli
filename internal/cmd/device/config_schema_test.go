@@ -416,7 +416,7 @@ func TestTransformSchemaProducts_Deduplicate(t *testing.T) {
 	if idxA1 == -1 || idxA3 == -1 || idxB2 == -1 {
 		t.Fatalf("missing entries in output: %s", outStr)
 	}
-	if !(idxA1 < idxA3 && idxA3 < idxB2) {
+	if idxA1 >= idxA3 || idxA3 >= idxB2 {
 		t.Errorf("expected sorted order A/V1, A/V3, B/V2; got positions %d, %d, %d", idxA1, idxA3, idxB2)
 	}
 }
