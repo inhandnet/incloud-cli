@@ -107,17 +107,19 @@ func newCmdConfigSchema(f *factory.Factory) *cobra.Command {
 and validate JSON payloads before writing.
 
 AI tools workflow:
-  1. incloud device config schema overview --device <id>
-  2. incloud device config schema list --device <id>
-  3. incloud device config schema get --device <id> <json-key>
-  4. incloud device config schema validate --device <id> --key <json-key> --payload '{...}'
-  5. incloud device config update <id> --payload '{...}'`,
+  1. incloud device config schema products                  # discover supported products
+  2. incloud device config schema overview --device <id>
+  3. incloud device config schema list --device <id>
+  4. incloud device config schema get --device <id> <json-key>
+  5. incloud device config schema validate --device <id> --key <json-key> --payload '{...}'
+  6. incloud device config update <id> --payload '{...}'`,
 	}
 
 	cmd.AddCommand(newCmdSchemaList(f))
 	cmd.AddCommand(newCmdSchemaGet(f))
 	cmd.AddCommand(newCmdSchemaOverview(f))
 	cmd.AddCommand(newCmdSchemaValidate(f))
+	cmd.AddCommand(newCmdSchemaProducts(f))
 
 	return cmd
 }
