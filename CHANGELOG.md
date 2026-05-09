@@ -1,3 +1,12 @@
+# v0.7.0 (2026-05-09)
+
+## New Features
+
+### Device Config Schema
+- **`device config schema products`** — Discover supported configuration products for a device, with deduplication and grouping by product scope
+
+---
+
 # v0.6.0 (2026-04-16)
 
 ## New Features
