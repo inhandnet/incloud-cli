@@ -13,6 +13,8 @@ func NewCmdModel(f *factory.Factory) *cobra.Command {
 		Long:  "Deploy and manage AI models on edge devices.",
 	}
 
+	cmd.AddCommand(newCmdList(f))
+	cmd.AddCommand(newCmdGet(f))
 	cmd.AddCommand(NewCmdDeploy(f))
 
 	return cmd
