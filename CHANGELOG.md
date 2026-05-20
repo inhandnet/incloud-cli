@@ -1,3 +1,51 @@
+# v0.8.0 (2026-05-20)
+
+## New Features
+
+### Edge API — Device Live
+- **`device edge` subcommands** — Manage edge computing instances on devices
+  - `device edge list` / `device edge get` — List and view edge instances
+  - `device edge update` — Update edge instance configuration
+  - `device edge pin` — Pin edge instance firmware version
+  - `device edge cli-config` — Retrieve edge CLI configuration (with offline cache fallback)
+- **`device app` subcommands** — Manage applications running on devices
+  - `device app list` — List device applications
+  - `device app start` / `device app stop` / `device app restart` — Control application lifecycle
+- **`device config-task` subcommands** — Manage device configuration tasks
+  - `device config-task create` / `device config-task get` — Create and view configuration tasks
+- **`device group layerfs` subcommands** — Manage LayerFS overlays for device groups
+  - `device group layerfs list` / `device group layerfs create` / `device group layerfs update` / `device group layerfs delete`
+- **`device group project` subcommands** — Manage edge projects for device groups
+  - `device group project list` / `device group project get` / `device group project create` / `device group project update` / `device group project delete`
+  - `device group project deploy` / `device group project publish` / `device group project devices-summary`
+- **`device group registry` subcommands** — Manage container registries for device groups
+  - `device group registry get` / `device group registry update`
+
+### Edge API — DeviceTouch
+- **`touch client` subcommands** — Manage DeviceTouch VPN clients
+  - `touch client list` / `touch client get` / `touch client create` / `touch client update` / `touch client delete`
+  - `touch client export` — Export client configuration
+  - `touch client connections` — View client connection status
+- **`touch connection` subcommands** — Manage DeviceTouch connections
+  - `touch connection create` / `touch connection disconnect`
+
+### Model Management
+- **`model` command group** — Manage device models
+  - `model list` / `model get` — List and view device models
+  - `model deploy` — Deploy model firmware
+
+### Device & Product Compatibility
+- **`device compatibility`** — Check device firmware/software compatibility, with `--supported` filter
+- **`product compatibility`** — Check product compatibility information
+
+### File Management
+- **`file presign`** — Generate presigned URLs for file uploads
+
+## Bug Fixes
+- Fix offline devices failing to retrieve edge CLI configuration by falling back to cached config
+
+---
+
 # v0.7.0 (2026-05-09)
 
 ## New Features

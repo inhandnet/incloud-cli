@@ -1,3 +1,51 @@
+# v0.8.0 (2026-05-20)
+
+## 新功能
+
+### Edge API — 设备实时管理
+- **`device edge` 子命令组** — 管理设备上的边缘计算实例
+  - `device edge list` / `device edge get` — 查看边缘实例列表和详情
+  - `device edge update` — 更新边缘实例配置
+  - `device edge pin` — 锁定边缘实例固件版本
+  - `device edge cli-config` — 获取边缘 CLI 配置（支持离线缓存回退）
+- **`device app` 子命令组** — 管理设备上运行的应用
+  - `device app list` — 查看设备应用列表
+  - `device app start` / `device app stop` / `device app restart` — 控制应用生命周期
+- **`device config-task` 子命令组** — 管理设备配置任务
+  - `device config-task create` / `device config-task get` — 创建和查看配置任务
+- **`device group layerfs` 子命令组** — 管理设备组 LayerFS 覆盖层
+  - `device group layerfs list` / `device group layerfs create` / `device group layerfs update` / `device group layerfs delete`
+- **`device group project` 子命令组** — 管理设备组边缘项目
+  - `device group project list` / `device group project get` / `device group project create` / `device group project update` / `device group project delete`
+  - `device group project deploy` / `device group project publish` / `device group project devices-summary`
+- **`device group registry` 子命令组** — 管理设备组容器镜像仓库
+  - `device group registry get` / `device group registry update`
+
+### Edge API — DeviceTouch
+- **`touch client` 子命令组** — 管理 DeviceTouch VPN 客户端
+  - `touch client list` / `touch client get` / `touch client create` / `touch client update` / `touch client delete`
+  - `touch client export` — 导出客户端配置
+  - `touch client connections` — 查看客户端连接状态
+- **`touch connection` 子命令组** — 管理 DeviceTouch 连接
+  - `touch connection create` / `touch connection disconnect`
+
+### 设备型号管理
+- **`model` 命令组** — 管理设备型号
+  - `model list` / `model get` — 查看设备型号列表和详情
+  - `model deploy` — 部署型号固件
+
+### 设备与产品兼容性
+- **`device compatibility`** — 查看设备固件/软件兼容性，支持 `--supported` 过滤
+- **`product compatibility`** — 查看产品兼容性信息
+
+### 文件管理
+- **`file presign`** — 生成文件上传预签名 URL
+
+## 修复
+- 修复设备离线时无法获取边缘 CLI 配置的问题，改为回退到缓存配置
+
+---
+
 # v0.7.0 (2026-05-09)
 
 ## 新功能
