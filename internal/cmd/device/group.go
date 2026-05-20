@@ -19,6 +19,9 @@ func NewCmdGroup(f *factory.Factory) *cobra.Command {
 	cmd.AddCommand(newCmdGroupUpdate(f))
 	cmd.AddCommand(newCmdGroupDelete(f))
 	cmd.AddCommand(newCmdGroupFirmwares(f))
+	cmd.AddCommand(newCmdGroupRegistry(f))
+	cmd.AddCommand(newCmdGroupLayerfs(f))
+	cmd.AddCommand(newCmdGroupProject(f))
 
 	return cmd
 }

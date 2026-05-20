@@ -15,16 +15,19 @@ import (
 	configCmd "github.com/inhandnet/incloud-cli/internal/cmd/config"
 	connectorCmd "github.com/inhandnet/incloud-cli/internal/cmd/connector"
 	deviceCmd "github.com/inhandnet/incloud-cli/internal/cmd/device"
+	fileCmd "github.com/inhandnet/incloud-cli/internal/cmd/file"
 	feedbackCmd "github.com/inhandnet/incloud-cli/internal/cmd/feedback"
 	firmwareCmd "github.com/inhandnet/incloud-cli/internal/cmd/firmware"
 	knowledgeCmd "github.com/inhandnet/incloud-cli/internal/cmd/knowledge"
 	licenseCmd "github.com/inhandnet/incloud-cli/internal/cmd/license"
+	modelCmd "github.com/inhandnet/incloud-cli/internal/cmd/model"
 	oobmCmd "github.com/inhandnet/incloud-cli/internal/cmd/oobm"
 	orgCmd "github.com/inhandnet/incloud-cli/internal/cmd/org"
 	overviewCmd "github.com/inhandnet/incloud-cli/internal/cmd/overview"
 	productCmd "github.com/inhandnet/incloud-cli/internal/cmd/product"
 	roleCmd "github.com/inhandnet/incloud-cli/internal/cmd/role"
 	sdwanCmd "github.com/inhandnet/incloud-cli/internal/cmd/sdwan"
+	touchCmd "github.com/inhandnet/incloud-cli/internal/cmd/touch"
 	tunnelCmd "github.com/inhandnet/incloud-cli/internal/cmd/tunnel"
 	updateCmd "github.com/inhandnet/incloud-cli/internal/cmd/update"
 	userCmd "github.com/inhandnet/incloud-cli/internal/cmd/user"
@@ -43,16 +46,19 @@ func main() {
 	rootCmd.AddCommand(apiCmd.NewCmdApi(f))
 	rootCmd.AddCommand(authCmd.NewCmdAuth(f))
 	rootCmd.AddCommand(deviceCmd.NewCmdDevice(f))
+	rootCmd.AddCommand(fileCmd.NewCmdFile(f))
 	rootCmd.AddCommand(feedbackCmd.NewCmdFeedback(f))
 	rootCmd.AddCommand(firmwareCmd.NewCmdFirmware(f))
 	rootCmd.AddCommand(knowledgeCmd.NewCmdKnowledge(f))
 	rootCmd.AddCommand(licenseCmd.NewCmdLicense(f))
+	rootCmd.AddCommand(modelCmd.NewCmdModel(f))
 	rootCmd.AddCommand(oobmCmd.NewCmdOobm(f))
 	rootCmd.AddCommand(orgCmd.NewCmdOrg(f))
 	rootCmd.AddCommand(overviewCmd.NewCmdOverview(f))
 	rootCmd.AddCommand(productCmd.NewCmdProduct(f))
 	rootCmd.AddCommand(roleCmd.NewCmdRole(f))
 	rootCmd.AddCommand(sdwanCmd.NewCmdSdwan(f))
+	rootCmd.AddCommand(touchCmd.NewCmdTouch(f))
 	rootCmd.AddCommand(tunnelCmd.NewCmdTunnel(f))
 	rootCmd.AddCommand(updateCmd.NewCmdUpdate(f))
 	rootCmd.AddCommand(userCmd.NewCmdUser(f))

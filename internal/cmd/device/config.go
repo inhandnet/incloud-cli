@@ -20,6 +20,7 @@ func NewCmdConfig(f *factory.Factory) *cobra.Command {
 	cmd.AddCommand(newCmdConfigUpdate(f))
 	cmd.AddCommand(newCmdConfigCopy(f))
 	cmd.AddCommand(newCmdConfigSchema(f))
+	cmd.AddCommand(newCmdConfigTask(f))
 
 	return cmd
 }
