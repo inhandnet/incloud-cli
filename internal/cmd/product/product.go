@@ -18,6 +18,7 @@ func NewCmdProduct(f *factory.Factory) *cobra.Command {
 	cmd.AddCommand(NewCmdCreate(f))
 	cmd.AddCommand(NewCmdUpdate(f))
 	cmd.AddCommand(NewCmdDelete(f))
+	cmd.AddCommand(NewCmdCompatibility(f))
 
 	return cmd
 }
