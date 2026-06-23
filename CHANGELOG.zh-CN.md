@@ -1,3 +1,24 @@
+# v0.9.0 (2026-06-23)
+
+## 新功能
+
+### POS Ready
+- **`pos` 命令组** — 管理 POS Ready 流量优先级（别名 `posready`）
+  - `pos clients` — 列出已标记 POS 优先级的终端（可按 `--level`/`--device`/`--oid` 过滤）
+  - `pos marked-clients <device-id>` — 列出某设备上已标记的终端
+  - `pos forwarded` — 列出近期命中转发的 POS 终端（`--active-within`/`--vendor`/`--client-type`）
+  - `pos device-hits <device-id>` — 某设备的 POS 命中统计（`--group-by vendor|client`）
+  - `pos vendor-hits <device-id> <client-id>` — 按 vendor 的命中时序（`--after`/`--before` 必填）
+  - `pos vendor-summary <device-id> <client-id>` — 按 vendor 的命中汇总
+  - `pos client-types` — 终端类型字典
+  - `pos rules get/set/list` — 管理 POS 自定义规则（`set --file <json|->`，整组替换，最多 100 条）
+
+## 破坏性变更
+
+- **`device client set-pos-ready` 改造** — 改为接收 `<client-id>` 并使用 `--level priority|default|bypass`，请求 `POST /network/clients/{clientId}/pos-ready`，对齐平台新的三级 POS Ready 模型。旧的 `--mac`/`--enabled` 参数（基于已废弃的布尔端点）已移除。
+
+---
+
 # v0.8.0 (2026-05-20)
 
 ## 新功能

@@ -10,8 +10,8 @@ func NewCmdConnector(f *factory.Factory) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "connector",
 		Aliases: []string{"conn"},
-		Short:   "Manage InConnect connector networks",
-		Long:    "Create and manage InConnect connector VPN networks, accounts, devices, and endpoints.",
+		Short:   "Manage InCloud Manager connector networks",
+		Long:    "Create and manage InCloud Manager connector VPN networks, accounts, devices, and endpoints.",
 	}
 
 	cmd.AddCommand(newCmdNetwork(f))
