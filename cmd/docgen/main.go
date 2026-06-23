@@ -24,6 +24,7 @@ import (
 	oobmCmd "github.com/inhandnet/incloud-cli/internal/cmd/oobm"
 	orgCmd "github.com/inhandnet/incloud-cli/internal/cmd/org"
 	overviewCmd "github.com/inhandnet/incloud-cli/internal/cmd/overview"
+	posCmd "github.com/inhandnet/incloud-cli/internal/cmd/pos"
 	productCmd "github.com/inhandnet/incloud-cli/internal/cmd/product"
 	roleCmd "github.com/inhandnet/incloud-cli/internal/cmd/role"
 	sdwanCmd "github.com/inhandnet/incloud-cli/internal/cmd/sdwan"
@@ -58,6 +59,7 @@ func main() {
 	rootCmd.AddCommand(oobmCmd.NewCmdOobm(f))
 	rootCmd.AddCommand(orgCmd.NewCmdOrg(f))
 	rootCmd.AddCommand(overviewCmd.NewCmdOverview(f))
+	rootCmd.AddCommand(posCmd.NewCmdPos(f))
 	rootCmd.AddCommand(productCmd.NewCmdProduct(f))
 	rootCmd.AddCommand(roleCmd.NewCmdRole(f))
 	rootCmd.AddCommand(sdwanCmd.NewCmdSdwan(f))

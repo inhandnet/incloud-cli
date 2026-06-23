@@ -1,3 +1,24 @@
+# v0.9.0 (2026-06-23)
+
+## New Features
+
+### POS Ready
+- **`pos` command group** — Manage POS Ready traffic prioritization (alias `posready`)
+  - `pos clients` — List clients with a POS priority level (filter by `--level`/`--device`/`--oid`)
+  - `pos marked-clients <device-id>` — List POS-marked clients on a device
+  - `pos forwarded` — List clients with recently forwarded POS traffic (`--active-within`/`--vendor`/`--client-type`)
+  - `pos device-hits <device-id>` — POS hit stats for a device (`--group-by vendor|client`)
+  - `pos vendor-hits <device-id> <client-id>` — Per-vendor POS hit time series (`--after`/`--before` required)
+  - `pos vendor-summary <device-id> <client-id>` — Per-vendor POS hit summary
+  - `pos client-types` — List client-type dictionary
+  - `pos rules get/set/list` — Manage POS custom rules (`set --file <json|->`, full replace, max 100 entries)
+
+## Breaking Changes
+
+- **`device client set-pos-ready` reworked** — Now takes a `<client-id>` with `--level priority|default|bypass` and targets `POST /network/clients/{clientId}/pos-ready`, aligning with the platform's three-tier POS Ready model. The previous `--mac`/`--enabled` flags (against the deprecated boolean endpoint) are removed.
+
+---
+
 # v0.8.0 (2026-05-20)
 
 ## New Features

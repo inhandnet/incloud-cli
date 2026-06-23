@@ -19,7 +19,7 @@ type clientListOptions struct {
 	Asset  string
 }
 
-var defaultClientListFields = []string{"_id", "name", "mac", "ip", "type", "online", "deviceId", "ssid", "connectedAt"}
+var defaultClientListFields = []string{"_id", "name", "mac", "ip", "type", "online", "deviceId", "ssid", "posReady.level", "connectedAt"}
 
 func newCmdClientList(f *factory.Factory) *cobra.Command {
 	opts := &clientListOptions{}

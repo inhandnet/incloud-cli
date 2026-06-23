@@ -543,29 +543,26 @@ func TestClientSetPosReady_Basic(t *testing.T) {
 
 	f, errBuf := newTestFactory(t, srv.URL)
 	root := newClientRoot(f)
-	root.SetArgs([]string{"client", "set-pos-ready", "dev123", "--mac", "FC:5C:EE:8C:90:93", "--enabled"})
+	root.SetArgs([]string{"client", "set-pos-ready", "c1", "--level", "priority"})
 	if err := root.Execute(); err != nil {
 		t.Fatalf("set-pos-ready: %v", err)
 	}
 
-	if gotPath != "/api/v1/network/devices/dev123/clients/pos-ready" {
-		t.Errorf("path = %q, want /api/v1/network/devices/dev123/clients/pos-ready", gotPath)
+	if gotPath != "/api/v1/network/clients/c1/pos-ready" {
+		t.Errorf("path = %q, want /api/v1/network/clients/c1/pos-ready", gotPath)
 	}
 	if gotMethod != "POST" {
 		t.Errorf("method = %q, want POST", gotMethod)
 	}
-	if gotBody["mac"] != "FC:5C:EE:8C:90:93" {
-		t.Errorf("body.mac = %v, want FC:5C:EE:8C:90:93", gotBody["mac"])
+	if gotBody["level"] != "priority" {
+		t.Errorf("body.level = %v, want priority", gotBody["level"])
 	}
-	if gotBody["enabled"] != true {
-		t.Errorf("body.enabled = %v, want true", gotBody["enabled"])
-	}
-	if !strings.Contains(errBuf.String(), "POS Ready enabled") {
+	if !strings.Contains(errBuf.String(), "POS priority set to priority") {
 		t.Errorf("unexpected stderr: %s", errBuf.String())
 	}
 }
 
-func TestClientSetPosReady_Disable(t *testing.T) {
+func TestClientSetPosReady_Bypass(t *testing.T) {
 	var gotBody map[string]interface{}
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		json.NewDecoder(r.Body).Decode(&gotBody)
@@ -575,56 +572,75 @@ func TestClientSetPosReady_Disable(t *testing.T) {
 
 	f, errBuf := newTestFactory(t, srv.URL)
 	root := newClientRoot(f)
-	root.SetArgs([]string{"client", "set-pos-ready", "dev123", "--mac", "AA:BB:CC:DD:EE:FF", "--enabled=false"})
+	root.SetArgs([]string{"client", "set-pos-ready", "c1", "--level", "bypass"})
 	if err := root.Execute(); err != nil {
-		t.Fatalf("set-pos-ready disable: %v", err)
+		t.Fatalf("set-pos-ready bypass: %v", err)
 	}
 
-	if gotBody["enabled"] != false {
-		t.Errorf("body.enabled = %v, want false", gotBody["enabled"])
+	if gotBody["level"] != "bypass" {
+		t.Errorf("body.level = %v, want bypass", gotBody["level"])
 	}
-	if !strings.Contains(errBuf.String(), "POS Ready disabled") {
+	if !strings.Contains(errBuf.String(), "POS priority set to bypass") {
 		t.Errorf("unexpected stderr: %s", errBuf.String())
 	}
 }
 
-func TestClientSetPosReady_RequiresMac(t *testing.T) {
-	f, _ := newTestFactory(t, "https://example.com")
+func TestClientSetPosReady_NormalizesCase(t *testing.T) {
+	var gotBody map[string]interface{}
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		json.NewDecoder(r.Body).Decode(&gotBody)
+		json.NewEncoder(w).Encode(map[string]interface{}{"code": 200})
+	}))
+	defer srv.Close()
+
+	f, _ := newTestFactory(t, srv.URL)
 	root := newClientRoot(f)
-	root.SetArgs([]string{"client", "set-pos-ready", "dev123", "--enabled"})
-	if err := root.Execute(); err == nil {
-		t.Fatal("expected error for missing --mac")
+	root.SetArgs([]string{"client", "set-pos-ready", "c1", "--level", "PRIORITY"})
+	if err := root.Execute(); err != nil {
+		t.Fatalf("set-pos-ready: %v", err)
+	}
+	if gotBody["level"] != "priority" {
+		t.Errorf("body.level = %v, want priority (lowercased)", gotBody["level"])
 	}
 }
 
-func TestClientSetPosReady_RequiresEnabled(t *testing.T) {
+func TestClientSetPosReady_InvalidLevel(t *testing.T) {
 	f, _ := newTestFactory(t, "https://example.com")
 	root := newClientRoot(f)
-	root.SetArgs([]string{"client", "set-pos-ready", "dev123", "--mac", "AA:BB:CC:DD:EE:FF"})
+	root.SetArgs([]string{"client", "set-pos-ready", "c1", "--level", "high"})
 	if err := root.Execute(); err == nil {
-		t.Fatal("expected error for missing --enabled")
+		t.Fatal("expected error for invalid --level")
 	}
 }
 
-func TestClientSetPosReady_RequiresDeviceID(t *testing.T) {
+func TestClientSetPosReady_RequiresLevel(t *testing.T) {
 	f, _ := newTestFactory(t, "https://example.com")
 	root := newClientRoot(f)
-	root.SetArgs([]string{"client", "set-pos-ready"})
+	root.SetArgs([]string{"client", "set-pos-ready", "c1"})
 	if err := root.Execute(); err == nil {
-		t.Fatal("expected error for missing device-id")
+		t.Fatal("expected error for missing --level")
+	}
+}
+
+func TestClientSetPosReady_RequiresClientID(t *testing.T) {
+	f, _ := newTestFactory(t, "https://example.com")
+	root := newClientRoot(f)
+	root.SetArgs([]string{"client", "set-pos-ready", "--level", "priority"})
+	if err := root.Execute(); err == nil {
+		t.Fatal("expected error for missing client-id")
 	}
 }
 
 func TestClientSetPosReady_HTTPError(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
-		_, _ = w.Write([]byte(`{"error":"device does not support star_pos_ready"}`))
+		_, _ = w.Write([]byte(`{"error":"device offline"}`))
 	}))
 	defer srv.Close()
 
 	f, _ := newTestFactory(t, srv.URL)
 	root := newClientRoot(f)
-	root.SetArgs([]string{"client", "set-pos-ready", "dev123", "--mac", "AA:BB:CC:DD:EE:FF", "--enabled"})
+	root.SetArgs([]string{"client", "set-pos-ready", "c1", "--level", "priority"})
 	err := root.Execute()
 	if err == nil {
 		t.Fatal("expected error")
