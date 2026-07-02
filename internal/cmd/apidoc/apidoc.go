@@ -31,22 +31,24 @@ func NewCmdApiDoc(f *factory.Factory) *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "apidoc",
-		Short: "Fetch the external API documentation spec",
-		Long: `Fetch the external API documentation (OpenAPI spec) served by nezha-support.
+		Short: "Download the InCloud public API spec for integration",
+		Long: `Download the OpenAPI spec for InCloud's public (integration) APIs.
 
-The spec is the same bilingual OpenAPI document that powers the online API
-reference. Use --lang to choose the language and --app to choose which
-document to fetch.`,
+This is the same spec that backs the online API reference. Use it to build
+against the platform: generate client SDKs, import into Postman/Insomnia, or
+browse the available endpoints, parameters and schemas offline.
+
+Use --lang to choose the language and --app to choose which spec to fetch.`,
 		Example: `  # Print the English InCloud API spec
   incloud apidoc
 
   # Chinese spec
   incloud apidoc --lang zh
 
-  # Device Live spec, saved to a file
+  # Device Live spec, saved to a file for code generation
   incloud apidoc --app devicelive --output-file device-live-api.json
 
-  # Extract all paths with jq
+  # List all available endpoints
   incloud apidoc --jq '.paths | keys'`,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
