@@ -1,18 +1,12 @@
 package api
 
 import (
-	"fmt"
 	"net/http"
 	"net/url"
-	"runtime"
 	"time"
 
-	"github.com/inhandnet/incloud-cli/internal/build"
 	"github.com/inhandnet/incloud-cli/internal/debug"
 )
-
-// userAgent is the User-Agent header value sent with every request.
-var userAgent = fmt.Sprintf("incloud-cli/%s (%s/%s)", build.Version, runtime.GOOS, runtime.GOARCH)
 
 // TokenTransport is an http.RoundTripper that injects Authorization header
 // and auto-refreshes tokens on 401 responses.
@@ -28,7 +22,7 @@ type TokenTransport struct {
 }
 
 func (t *TokenTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-	req.Header.Set("User-Agent", userAgent)
+	req.Header.Set("User-Agent", UserAgent())
 
 	if t.Token != "" && t.isSameHost(req) {
 		req.Header.Set("Authorization", "Bearer "+t.Token)

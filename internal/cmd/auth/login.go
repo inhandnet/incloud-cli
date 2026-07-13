@@ -153,7 +153,9 @@ func runLogin(f *factory.Factory, opts *LoginOptions) error {
 
 	// 5. Exchange code for token using x/oauth2 with PKCE verifier
 	fmt.Fprintln(out, "Exchanging authorization code...")
-	token, err := oauthCfg.Exchange(context.Background(), code, oauth2.VerifierOption(verifier))
+	exchangeCtx := context.WithValue(context.Background(), oauth2.HTTPClient,
+		&http.Client{Transport: &oauthapi.UserAgentTransport{}})
+	token, err := oauthCfg.Exchange(exchangeCtx, code, oauth2.VerifierOption(verifier))
 	if err != nil {
 		return fmt.Errorf("token exchange failed: %w", err)
 	}

@@ -29,6 +29,7 @@ func FetchOAuthClient(ctx context.Context, host string) (*OAuthClient, error) {
 	if err != nil {
 		return nil, fmt.Errorf("creating request: %w", err)
 	}
+	req.Header.Set("User-Agent", UserAgent())
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("fetching frontend settings: %w", err)
@@ -141,6 +142,8 @@ func RefreshAccessToken(host, clientID, clientSecret, refreshToken string) (*oau
 		},
 	}
 	token := &oauth2.Token{RefreshToken: refreshToken}
-	ts := cfg.TokenSource(context.Background(), token)
+	ctx := context.WithValue(context.Background(), oauth2.HTTPClient,
+		&http.Client{Transport: &UserAgentTransport{}})
+	ts := cfg.TokenSource(ctx, token)
 	return ts.Token()
 }
