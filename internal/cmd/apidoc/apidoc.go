@@ -76,7 +76,7 @@ Use --lang to choose the language and --app to choose which spec to fetch.`,
 			}
 
 			if opts.OutputFile != "" {
-				if err := os.WriteFile(opts.OutputFile, body, 0o644); err != nil {
+				if err := os.WriteFile(opts.OutputFile, body, 0o600); err != nil {
 					return fmt.Errorf("writing file: %w", err)
 				}
 				fmt.Fprintf(f.IO.ErrOut, "Saved to %s\n", opts.OutputFile)
