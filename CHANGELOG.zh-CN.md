@@ -1,3 +1,28 @@
+# v0.10.0 (2026-08-04)
+
+## 新功能
+
+### API 文档
+- **`apidoc` 命令** — 拉取平台提供的双语外部 API 文档 spec（`GET /api/v1/api-docs`）
+  - `--lang en|zh` — 选择 spec 语言
+  - `--app star|devicelive` — 选择要拉取的产品
+  - `--output-file <path>` — 保存到文件而不是直接打印
+
+## 改进
+
+- **`device interface` 新增 MAC 列** — 每个接口行携带自己的 `mac` 值，`-o table` 输出可直接看到 WAN/LAN/Cellular/Wi-Fi(STA) 的 MAC 地址。（IM-3113）
+
+## 缺陷修复
+
+- **`device interface -o table` 不再丢掉 Wi-Fi(STA)** — `wifiSta` 上报为单个对象而非数组，表格转换反序列化失败后静默跳过该行（`-o json` 不受影响）。现在 wi-fi-sta 行会正常显示。（IM-3114）
+- **`tunnel cli` / `device exec cli` 在未配置 JWT 的节点可用** — 生产 ngrok 节点没有 `config.Jwt`，visitor JWT 恒为空，CLI 在连接前就退出。服务端 `authenticateVisitor` 与 CLI 的 `dialMuxSession` 本就支持 Key 鉴权，现在确认无 token 时静默回落到 Key；其他 token 错误仍然中断。（IM-3111）
+
+## 破坏性变更
+
+- **移除 `knowledge ask`** — `/api/v1/knowledge/ask` 端点自 2026-04-13 起服务端已损坏（每次调用返回 HTTP 500）。按 IM-3031 的决定，该能力退役而不修复。
+
+---
+
 # v0.9.0 (2026-06-23)
 
 ## 新功能

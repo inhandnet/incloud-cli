@@ -1,3 +1,28 @@
+# v0.10.0 (2026-08-04)
+
+## New Features
+
+### API Documentation
+- **`apidoc` command** — Fetch the bilingual external API documentation spec served by the platform (`GET /api/v1/api-docs`)
+  - `--lang en|zh` — Select the spec language
+  - `--app star|devicelive` — Select the product whose spec to fetch
+  - `--output-file <path>` — Save the spec to a file instead of printing it
+
+## Improvements
+
+- **`device interface` shows a MAC column** — Each interface row now carries its own `mac` value, so WAN/LAN/Cellular/Wi-Fi(STA) MAC addresses are visible directly in `-o table` output. (IM-3113)
+
+## Bug Fixes
+
+- **`device interface -o table` no longer drops Wi-Fi(STA)** — `wifiSta` is reported as a single object rather than an array, so the table transform failed to decode it and silently skipped the row; `-o json` was unaffected. The wi-fi-sta row now appears as expected. (IM-3114)
+- **`tunnel cli` / `device exec cli` work on nodes without JWT configured** — Production ngrok nodes have no `config.Jwt`, so the visitor JWT is always empty and the CLI aborted before connecting. Both the server's `authenticateVisitor` and the CLI's `dialMuxSession` already support Key authentication, so the CLI now falls back to it silently when no token is present; other token errors still abort. (IM-3111)
+
+## Breaking Changes
+
+- **`knowledge ask` removed** — The `/api/v1/knowledge/ask` endpoint has been broken server-side since 2026-04-13 (every call returns HTTP 500). Per IM-3031 the feature is retired rather than repaired.
+
+---
+
 # v0.9.0 (2026-06-23)
 
 ## New Features
