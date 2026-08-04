@@ -84,11 +84,7 @@ func flattenInterfaces(data []byte) ([]byte, error) {
 		if !ok {
 			continue
 		}
-		var ifaces []map[string]any
-		if err := json.Unmarshal(raw, &ifaces); err != nil {
-			continue
-		}
-		for _, iface := range ifaces {
+		for _, iface := range decodeInterfaces(raw) {
 			iface["type"] = ifType
 			rows = append(rows, iface)
 		}
@@ -99,6 +95,20 @@ func flattenInterfaces(data []byte) ([]byte, error) {
 	// Wrap as {"result": [...]} so FormatTable extracts the array.
 	wrapped := map[string]any{"result": rows}
 	return json.Marshal(wrapped)
+}
+
+// decodeInterfaces normalizes an interface entry to a list of rows. Most types are
+// reported as arrays, but wifiSta is a single object.
+func decodeInterfaces(raw json.RawMessage) []map[string]any {
+	var ifaces []map[string]any
+	if err := json.Unmarshal(raw, &ifaces); err == nil {
+		return ifaces
+	}
+	var iface map[string]any
+	if err := json.Unmarshal(raw, &iface); err == nil && iface != nil {
+		return []map[string]any{iface}
+	}
+	return nil
 }
 
 // sparseColumns are fields only some interfaces report. The table renderer derives
