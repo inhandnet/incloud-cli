@@ -2,6 +2,7 @@ package tunnel
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/inhandnet/incloud-cli/internal/debug"
 	"github.com/inhandnet/incloud-cli/internal/factory"
 )
 
@@ -121,10 +123,16 @@ and prompt are stripped. stdout contains only the command output.`,
 // RunCli connects to a tunnel and executes a CLI command on the device.
 // Exported so that 'device exec cli' can reuse it.
 func RunCli(f *factory.Factory, ngrokAddr string, opts *CliOptions) error {
-	// Auto-fetch token from API if not provided
+	// Auto-fetch token from API if not provided. The token is a visitor JWT that
+	// only exists when the ngrok node has JWT configured; otherwise the server
+	// authenticates by Key (the tunnel ID). Failing to get one is therefore not
+	// fatal — dialMuxSession falls back to Key auth.
 	if opts.Token == "" {
 		token, err := fetchTunnelToken(f, opts.TunnelID)
-		if err != nil {
+		switch {
+		case errors.Is(err, errNoTunnelToken):
+			debug.Log("tunnel %s has no token, falling back to key auth", opts.TunnelID)
+		case err != nil:
 			return fmt.Errorf("get tunnel token: %w", err)
 		}
 		opts.Token = token
@@ -279,6 +287,10 @@ func telnetExit(tc *telnetClient) {
 	time.Sleep(500 * time.Millisecond)
 }
 
+// errNoTunnelToken means the tunnel carries no visitor JWT, which is the normal
+// state when the ngrok node has no JWT configured. Callers can fall back to Key auth.
+var errNoTunnelToken = errors.New("has no token")
+
 // fetchTunnelToken retrieves the visitor JWT for a tunnel from the API.
 func fetchTunnelToken(f *factory.Factory, tunnelID string) (string, error) {
 	client, err := f.APIClient()
@@ -301,7 +313,7 @@ func fetchTunnelToken(f *factory.Factory, tunnelID string) (string, error) {
 		return "", fmt.Errorf("parse tunnel response: %w", err)
 	}
 	if resp.Result.Token == "" {
-		return "", fmt.Errorf("tunnel %s has no token", tunnelID)
+		return "", fmt.Errorf("tunnel %s: %w", tunnelID, errNoTunnelToken)
 	}
 	return resp.Result.Token, nil
 }
