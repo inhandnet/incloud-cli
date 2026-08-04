@@ -49,6 +49,29 @@ func TestFlattenInterfacesBackfillsSparseMac(t *testing.T) {
 	}
 }
 
+// wifiSta is reported as a single object rather than an array; it must still
+// produce a row.
+func TestFlattenInterfacesIncludesWifiSta(t *testing.T) {
+	rows := flattenRows(t, `{"result":{"cellular":[{"name":"cellular1"}],"wan":[{"name":"wan1"}],"lan":[{"name":"lan1"}],"wifiSta":{"name":"wlan-sta","mac":"00:18:05:36:59:E1"}}}`)
+	if len(rows) != 4 {
+		t.Fatalf("expected 4 rows, got %d", len(rows))
+	}
+	var wifi map[string]any
+	count := 0
+	for _, row := range rows {
+		if row["type"] == "wifiSta" {
+			wifi = row
+			count++
+		}
+	}
+	if count != 1 {
+		t.Fatalf("expected exactly 1 wifiSta row, got %d", count)
+	}
+	if wifi["name"] != "wlan-sta" || wifi["mac"] != "00:18:05:36:59:E1" {
+		t.Errorf("unexpected wifiSta row: %v", wifi)
+	}
+}
+
 func TestFlattenInterfacesOmitsMacWhenAbsentEverywhere(t *testing.T) {
 	rows := flattenRows(t, `{"result":{"wan":[{"name":"wan1"}],"lan":[{"name":"lan2"}]}}`)
 	if len(rows) != 2 {
