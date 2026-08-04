@@ -94,7 +94,37 @@ func flattenInterfaces(data []byte) ([]byte, error) {
 		}
 	}
 
+	fillSparseColumns(rows, sparseColumns)
+
 	// Wrap as {"result": [...]} so FormatTable extracts the array.
 	wrapped := map[string]any{"result": rows}
 	return json.Marshal(wrapped)
+}
+
+// sparseColumns are fields only some interfaces report. The table renderer derives
+// its columns from the first row, so a value present on a later row alone would be
+// dropped silently.
+var sparseColumns = []string{"mac"}
+
+// fillSparseColumns backfills an empty placeholder on rows missing a sparse field,
+// but only when at least one row carries it — so a column absent everywhere stays
+// out of the table entirely.
+func fillSparseColumns(rows []map[string]any, keys []string) {
+	for _, key := range keys {
+		present := false
+		for _, row := range rows {
+			if _, ok := row[key]; ok {
+				present = true
+				break
+			}
+		}
+		if !present {
+			continue
+		}
+		for _, row := range rows {
+			if _, ok := row[key]; !ok {
+				row[key] = ""
+			}
+		}
+	}
 }
