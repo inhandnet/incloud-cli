@@ -11,6 +11,7 @@ import (
 	activityCmd "github.com/inhandnet/incloud-cli/internal/cmd/activity"
 	alertCmd "github.com/inhandnet/incloud-cli/internal/cmd/alert"
 	apiCmd "github.com/inhandnet/incloud-cli/internal/cmd/api"
+	apidocCmd "github.com/inhandnet/incloud-cli/internal/cmd/apidoc"
 	authCmd "github.com/inhandnet/incloud-cli/internal/cmd/auth"
 	configCmd "github.com/inhandnet/incloud-cli/internal/cmd/config"
 	connectorCmd "github.com/inhandnet/incloud-cli/internal/cmd/connector"
@@ -48,6 +49,7 @@ func main() {
 	rootCmd.AddCommand(configCmd.NewCmdConfig(f))
 	rootCmd.AddCommand(connectorCmd.NewCmdConnector(f))
 	rootCmd.AddCommand(apiCmd.NewCmdApi(f))
+	rootCmd.AddCommand(apidocCmd.NewCmdApiDoc(f))
 	rootCmd.AddCommand(authCmd.NewCmdAuth(f))
 	rootCmd.AddCommand(deviceCmd.NewCmdDevice(f))
 	rootCmd.AddCommand(feedbackCmd.NewCmdFeedback(f))
