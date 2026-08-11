@@ -46,6 +46,7 @@ func NewCmdOrg(f *factory.Factory) *cobra.Command {
 	cmd.AddCommand(NewCmdCreate(f))
 	cmd.AddCommand(NewCmdUpdate(f))
 	cmd.AddCommand(NewCmdDelete(f))
+	cmd.AddCommand(NewCmdReparent(f))
 
 	return cmd
 }
