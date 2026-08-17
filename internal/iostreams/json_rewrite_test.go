@@ -51,74 +51,74 @@ func TestApplyFieldRewrites(t *testing.T) {
 		{
 			name:  "renames latency and jitter",
 			in:    `{"name":"wan1","latency":42069,"jitter":120}`,
-			rules: LatencyJitterRewrites,
-			want:  `{"name":"wan1","latencyUs":42069,"jitterUs":120}`,
+			rules: latencyJitterRewrites,
+			want:  `{"name":"wan1","latencyMicroseconds":42069,"jitterMicroseconds":120}`,
 		},
 		{
 			name:  "normal value gets no status field",
 			in:    `{"latency":42069}`,
-			rules: LatencyJitterRewrites,
-			want:  `{"latencyUs":42069}`,
+			rules: latencyJitterRewrites,
+			want:  `{"latencyMicroseconds":42069}`,
 		},
 		{
-			name:  "no-measurement sentinel becomes null with status",
+			name:  "timeout sentinel becomes null with status",
 			in:    `{"latency":-1,"jitter":-1}`,
-			rules: LatencyJitterRewrites,
-			want:  `{"latencyUs":null,"latencyStatus":"no-measurement","jitterUs":null,"jitterStatus":"no-measurement"}`,
+			rules: latencyJitterRewrites,
+			want: `{"latencyMicroseconds":null,"latencyStatus":"timeout",` +
+				`"jitterMicroseconds":null,"jitterStatus":"timeout"}`,
 		},
 		{
-			name:  "2s clamp keeps original value and is annotated",
+			// 2000000 us = 2s is a plausible real measurement on a degraded
+			// link. There is no clamp ceiling on this link, so it must pass
+			// through unannotated (IM-3180 correction, 2026-08-17).
+			name:  "two seconds is a real measurement and is not annotated",
 			in:    `{"latency":2000000}`,
-			rules: LatencyJitterRewrites,
-			want:  `{"latencyUs":2000000,"latencyStatus":"suspected-timeout"}`,
+			rules: latencyJitterRewrites,
+			want:  `{"latencyMicroseconds":2000000}`,
 		},
 		{
-			name:  "4s clamp keeps original value and is annotated",
-			in:    `{"latency":4000000}`,
-			rules: LatencyJitterRewrites,
-			want:  `{"latencyUs":4000000,"latencyStatus":"suspected-timeout"}`,
-		},
-		{
-			name:  "jitter does not get the timeout clamp treatment",
-			in:    `{"jitter":2000000}`,
-			rules: LatencyJitterRewrites,
-			want:  `{"jitterUs":2000000}`,
+			name:  "four seconds is a real measurement and is not annotated",
+			in:    `{"latency":4000000,"jitter":4000000}`,
+			rules: latencyJitterRewrites,
+			want:  `{"latencyMicroseconds":4000000,"jitterMicroseconds":4000000}`,
 		},
 		{
 			name:  "missing fields are left alone",
 			in:    `{"name":"wan1","state":"disconnected"}`,
-			rules: LatencyJitterRewrites,
+			rules: latencyJitterRewrites,
 			want:  `{"name":"wan1","state":"disconnected"}`,
 		},
 		{
 			name:  "null value is renamed but not annotated",
 			in:    `{"latency":null}`,
-			rules: LatencyJitterRewrites,
-			want:  `{"latencyUs":null}`,
+			rules: latencyJitterRewrites,
+			want:  `{"latencyMicroseconds":null}`,
 		},
 		{
 			name:  "non-numeric value is renamed but not annotated",
 			in:    `{"latency":"n/a"}`,
-			rules: LatencyJitterRewrites,
-			want:  `{"latencyUs":"n/a"}`,
+			rules: latencyJitterRewrites,
+			want:  `{"latencyMicroseconds":"n/a"}`,
 		},
 		{
-			name:  "nested and array entries are rewritten at any depth",
-			in:    `{"result":{"wan":[{"name":"wan1","latency":-1},{"name":"wan2","latency":33563}],"cellular":[{"latency":2000000}]}}`,
-			rules: LatencyJitterRewrites,
-			want: `{"result":{"wan":[{"name":"wan1","latencyUs":null,"latencyStatus":"no-measurement"},` +
-				`{"name":"wan2","latencyUs":33563}],"cellular":[{"latencyUs":2000000,"latencyStatus":"suspected-timeout"}]}}`,
+			name: "nested and array entries are rewritten at any depth",
+			in: `{"result":{"wan":[{"name":"wan1","latency":-1},{"name":"wan2","latency":33563}],` +
+				`"cellular":[{"latency":2000000}]}}`,
+			rules: latencyJitterRewrites,
+			want: `{"result":{"wan":[{"name":"wan1","latencyMicroseconds":null,"latencyStatus":"timeout"},` +
+				`{"name":"wan2","latencyMicroseconds":33563}],"cellular":[{"latencyMicroseconds":2000000}]}}`,
 		},
 		{
 			name:  "offline durations get a seconds suffix",
 			in:    `{"result":[{"totalOfflineDuration":173114,"avgOfflineDuration":10,"maxOfflineDuration":924}]}`,
-			rules: OfflineDurationRewrites,
-			want:  `{"result":[{"totalOfflineDurationSeconds":173114,"avgOfflineDurationSeconds":10,"maxOfflineDurationSeconds":924}]}`,
+			rules: offlineDurationRewrites,
+			want: `{"result":[{"totalOfflineDurationSeconds":173114,"avgOfflineDurationSeconds":10,` +
+				`"maxOfflineDurationSeconds":924}]}`,
 		},
 		{
 			name:  "offline durations get no sentinel annotation",
 			in:    `{"maxOfflineDuration":-1}`,
-			rules: OfflineDurationRewrites,
+			rules: offlineDurationRewrites,
 			want:  `{"maxOfflineDurationSeconds":-1}`,
 		},
 		{
@@ -136,9 +136,23 @@ func TestApplyFieldRewrites(t *testing.T) {
 	}
 }
 
+// TestNoSuspectedSentinelSet guards acceptance criterion 7: the codebase must
+// not carry any "suspected timeout clamp" value set.
+func TestNoSuspectedSentinelSet(t *testing.T) {
+	src, err := os.ReadFile("json_rewrite.go")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, banned := range []string{"suspected", "Suspected", "no-measurement", "NoMeasurement"} {
+		if strings.Contains(string(src), banned) {
+			t.Errorf("json_rewrite.go still mentions %q", banned)
+		}
+	}
+}
+
 func TestApplyFieldRewritesInvalidJSON(t *testing.T) {
 	in := []byte("not json at all")
-	got := applyFieldRewrites(in, LatencyJitterRewrites)
+	got := applyFieldRewrites(in, latencyJitterRewrites)
 	if string(got) != string(in) {
 		t.Errorf("invalid JSON should pass through unchanged, got %s", got)
 	}
@@ -154,37 +168,201 @@ func TestApplyFieldRewritesColumnarSeries(t *testing.T) {
 			name: "columns are renamed, no status column when all values are normal",
 			in: `{"series":[{"name":"uplink","columns":["time","latency","jitter","loss"],` +
 				`"values":[["t1",33685,120,0],["t2",43972,130,0]]}]}`,
-			want: `{"series":[{"name":"uplink","columns":["time","latencyUs","jitterUs","loss"],` +
+			want: `{"series":[{"name":"uplink","columns":["time","latencyMicroseconds","jitterMicroseconds","loss"],` +
 				`"values":[["t1",33685,120,0],["t2",43972,130,0]]}]}`,
 		},
 		{
 			name: "sentinels append a status column aligned with the rows",
 			in: `{"series":[{"columns":["time","latency"],` +
 				`"values":[["t1",-1],["t2",42069],["t3",2000000]]}]}`,
-			want: `{"series":[{"columns":["time","latencyUs","latencyStatus"],` +
-				`"values":[["t1",null,"no-measurement"],["t2",42069,null],["t3",2000000,"suspected-timeout"]]}]}`,
+			want: `{"series":[{"columns":["time","latencyMicroseconds","latencyStatus"],` +
+				`"values":[["t1",null,"timeout"],["t2",42069,null],["t3",2000000,null]]}]}`,
+		},
+		{
+			name: "latency and jitter sentinels append two aligned status columns",
+			in: `{"series":[{"columns":["time","latency","jitter"],` +
+				`"values":[["t1",-1,-1],["t2",42069,120]]}]}`,
+			want: `{"series":[{"columns":["time","latencyMicroseconds","jitterMicroseconds",` +
+				`"latencyStatus","jitterStatus"],` +
+				`"values":[["t1",null,null,"timeout","timeout"],["t2",42069,120,null,null]]}]}`,
 		},
 		{
 			name: "fields/data naming convention is supported too",
 			in:   `{"series":[{"fields":["time","latency"],"data":[["t1",-1]]}]}`,
-			want: `{"series":[{"fields":["time","latencyUs","latencyStatus"],"data":[["t1",null,"no-measurement"]]}]}`,
+			want: `{"series":[{"fields":["time","latencyMicroseconds","latencyStatus"],"data":[["t1",null,"timeout"]]}]}`,
+		},
+		{
+			name: "fields/data without sentinels only renames the field names",
+			in:   `{"series":[{"fields":["time","latency","jitter"],"data":[["t1",33685,120]]}]}`,
+			want: `{"series":[{"fields":["time","latencyMicroseconds","jitterMicroseconds"],"data":[["t1",33685,120]]}]}`,
 		},
 		{
 			name: "null samples pass through without an annotation",
 			in:   `{"series":[{"columns":["time","latency","jitter"],"values":[["t1",33685,null]]}]}`,
-			want: `{"series":[{"columns":["time","latencyUs","jitterUs"],"values":[["t1",33685,null]]}]}`,
+			want: `{"series":[{"columns":["time","latencyMicroseconds","jitterMicroseconds"],"values":[["t1",33685,null]]}]}`,
 		},
 		{
 			name: "empty value set still renames the columns",
 			in:   `{"series":[{"columns":["time","latency"],"values":[]}]}`,
-			want: `{"series":[{"columns":["time","latencyUs"],"values":[]}]}`,
+			want: `{"series":[{"columns":["time","latencyMicroseconds"],"values":[]}]}`,
+		},
+		{
+			name: "empty column list is left alone",
+			in:   `{"series":[{"columns":[],"values":[["t1",42069]]}]}`,
+			want: `{"series":[{"columns":[],"values":[["t1",42069]]}]}`,
+		},
+		{
+			name: "non-string column names are skipped",
+			in:   `{"series":[{"columns":[7,"latency"],"values":[["t1",42069]]}]}`,
+			want: `{"series":[{"columns":[7,"latencyMicroseconds"],"values":[["t1",42069]]}]}`,
+		},
+		{
+			name: "series whose columns match no rule is untouched",
+			in:   `{"series":[{"columns":["time","signal"],"values":[["t1",-1]]}]}`,
+			want: `{"series":[{"columns":["time","signal"],"values":[["t1",-1]]}]}`,
+		},
+		{
+			name: "rows that are not arrays are left in place",
+			in:   `{"series":[{"columns":["time","latency"],"values":[["t1",-1],"broken"]}]}`,
+			want: `{"series":[{"columns":["time","latencyMicroseconds","latencyStatus"],` +
+				`"values":[["t1",null,"timeout"],"broken"]}]}`,
+		},
+		{
+			name: "columns without a matching values array is not a series",
+			in:   `{"series":[{"columns":["time","latency"],"values":{"t1":-1}}]}`,
+			want: `{"series":[{"columns":["time","latency"],"values":{"t1":-1}}]}`,
+		},
+		{
+			name: "duplicate column names are both rewritten",
+			in:   `{"series":[{"columns":["latency","latency"],"values":[[-1,42069]]}]}`,
+			want: `{"series":[{"columns":["latencyMicroseconds","latencyMicroseconds","latencyStatus"],` +
+				`"values":[[null,42069,"timeout"]]}]}`,
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			assertJSONEqual(t, applyFieldRewrites([]byte(tc.in), LatencyJitterRewrites), tc.want)
+			assertJSONEqual(t, applyFieldRewrites([]byte(tc.in), latencyJitterRewrites), tc.want)
 		})
+	}
+}
+
+// TestColumnarShortRowsStayAligned covers the column-misalignment bug: a row
+// shorter than "columns" used to be skipped while building values but still got
+// a status appended, landing the status in a value column.
+func TestColumnarShortRowsStayAligned(t *testing.T) {
+	cases := []string{
+		// short row, some other row carries a sentinel
+		`{"columns":["time","latency"],"values":[["t0",-1],["t1"]]}`,
+		// short row, no sentinel anywhere
+		`{"columns":["time","latency"],"values":[["t0",2000000],["t1"]]}`,
+		// short row, latency and jitter both sentinel elsewhere
+		`{"columns":["time","latency","jitter"],"values":[["t0",-1,-1],["t1"],["t2",1,2]]}`,
+	}
+	for _, in := range cases {
+		got := applyFieldRewrites([]byte(in), latencyJitterRewrites)
+		var out struct {
+			Columns []interface{}   `json:"columns"`
+			Values  [][]interface{} `json:"values"`
+		}
+		if err := json.Unmarshal(got, &out); err != nil {
+			t.Fatalf("%s -> %s: %v", in, got, err)
+		}
+		for i, row := range out.Values {
+			if len(row) != len(out.Columns) {
+				t.Errorf("%s -> %s: row %d has %d cells, want %d",
+					in, got, i, len(row), len(out.Columns))
+			}
+		}
+	}
+}
+
+func TestAsFloat(t *testing.T) {
+	tests := []struct {
+		name string
+		raw  interface{}
+		want float64
+		ok   bool
+	}{
+		{name: "json.Number integer", raw: json.Number("42069"), want: 42069, ok: true},
+		{name: "json.Number unparsable", raw: json.Number("not-a-number"), ok: false},
+		{name: "float64 passes through", raw: float64(-1), want: -1, ok: true},
+		{name: "string is not numeric", raw: "-1", ok: false},
+		{name: "nil is not numeric", raw: nil, ok: false},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got, ok := asFloat(tc.raw)
+			if ok != tc.ok || (ok && got != tc.want) {
+				t.Errorf("asFloat(%v) = (%v, %v), want (%v, %v)", tc.raw, got, ok, tc.want, tc.ok)
+			}
+		})
+	}
+}
+
+// TestApplyRuleAcceptsFloat64 covers the float64 branch of asFloat, which is
+// reached when the tree was decoded without UseNumber (e.g. by a caller that
+// pre-parsed the body).
+func TestApplyRuleAcceptsFloat64(t *testing.T) {
+	value, status := applyRule(float64(-1), latencyJitterRewrites["latency"])
+	if value != nil || status != StatusTimeout {
+		t.Errorf("got (%v, %q), want (nil, %q)", value, status, StatusTimeout)
+	}
+	value, status = applyRule(json.Number("bogus"), latencyJitterRewrites["latency"])
+	if status != "" {
+		t.Errorf("unparsable number should not be annotated, got %q", status)
+	}
+	if value != json.Number("bogus") {
+		t.Errorf("unparsable number should pass through, got %v", value)
+	}
+}
+
+func TestDeclaredUnits(t *testing.T) {
+	want := map[string]bool{
+		"device uplink":      true,
+		"device uplink get":  true,
+		"device uplink perf": true,
+		"device interface":   true,
+		"device log mqtt":    true,
+		"overview offline":   true,
+	}
+	if len(unitDeclarations) != len(want) {
+		t.Errorf("whitelist has %d entries, want %d: %v", len(unitDeclarations), len(want), unitDeclarations)
+	}
+	for cmd := range want {
+		if _, ok := declaredUnits(cmd); !ok {
+			t.Errorf("%q should be declared", cmd)
+		}
+	}
+	if _, ok := declaredUnits("device signal list"); ok {
+		t.Error("device signal list should not be declared")
+	}
+}
+
+func TestWithDeclaredUnitsPanicsOnUndeclaredCommand(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Error("expected a panic for an undeclared command")
+		}
+	}()
+	WithDeclaredUnits("device signal list")
+}
+
+// TestFormatOutputWithoutDeclarationIsUnchanged covers acceptance criterion 9:
+// a command that did not declare its units is not rewritten even if its payload
+// carries a latency field.
+func TestFormatOutputWithoutDeclarationIsUnchanged(t *testing.T) {
+	body := []byte(`{"result":[{"name":"wan1","latency":-1}]}`)
+	io, out := newBufferIO()
+	if err := FormatOutput(body, io, "json"); err != nil {
+		t.Fatal(err)
+	}
+	got := out.String()
+	if !strings.Contains(got, `"latency"`) || strings.Contains(got, "latencyMicroseconds") {
+		t.Errorf("expected the bare latency key to survive, got %s", got)
+	}
+	if strings.Contains(got, "latencyStatus") {
+		t.Errorf("expected no status annotation, got %s", got)
 	}
 }
 
@@ -195,39 +373,39 @@ func TestFormatOutputRewritesStructuredButNotTable(t *testing.T) {
 		io, out := newBufferIO()
 		if err := FormatOutput(body, io, "json",
 			WithFormatters(ColumnFormatters{"latency": FormatMicroseconds}),
-			WithJSONFieldRewrites(LatencyJitterRewrites),
+			WithDeclaredUnits("device uplink"),
 		); err != nil {
 			t.Fatal(err)
 		}
 		got := out.String()
-		if !strings.Contains(got, "latencyUs") || strings.Contains(got, `"latency"`) {
-			t.Errorf("expected latencyUs and no bare latency, got %s", got)
+		if !strings.Contains(got, "latencyMicroseconds") || strings.Contains(got, `"latency"`) {
+			t.Errorf("expected latencyMicroseconds and no bare latency, got %s", got)
 		}
 	})
 
 	t.Run("yaml output is rewritten", func(t *testing.T) {
 		io, out := newBufferIO()
 		if err := FormatOutput(body, io, "yaml",
-			WithJSONFieldRewrites(LatencyJitterRewrites),
+			WithDeclaredUnits("device uplink"),
 		); err != nil {
 			t.Fatal(err)
 		}
 		got := out.String()
-		if !strings.Contains(got, "latencyUs") {
-			t.Errorf("expected latencyUs in yaml, got %s", got)
+		if !strings.Contains(got, "latencyMicroseconds") {
+			t.Errorf("expected latencyMicroseconds in yaml, got %s", got)
 		}
 	})
 
 	t.Run("jq sees the rewritten field", func(t *testing.T) {
 		io, out := newBufferIO()
-		io.JQExpr = ".[0].latencyUs"
+		io.JQExpr = ".[0].latencyMicroseconds"
 		if err := FormatOutput(body, io, "json",
-			WithJSONFieldRewrites(LatencyJitterRewrites),
+			WithDeclaredUnits("device uplink"),
 		); err != nil {
 			t.Fatal(err)
 		}
 		if !strings.Contains(out.String(), "42069") {
-			t.Errorf("expected jq to resolve latencyUs, got %s", out.String())
+			t.Errorf("expected jq to resolve latencyMicroseconds, got %s", out.String())
 		}
 	})
 
@@ -235,7 +413,7 @@ func TestFormatOutputRewritesStructuredButNotTable(t *testing.T) {
 		io, out := newBufferIO()
 		io.JQExpr = ".[0].latency"
 		if err := FormatOutput(body, io, "json",
-			WithJSONFieldRewrites(LatencyJitterRewrites),
+			WithDeclaredUnits("device uplink"),
 		); err != nil {
 			t.Fatal(err)
 		}
@@ -254,7 +432,7 @@ func TestFormatOutputRewritesStructuredButNotTable(t *testing.T) {
 		ioB, outB := newBufferIO()
 		if err := FormatOutput(body, ioB, "table",
 			WithFormatters(ColumnFormatters{"latency": FormatMicroseconds}),
-			WithJSONFieldRewrites(LatencyJitterRewrites),
+			WithDeclaredUnits("device uplink"),
 		); err != nil {
 			t.Fatal(err)
 		}
@@ -270,8 +448,8 @@ func TestFormatOutputRewritesStructuredButNotTable(t *testing.T) {
 // TestApplyFieldRewritesPreservesIntegerPrecision guards against the rewriter
 // round-tripping numbers through float64, which would corrupt large integers.
 func TestApplyFieldRewritesPreservesIntegerPrecision(t *testing.T) {
-	got := applyFieldRewrites([]byte(`{"latency":42069,"_id":9007199254740993}`), LatencyJitterRewrites)
-	for _, want := range []string{`"latencyUs":42069`, `9007199254740993`} {
+	got := applyFieldRewrites([]byte(`{"latency":42069,"_id":9007199254740993}`), latencyJitterRewrites)
+	for _, want := range []string{`"latencyMicroseconds":42069`, `9007199254740993`} {
 		if !strings.Contains(string(got), want) {
 			t.Errorf("expected %s in %s", want, got)
 		}

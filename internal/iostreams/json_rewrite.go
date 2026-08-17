@@ -3,36 +3,22 @@ package iostreams
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 )
 
-// Status values emitted alongside a rewritten numeric field when the raw value
-// is a sentinel rather than a real measurement.
-const (
-	// StatusNoMeasurement means the device reported the sample but had no
-	// measured value for it. The numeric field is emitted as null.
-	StatusNoMeasurement = "no-measurement"
-	// StatusSuspectedTimeout means the raw value matches a value believed to be
-	// a firmware probe-timeout clamp. The original number is preserved.
-	StatusSuspectedTimeout = "suspected-timeout"
-)
-
-// noMeasurementSentinel is the value devices report when a metric was not
-// measured. Confirmed via incloud-portal, which filters it out in five places
-// (apps/network .../uplink, .../overview/Uplink, .../Uplink/LinkProfile/*).
-const noMeasurementSentinel = -1
-
-// suspectedTimeoutMicros lists latency values (microseconds) believed to be a
-// firmware ping-timeout clamp rather than a real round-trip measurement.
+// StatusTimeout is emitted alongside a rewritten numeric field when the raw
+// value is the timeout sentinel rather than a measurement. The device firmware
+// reports -1 when a probe timed out (nezha-agent/pkg/message/message.go:117:
+// "latency, us, set value to -1 if timeout"); the numeric field is emitted as
+// null so the sentinel never reaches a consumer as a number.
 //
-// Provenance: derived from Langfuse session statistics — the values are exact
-// integers, land on common ping timeout steps (2s / 4s), and differ by device
-// model. This has NOT been confirmed by the firmware team (IM-3180 decision
-// record #4), which is why the original value is preserved and only annotated.
-// Tighten (or drop) this list once firmware confirms the semantics.
-//
-// This is the single source of truth for the suspected-sentinel set; do not
-// duplicate these numbers elsewhere.
-var suspectedTimeoutMicros = []float64{2000000, 4000000}
+// This is the only sentinel on this link. In particular there is no clamp
+// ceiling: values such as 2000000 (2s) are real measurements on a degraded
+// cellular link and must never be annotated.
+const StatusTimeout = "timeout"
+
+// timeoutSentinel is the value devices report when a probe timed out.
+const timeoutSentinel = -1
 
 // FieldRewrite describes how one field is renamed and annotated in structured
 // (json / yaml / --jq) output.
@@ -42,45 +28,68 @@ type FieldRewrite struct {
 	// StatusKey is the companion field that carries the sentinel annotation.
 	// Empty disables sentinel annotation entirely.
 	StatusKey string
-	// NoMeasurement maps the -1 sentinel to null + StatusNoMeasurement.
-	NoMeasurement bool
-	// SuspectedTimeout annotates values in suspectedTimeoutMicros with
-	// StatusSuspectedTimeout while preserving the original number.
-	SuspectedTimeout bool
+	// Timeout maps the -1 sentinel to null + StatusTimeout.
+	Timeout bool
 }
 
 // FieldRewrites maps the field name as returned by the platform API to its
-// rewrite rule. Matching is by field name at any nesting depth.
+// rewrite rule. Matching is by field name at any nesting depth, plus by column
+// name for the columnar time-series shape.
 type FieldRewrites map[string]FieldRewrite
 
-// LatencyJitterRewrites renames the microsecond-valued latency/jitter fields so
+// latencyJitterRewrites renames the microsecond-valued latency/jitter fields so
 // that a caller reading -o json can tell the unit from the output alone, and
-// annotates the known sentinel values.
+// maps the -1 timeout sentinel to null.
 //
-// jitter deliberately does not get the suspected-timeout treatment: there is no
-// evidence that jitter is clamped on probe timeout. It does get the -1 handling,
-// since a negative jitter is physically impossible and can only be the same
-// "no measured value" convention.
-var LatencyJitterRewrites = FieldRewrites{
+// jitter gets the same -1 handling as latency: the device interaction protocol
+// uses one convention for both, and a negative jitter is physically impossible.
+var latencyJitterRewrites = FieldRewrites{
 	"latency": {
-		To:               "latencyUs",
-		StatusKey:        "latencyStatus",
-		NoMeasurement:    true,
-		SuspectedTimeout: true,
+		To:        "latencyMicroseconds",
+		StatusKey: "latencyStatus",
+		Timeout:   true,
 	},
 	"jitter": {
-		To:            "jitterUs",
-		StatusKey:     "jitterStatus",
-		NoMeasurement: true,
+		To:        "jitterMicroseconds",
+		StatusKey: "jitterStatus",
+		Timeout:   true,
 	},
 }
 
-// OfflineDurationRewrites renames the second-valued offline duration fields.
+// offlineDurationRewrites renames the second-valued offline duration fields.
 // No sentinel values are known for these.
-var OfflineDurationRewrites = FieldRewrites{
+var offlineDurationRewrites = FieldRewrites{
 	"totalOfflineDuration": {To: "totalOfflineDurationSeconds"},
 	"avgOfflineDuration":   {To: "avgOfflineDurationSeconds"},
 	"maxOfflineDuration":   {To: "maxOfflineDurationSeconds"},
+}
+
+// unitDeclarations is the command-level whitelist of field rewrites.
+//
+// Rewriting is deliberately not global: a command is rewritten only if it
+// appears here and passes WithDeclaredUnits to FormatOutput. Being listed is a
+// statement that someone checked this command's payload and confirmed the unit
+// of every time-valued field in it. A new command therefore has to opt in
+// explicitly rather than inherit a rewrite it was never audited for.
+//
+// Granularity deliberately stops at the command. Going finer would mean a
+// field-path model, and in the columnar shape field names live inside a
+// columns[] array rather than as object keys, so a path model would need two
+// different syntaxes for the same declaration.
+var unitDeclarations = map[string]FieldRewrites{
+	"device uplink":      latencyJitterRewrites,
+	"device uplink get":  latencyJitterRewrites,
+	"device uplink perf": latencyJitterRewrites,
+	"device interface":   latencyJitterRewrites,
+	"device log mqtt":    latencyJitterRewrites,
+	"overview offline":   offlineDurationRewrites,
+}
+
+// declaredUnits looks up a command's declaration. The second return value is
+// false for any command that has not declared its units.
+func declaredUnits(command string) (FieldRewrites, bool) {
+	rw, ok := unitDeclarations[command]
+	return rw, ok
 }
 
 // applyFieldRewrites renames and annotates fields anywhere in the JSON body.
@@ -145,6 +154,10 @@ func rewriteObjectKeys(obj map[string]interface{}, rules FieldRewrites) {
 // perf-trend style endpoints, where field names live in a "columns" (or
 // "fields") array and the numbers live positionally in "values" (or "data").
 // A status column is appended only when at least one row carries a sentinel.
+//
+// Every row that is an array is normalized to the width of the column list, so
+// a short input row cannot shift the appended status values into the wrong
+// column.
 func rewriteSeriesObject(obj map[string]interface{}, rules FieldRewrites) {
 	colKey, rowKey := seriesKeys(obj)
 	if colKey == "" {
@@ -155,12 +168,14 @@ func rewriteSeriesObject(obj map[string]interface{}, rules FieldRewrites) {
 	if len(cols) == 0 {
 		return
 	}
+	width := len(cols)
 
 	type pendingStatus struct {
 		key    string
 		values []interface{}
 	}
 	var pending []pendingStatus
+	matched := false
 
 	for idx, col := range cols {
 		name, ok := col.(string)
@@ -171,6 +186,7 @@ func rewriteSeriesObject(obj map[string]interface{}, rules FieldRewrites) {
 		if !ok {
 			continue
 		}
+		matched = true
 		cols[idx] = rule.To
 
 		statuses := make([]interface{}, len(rows))
@@ -192,16 +208,29 @@ func rewriteSeriesObject(obj map[string]interface{}, rules FieldRewrites) {
 		}
 	}
 
+	if !matched {
+		return
+	}
+
+	for r, row := range rows {
+		cells, ok := row.([]interface{})
+		if !ok {
+			continue
+		}
+		// Pad short rows first: appending a status onto a short row would
+		// otherwise land it in a value column.
+		for len(cells) < width {
+			cells = append(cells, nil)
+		}
+		for _, p := range pending {
+			cells = append(cells, p.values[r])
+		}
+		rows[r] = cells
+	}
 	for _, p := range pending {
 		cols = append(cols, p.key)
-		for r, row := range rows {
-			cells, ok := row.([]interface{})
-			if !ok {
-				continue
-			}
-			rows[r] = append(cells, p.values[r])
-		}
 	}
+
 	obj[colKey] = cols
 	obj[rowKey] = rows
 }
@@ -228,15 +257,8 @@ func applyRule(raw interface{}, rule FieldRewrite) (interface{}, string) {
 	if !ok {
 		return raw, ""
 	}
-	if rule.NoMeasurement && num == noMeasurementSentinel {
-		return nil, StatusNoMeasurement
-	}
-	if rule.SuspectedTimeout {
-		for _, s := range suspectedTimeoutMicros {
-			if num == s {
-				return raw, StatusSuspectedTimeout
-			}
-		}
+	if rule.Timeout && num == timeoutSentinel {
+		return nil, StatusTimeout
 	}
 	return raw, ""
 }
@@ -255,4 +277,10 @@ func asFloat(raw interface{}) (float64, bool) {
 	default:
 		return 0, false
 	}
+}
+
+// unknownDeclarationError reports a command that asked for unit rewriting
+// without being in the whitelist.
+func unknownDeclarationError(command string) error {
+	return fmt.Errorf("iostreams: command %q has no unit declaration", command)
 }

@@ -25,21 +25,16 @@ func newCmdUplinkPerf(f *factory.Factory) *cobra.Command {
 		Short: "Show uplink performance trend",
 		Long: `Show uplink performance metrics (throughput, latency, jitter, loss) over time for a specific device uplink.
 
-Units in -o json / -o yaml / --jq output:
-  latencyUs, jitterUs   microseconds (divide by 1000 for milliseconds)
-  throughputUp/Down     bits per second
-  loss                  fraction (0.05 = 5%), not a percentage
+The loss field is a fraction (0.05 = 5%), not a percentage.
 
-JSON output is columnar: field names appear in "columns" and the samples in
-"values", positionally aligned. Sentinel annotations add a "latencyStatus" /
-"jitterStatus" column, and only when at least one sample is a sentinel:
-  "no-measurement"     no measured value for that sample; latencyUs is null
-  "suspected-timeout"  suspected firmware probe-timeout clamp (unconfirmed);
-                       the original number is kept. Report it as "probe likely
-                       timed out", not as a real latency reading.
+-o json / -o yaml / --jq output is columnar: field names appear in "columns" and
+the samples in "values", positionally aligned, one array per row. A
+"latencyStatus" / "jitterStatus" column is appended only when at least one
+sample is not a measurement:
+  "timeout"   the probe timed out for that sample; the value is null.
 
-Table output keeps the short field names and renders latency/jitter as
-milliseconds.`,
+Table output is flattened into row objects with different, shorter field
+names.`,
 		Example: `  # Show performance trend for wan1
   incloud device uplink perf 507f1f77bcf86cd799439011 --name wan1
 
@@ -83,7 +78,7 @@ milliseconds.`,
 					"latency":        iostreams.FormatMicroseconds,
 					"jitter":         iostreams.FormatMicroseconds,
 				}),
-				iostreams.WithJSONFieldRewrites(iostreams.LatencyJitterRewrites),
+				iostreams.WithDeclaredUnits("device uplink perf"),
 			)
 		},
 	}

@@ -44,11 +44,19 @@ func WithColumns(cols ...string) FormatOption {
 	}
 }
 
-// WithJSONFieldRewrites renames (and annotates) fields in structured output.
-// It is the mirror image of WithFormatters: formatters carry unit semantics into
-// the table rendering, rewrites carry the same semantics into the yaml / json /
-// --jq output that machine callers read. Table output is left untouched.
-func WithJSONFieldRewrites(rw FieldRewrites) FormatOption {
+// WithDeclaredUnits opts a command into structured-output field rewriting by
+// naming it in the command-level whitelist (see unitDeclarations). It is the
+// mirror image of WithFormatters: formatters carry unit semantics into the table
+// rendering, rewrites carry the same semantics into the yaml / json / --jq
+// output that machine callers read. Table output is left untouched.
+//
+// Passing a command that has no declaration is a programming error and panics
+// at command-construction time, which the command-tree tests exercise.
+func WithDeclaredUnits(command string) FormatOption {
+	rw, ok := declaredUnits(command)
+	if !ok {
+		panic(unknownDeclarationError(command))
+	}
 	return func(o *formatOptions) {
 		o.rewrites = rw
 	}
@@ -62,15 +70,18 @@ func FormatOutput(body []byte, io *IOStreams, output string, opts ...FormatOptio
 	}
 
 	// Structured output (yaml/json/jq) gets field rewrites; table keeps the
-	// original field names and relies on o.formatters instead.
-	structured := body
-	if len(o.rewrites) > 0 {
-		structured = applyFieldRewrites(body, o.rewrites)
+	// original field names and relies on o.formatters instead. Computed lazily so
+	// the table path never pays for a rewrite it does not use.
+	structured := func() []byte {
+		if len(o.rewrites) == 0 {
+			return body
+		}
+		return applyFieldRewrites(body, o.rewrites)
 	}
 
 	// --jq overrides output mode: apply expression on unwrapped data
 	if io.JQExpr != "" {
-		result, err := ApplyJQ(unwrapResult(normalizePage(structured)), io.JQExpr)
+		result, err := ApplyJQ(unwrapResult(normalizePage(structured())), io.JQExpr)
 		if err != nil {
 			return err
 		}
@@ -95,16 +106,17 @@ func FormatOutput(body []byte, io *IOStreams, output string, opts ...FormatOptio
 		}
 		return FormatTable(data, io, o.columns)
 	case "yaml":
-		s, err := FormatYAML(unwrapResult(normalizePage(structured)))
+		s, err := FormatYAML(unwrapResult(normalizePage(structured())))
 		if err != nil {
 			return err
 		}
 		fmt.Fprintln(io.Out, s)
 	default:
-		if json.Valid(structured) {
-			fmt.Fprintln(io.Out, FormatJSON(unwrapResult(normalizePage(structured)), io, output))
+		data := structured()
+		if json.Valid(data) {
+			fmt.Fprintln(io.Out, FormatJSON(unwrapResult(normalizePage(data)), io, output))
 		} else {
-			fmt.Fprintln(io.Out, string(structured))
+			fmt.Fprintln(io.Out, string(data))
 		}
 	}
 	return nil

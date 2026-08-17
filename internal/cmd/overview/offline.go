@@ -43,13 +43,8 @@ func NewCmdOffline(f *factory.Factory) *cobra.Command {
 		Short: "Offline analysis and top devices",
 		Long: `Show top-N offline devices and offline statistics list.
 
-Units in -o json / -o yaml / --jq output:
-  totalOfflineDurationSeconds   seconds
-  avgOfflineDurationSeconds     seconds
-  maxOfflineDurationSeconds     seconds
-
-Table output keeps the short field names and renders these as human-readable
-durations (e.g. "1d 1h 1m").`,
+Table output uses different, shorter field names and renders the offline
+durations as human-readable strings (e.g. "1d 1h 1m").`,
 		Example: `  # Show offline dashboard
   incloud overview offline
 
@@ -156,7 +151,7 @@ func runOffline(cmd *cobra.Command, f *factory.Factory, opts *OfflineOptions) er
 		merged := buildMergedOutput(topnData, statsBody)
 		b, _ := json.Marshal(merged)
 		return iostreams.FormatOutput(b, f.IO, output,
-			iostreams.WithJSONFieldRewrites(iostreams.OfflineDurationRewrites),
+			iostreams.WithDeclaredUnits("overview offline"),
 		)
 	default:
 		printOfflineDashboard(f.IO, opts, topnData, statsBody)

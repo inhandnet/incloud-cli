@@ -26,15 +26,12 @@ func NewCmdInterface(f *factory.Factory) *cobra.Command {
 		Short: "Show device network interfaces",
 		Long: `Show network interface information for a specific device.
 
-Units in -o json / -o yaml / --jq output:
-  latencyUs, jitterUs   microseconds (divide by 1000 for milliseconds)
-  connectedSeconds      seconds
+In -o json / -o yaml / --jq output, a "latencyStatus" / "jitterStatus" field
+appears next to the value (including on nested entries such as wan[]) when the
+value is not a measurement:
+  "timeout"   the probe timed out; the numeric field is null.
 
-The rewrite reaches nested entries (e.g. wan[].latencyUs). See
-'incloud device uplink --help' for the latencyStatus / jitterStatus sentinel
-annotations.
-
-Table output keeps the short field names.`,
+Table output uses different, shorter field names.`,
 		Example: `  # Show interfaces as JSON
   incloud device interface 507f1f77bcf86cd799439011
 
@@ -70,7 +67,7 @@ Table output keeps the short field names.`,
 			output, _ := cmd.Flags().GetString("output")
 			return iostreams.FormatOutput(body, f.IO, output,
 				iostreams.WithTransform(flattenInterfaces),
-				iostreams.WithJSONFieldRewrites(iostreams.LatencyJitterRewrites),
+				iostreams.WithDeclaredUnits("device interface"),
 			)
 		},
 	}

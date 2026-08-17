@@ -19,11 +19,11 @@ func newCmdUplinkGet(f *factory.Factory) *cobra.Command {
 		Short: "Get uplink details",
 		Long: `Get detailed information for a specific uplink by its ID.
 
-Units in -o json / -o yaml / --jq output:
-  latencyUs, jitterUs   microseconds (divide by 1000 for milliseconds)
+In -o json / -o yaml / --jq output, a "latencyStatus" / "jitterStatus" field
+appears when the value is not a measurement:
+  "timeout"   the probe timed out; the numeric field is null.
 
-See 'incloud device uplink --help' for the latencyStatus / jitterStatus
-sentinel annotations.`,
+Table output uses different, shorter field names.`,
 		Example: `  # Get uplink details
   incloud device uplink get 69b27e3e6e65fb572c20fab4
 
@@ -46,7 +46,7 @@ sentinel annotations.`,
 			output, _ := cmd.Flags().GetString("output")
 			return iostreams.FormatOutput(body, f.IO, output,
 				iostreams.WithFormatters(uplinkFormatters),
-				iostreams.WithJSONFieldRewrites(iostreams.LatencyJitterRewrites),
+				iostreams.WithDeclaredUnits("device uplink get"),
 			)
 		},
 	}

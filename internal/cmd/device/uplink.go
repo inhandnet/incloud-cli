@@ -24,21 +24,12 @@ func NewCmdUplink(f *factory.Factory) *cobra.Command {
 		Short: "Show device uplinks",
 		Long: `Show uplink (WAN/Cellular/WiFi) information for a specific device.
 
-Units in -o json / -o yaml / --jq output:
-  latencyUs, jitterUs   microseconds (divide by 1000 for milliseconds)
+In -o json / -o yaml / --jq output, a "latencyStatus" / "jitterStatus" field
+appears when the value is not a measurement:
+  "timeout"   the probe timed out; the numeric field is null.
+The status fields are absent for normal measurements.
 
-Sentinel annotations (json/yaml/jq only):
-  latencyStatus / jitterStatus = "no-measurement"
-      the device reported the sample but had no measured value;
-      latencyUs / jitterUs is null.
-  latencyStatus = "suspected-timeout"
-      the value matches a suspected firmware probe-timeout clamp
-      (unconfirmed); the original number is kept. Report it as
-      "probe likely timed out", not as a real latency reading.
-The status fields are absent when the value is a normal measurement.
-
-Table output keeps the short field names and renders latency/jitter as
-milliseconds.`,
+Table output uses different, shorter field names.`,
 		Example: `  # Show uplinks for a device
   incloud device uplink 507f1f77bcf86cd799439011
 
@@ -64,7 +55,7 @@ milliseconds.`,
 			output, _ := cmd.Flags().GetString("output")
 			return iostreams.FormatOutput(body, f.IO, output,
 				iostreams.WithFormatters(uplinkFormatters),
-				iostreams.WithJSONFieldRewrites(iostreams.LatencyJitterRewrites),
+				iostreams.WithDeclaredUnits("device uplink"),
 			)
 		},
 	}
