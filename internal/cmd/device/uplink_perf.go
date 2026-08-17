@@ -8,6 +8,7 @@ import (
 	"github.com/inhandnet/incloud-cli/internal/cmdutil"
 	"github.com/inhandnet/incloud-cli/internal/factory"
 	"github.com/inhandnet/incloud-cli/internal/iostreams"
+	"github.com/inhandnet/incloud-cli/internal/unitdecl"
 )
 
 type uplinkPerfOptions struct {
@@ -78,7 +79,7 @@ names.`,
 					"latency":        iostreams.FormatMicroseconds,
 					"jitter":         iostreams.FormatMicroseconds,
 				}),
-				iostreams.WithDeclaredUnits("device uplink perf"),
+				iostreams.WithDeclaredUnits(unitdecl.DeviceUplinkPerf),
 			)
 		},
 	}

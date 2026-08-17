@@ -3,7 +3,6 @@ package iostreams
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 )
 
 // StatusTimeout is emitted alongside a rewritten numeric field when the raw
@@ -36,61 +35,6 @@ type FieldRewrite struct {
 // rewrite rule. Matching is by field name at any nesting depth, plus by column
 // name for the columnar time-series shape.
 type FieldRewrites map[string]FieldRewrite
-
-// latencyJitterRewrites renames the microsecond-valued latency/jitter fields so
-// that a caller reading -o json can tell the unit from the output alone, and
-// maps the -1 timeout sentinel to null.
-//
-// jitter gets the same -1 handling as latency: the device interaction protocol
-// uses one convention for both, and a negative jitter is physically impossible.
-var latencyJitterRewrites = FieldRewrites{
-	"latency": {
-		To:        "latencyMicroseconds",
-		StatusKey: "latencyStatus",
-		Timeout:   true,
-	},
-	"jitter": {
-		To:        "jitterMicroseconds",
-		StatusKey: "jitterStatus",
-		Timeout:   true,
-	},
-}
-
-// offlineDurationRewrites renames the second-valued offline duration fields.
-// No sentinel values are known for these.
-var offlineDurationRewrites = FieldRewrites{
-	"totalOfflineDuration": {To: "totalOfflineDurationSeconds"},
-	"avgOfflineDuration":   {To: "avgOfflineDurationSeconds"},
-	"maxOfflineDuration":   {To: "maxOfflineDurationSeconds"},
-}
-
-// unitDeclarations is the command-level whitelist of field rewrites.
-//
-// Rewriting is deliberately not global: a command is rewritten only if it
-// appears here and passes WithDeclaredUnits to FormatOutput. Being listed is a
-// statement that someone checked this command's payload and confirmed the unit
-// of every time-valued field in it. A new command therefore has to opt in
-// explicitly rather than inherit a rewrite it was never audited for.
-//
-// Granularity deliberately stops at the command. Going finer would mean a
-// field-path model, and in the columnar shape field names live inside a
-// columns[] array rather than as object keys, so a path model would need two
-// different syntaxes for the same declaration.
-var unitDeclarations = map[string]FieldRewrites{
-	"device uplink":      latencyJitterRewrites,
-	"device uplink get":  latencyJitterRewrites,
-	"device uplink perf": latencyJitterRewrites,
-	"device interface":   latencyJitterRewrites,
-	"device log mqtt":    latencyJitterRewrites,
-	"overview offline":   offlineDurationRewrites,
-}
-
-// declaredUnits looks up a command's declaration. The second return value is
-// false for any command that has not declared its units.
-func declaredUnits(command string) (FieldRewrites, bool) {
-	rw, ok := unitDeclarations[command]
-	return rw, ok
-}
 
 // applyFieldRewrites renames and annotates fields anywhere in the JSON body.
 // Invalid JSON is returned unchanged.
@@ -277,10 +221,4 @@ func asFloat(raw interface{}) (float64, bool) {
 	default:
 		return 0, false
 	}
-}
-
-// unknownDeclarationError reports a command that asked for unit rewriting
-// without being in the whitelist.
-func unknownDeclarationError(command string) error {
-	return fmt.Errorf("iostreams: command %q has no unit declaration", command)
 }

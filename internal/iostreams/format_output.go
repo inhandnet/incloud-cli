@@ -44,19 +44,15 @@ func WithColumns(cols ...string) FormatOption {
 	}
 }
 
-// WithDeclaredUnits opts a command into structured-output field rewriting by
-// naming it in the command-level whitelist (see unitDeclarations). It is the
-// mirror image of WithFormatters: formatters carry unit semantics into the table
-// rendering, rewrites carry the same semantics into the yaml / json / --jq
+// WithDeclaredUnits opts a command into structured-output field rewriting. It is
+// the mirror image of WithFormatters: formatters carry unit semantics into the
+// table rendering, rewrites carry the same semantics into the yaml / json / --jq
 // output that machine callers read. Table output is left untouched.
 //
-// Passing a command that has no declaration is a programming error and panics
-// at command-construction time, which the command-tree tests exercise.
-func WithDeclaredUnits(command string) FormatOption {
-	rw, ok := declaredUnits(command)
-	if !ok {
-		panic(unknownDeclarationError(command))
-	}
+// Commands pass a declaration from internal/unitdecl, which is where the audit
+// record of "this payload's time-field units were confirmed" lives. A command
+// that passes nothing is not rewritten at all.
+func WithDeclaredUnits(rw FieldRewrites) FormatOption {
 	return func(o *formatOptions) {
 		o.rewrites = rw
 	}

@@ -9,6 +9,7 @@ import (
 	"github.com/inhandnet/incloud-cli/internal/cmdutil"
 	"github.com/inhandnet/incloud-cli/internal/factory"
 	"github.com/inhandnet/incloud-cli/internal/iostreams"
+	"github.com/inhandnet/incloud-cli/internal/unitdecl"
 )
 
 type LogMqttOptions struct {
@@ -98,7 +99,7 @@ Table output echoes the payload with its original field names.`,
 			}
 			if err := iostreams.FormatOutput(body, f.IO, output,
 				iostreams.WithTransform(transform),
-				iostreams.WithDeclaredUnits("device log mqtt"),
+				iostreams.WithDeclaredUnits(unitdecl.DeviceLogMqtt),
 			); err != nil {
 				return err
 			}

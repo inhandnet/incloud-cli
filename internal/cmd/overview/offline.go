@@ -11,6 +11,7 @@ import (
 	"github.com/inhandnet/incloud-cli/internal/cmdutil"
 	"github.com/inhandnet/incloud-cli/internal/factory"
 	"github.com/inhandnet/incloud-cli/internal/iostreams"
+	"github.com/inhandnet/incloud-cli/internal/unitdecl"
 )
 
 type OfflineOptions struct {
@@ -151,7 +152,7 @@ func runOffline(cmd *cobra.Command, f *factory.Factory, opts *OfflineOptions) er
 		merged := buildMergedOutput(topnData, statsBody)
 		b, _ := json.Marshal(merged)
 		return iostreams.FormatOutput(b, f.IO, output,
-			iostreams.WithDeclaredUnits("overview offline"),
+			iostreams.WithDeclaredUnits(unitdecl.OverviewOffline),
 		)
 	default:
 		printOfflineDashboard(f.IO, opts, topnData, statsBody)

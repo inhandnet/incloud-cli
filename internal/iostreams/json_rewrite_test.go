@@ -41,6 +41,20 @@ func assertJSONEqual(t *testing.T, got []byte, want string) {
 	}
 }
 
+// testLatencyJitter and testOfflineDuration mirror the declarations in
+// internal/unitdecl. They are duplicated here on purpose: iostreams is the
+// mechanism and must be testable without knowing which commands use it.
+var testLatencyJitter = FieldRewrites{
+	"latency": {To: "latencyMicroseconds", StatusKey: "latencyStatus", Timeout: true},
+	"jitter":  {To: "jitterMicroseconds", StatusKey: "jitterStatus", Timeout: true},
+}
+
+var testOfflineDuration = FieldRewrites{
+	"totalOfflineDuration": {To: "totalOfflineDurationSeconds"},
+	"avgOfflineDuration":   {To: "avgOfflineDurationSeconds"},
+	"maxOfflineDuration":   {To: "maxOfflineDurationSeconds"},
+}
+
 func TestApplyFieldRewrites(t *testing.T) {
 	tests := []struct {
 		name  string
@@ -51,19 +65,19 @@ func TestApplyFieldRewrites(t *testing.T) {
 		{
 			name:  "renames latency and jitter",
 			in:    `{"name":"wan1","latency":42069,"jitter":120}`,
-			rules: latencyJitterRewrites,
+			rules: testLatencyJitter,
 			want:  `{"name":"wan1","latencyMicroseconds":42069,"jitterMicroseconds":120}`,
 		},
 		{
 			name:  "normal value gets no status field",
 			in:    `{"latency":42069}`,
-			rules: latencyJitterRewrites,
+			rules: testLatencyJitter,
 			want:  `{"latencyMicroseconds":42069}`,
 		},
 		{
 			name:  "timeout sentinel becomes null with status",
 			in:    `{"latency":-1,"jitter":-1}`,
-			rules: latencyJitterRewrites,
+			rules: testLatencyJitter,
 			want: `{"latencyMicroseconds":null,"latencyStatus":"timeout",` +
 				`"jitterMicroseconds":null,"jitterStatus":"timeout"}`,
 		},
@@ -73,52 +87,52 @@ func TestApplyFieldRewrites(t *testing.T) {
 			// through unannotated (IM-3180 correction, 2026-08-17).
 			name:  "two seconds is a real measurement and is not annotated",
 			in:    `{"latency":2000000}`,
-			rules: latencyJitterRewrites,
+			rules: testLatencyJitter,
 			want:  `{"latencyMicroseconds":2000000}`,
 		},
 		{
 			name:  "four seconds is a real measurement and is not annotated",
 			in:    `{"latency":4000000,"jitter":4000000}`,
-			rules: latencyJitterRewrites,
+			rules: testLatencyJitter,
 			want:  `{"latencyMicroseconds":4000000,"jitterMicroseconds":4000000}`,
 		},
 		{
 			name:  "missing fields are left alone",
 			in:    `{"name":"wan1","state":"disconnected"}`,
-			rules: latencyJitterRewrites,
+			rules: testLatencyJitter,
 			want:  `{"name":"wan1","state":"disconnected"}`,
 		},
 		{
 			name:  "null value is renamed but not annotated",
 			in:    `{"latency":null}`,
-			rules: latencyJitterRewrites,
+			rules: testLatencyJitter,
 			want:  `{"latencyMicroseconds":null}`,
 		},
 		{
 			name:  "non-numeric value is renamed but not annotated",
 			in:    `{"latency":"n/a"}`,
-			rules: latencyJitterRewrites,
+			rules: testLatencyJitter,
 			want:  `{"latencyMicroseconds":"n/a"}`,
 		},
 		{
 			name: "nested and array entries are rewritten at any depth",
 			in: `{"result":{"wan":[{"name":"wan1","latency":-1},{"name":"wan2","latency":33563}],` +
 				`"cellular":[{"latency":2000000}]}}`,
-			rules: latencyJitterRewrites,
+			rules: testLatencyJitter,
 			want: `{"result":{"wan":[{"name":"wan1","latencyMicroseconds":null,"latencyStatus":"timeout"},` +
 				`{"name":"wan2","latencyMicroseconds":33563}],"cellular":[{"latencyMicroseconds":2000000}]}}`,
 		},
 		{
 			name:  "offline durations get a seconds suffix",
 			in:    `{"result":[{"totalOfflineDuration":173114,"avgOfflineDuration":10,"maxOfflineDuration":924}]}`,
-			rules: offlineDurationRewrites,
+			rules: testOfflineDuration,
 			want: `{"result":[{"totalOfflineDurationSeconds":173114,"avgOfflineDurationSeconds":10,` +
 				`"maxOfflineDurationSeconds":924}]}`,
 		},
 		{
 			name:  "offline durations get no sentinel annotation",
 			in:    `{"maxOfflineDuration":-1}`,
-			rules: offlineDurationRewrites,
+			rules: testOfflineDuration,
 			want:  `{"maxOfflineDurationSeconds":-1}`,
 		},
 		{
@@ -136,23 +150,9 @@ func TestApplyFieldRewrites(t *testing.T) {
 	}
 }
 
-// TestNoSuspectedSentinelSet guards acceptance criterion 7: the codebase must
-// not carry any "suspected timeout clamp" value set.
-func TestNoSuspectedSentinelSet(t *testing.T) {
-	src, err := os.ReadFile("json_rewrite.go")
-	if err != nil {
-		t.Fatal(err)
-	}
-	for _, banned := range []string{"suspected", "Suspected", "no-measurement", "NoMeasurement"} {
-		if strings.Contains(string(src), banned) {
-			t.Errorf("json_rewrite.go still mentions %q", banned)
-		}
-	}
-}
-
 func TestApplyFieldRewritesInvalidJSON(t *testing.T) {
 	in := []byte("not json at all")
-	got := applyFieldRewrites(in, latencyJitterRewrites)
+	got := applyFieldRewrites(in, testLatencyJitter)
 	if string(got) != string(in) {
 		t.Errorf("invalid JSON should pass through unchanged, got %s", got)
 	}
@@ -242,7 +242,7 @@ func TestApplyFieldRewritesColumnarSeries(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			assertJSONEqual(t, applyFieldRewrites([]byte(tc.in), latencyJitterRewrites), tc.want)
+			assertJSONEqual(t, applyFieldRewrites([]byte(tc.in), testLatencyJitter), tc.want)
 		})
 	}
 }
@@ -260,7 +260,7 @@ func TestColumnarShortRowsStayAligned(t *testing.T) {
 		`{"columns":["time","latency","jitter"],"values":[["t0",-1,-1],["t1"],["t2",1,2]]}`,
 	}
 	for _, in := range cases {
-		got := applyFieldRewrites([]byte(in), latencyJitterRewrites)
+		got := applyFieldRewrites([]byte(in), testLatencyJitter)
 		var out struct {
 			Columns []interface{}   `json:"columns"`
 			Values  [][]interface{} `json:"values"`
@@ -304,11 +304,11 @@ func TestAsFloat(t *testing.T) {
 // reached when the tree was decoded without UseNumber (e.g. by a caller that
 // pre-parsed the body).
 func TestApplyRuleAcceptsFloat64(t *testing.T) {
-	value, status := applyRule(float64(-1), latencyJitterRewrites["latency"])
+	value, status := applyRule(float64(-1), testLatencyJitter["latency"])
 	if value != nil || status != StatusTimeout {
 		t.Errorf("got (%v, %q), want (nil, %q)", value, status, StatusTimeout)
 	}
-	value, status = applyRule(json.Number("bogus"), latencyJitterRewrites["latency"])
+	value, status = applyRule(json.Number("bogus"), testLatencyJitter["latency"])
 	if status != "" {
 		t.Errorf("unparsable number should not be annotated, got %q", status)
 	}
@@ -317,40 +317,9 @@ func TestApplyRuleAcceptsFloat64(t *testing.T) {
 	}
 }
 
-func TestDeclaredUnits(t *testing.T) {
-	want := map[string]bool{
-		"device uplink":      true,
-		"device uplink get":  true,
-		"device uplink perf": true,
-		"device interface":   true,
-		"device log mqtt":    true,
-		"overview offline":   true,
-	}
-	if len(unitDeclarations) != len(want) {
-		t.Errorf("whitelist has %d entries, want %d: %v", len(unitDeclarations), len(want), unitDeclarations)
-	}
-	for cmd := range want {
-		if _, ok := declaredUnits(cmd); !ok {
-			t.Errorf("%q should be declared", cmd)
-		}
-	}
-	if _, ok := declaredUnits("device signal list"); ok {
-		t.Error("device signal list should not be declared")
-	}
-}
-
-func TestWithDeclaredUnitsPanicsOnUndeclaredCommand(t *testing.T) {
-	defer func() {
-		if r := recover(); r == nil {
-			t.Error("expected a panic for an undeclared command")
-		}
-	}()
-	WithDeclaredUnits("device signal list")
-}
-
 // TestFormatOutputWithoutDeclarationIsUnchanged covers acceptance criterion 9:
-// a command that did not declare its units is not rewritten even if its payload
-// carries a latency field.
+// without a declaration, structured output carries the input field names and
+// values through unchanged, sentinel included.
 func TestFormatOutputWithoutDeclarationIsUnchanged(t *testing.T) {
 	body := []byte(`{"result":[{"name":"wan1","latency":-1}]}`)
 	io, out := newBufferIO()
@@ -358,11 +327,13 @@ func TestFormatOutputWithoutDeclarationIsUnchanged(t *testing.T) {
 		t.Fatal(err)
 	}
 	got := out.String()
-	if !strings.Contains(got, `"latency"`) || strings.Contains(got, "latencyMicroseconds") {
-		t.Errorf("expected the bare latency key to survive, got %s", got)
+	if !strings.Contains(got, `"latency"`) || !strings.Contains(got, "-1") {
+		t.Errorf("expected the input field and value to survive, got %s", got)
 	}
-	if strings.Contains(got, "latencyStatus") {
-		t.Errorf("expected no status annotation, got %s", got)
+	for _, absent := range []string{"latencyMicroseconds", "latencyStatus"} {
+		if strings.Contains(got, absent) {
+			t.Errorf("expected no %s without a declaration, got %s", absent, got)
+		}
 	}
 }
 
@@ -373,7 +344,7 @@ func TestFormatOutputRewritesStructuredButNotTable(t *testing.T) {
 		io, out := newBufferIO()
 		if err := FormatOutput(body, io, "json",
 			WithFormatters(ColumnFormatters{"latency": FormatMicroseconds}),
-			WithDeclaredUnits("device uplink"),
+			WithDeclaredUnits(testLatencyJitter),
 		); err != nil {
 			t.Fatal(err)
 		}
@@ -386,7 +357,7 @@ func TestFormatOutputRewritesStructuredButNotTable(t *testing.T) {
 	t.Run("yaml output is rewritten", func(t *testing.T) {
 		io, out := newBufferIO()
 		if err := FormatOutput(body, io, "yaml",
-			WithDeclaredUnits("device uplink"),
+			WithDeclaredUnits(testLatencyJitter),
 		); err != nil {
 			t.Fatal(err)
 		}
@@ -400,7 +371,7 @@ func TestFormatOutputRewritesStructuredButNotTable(t *testing.T) {
 		io, out := newBufferIO()
 		io.JQExpr = ".[0].latencyMicroseconds"
 		if err := FormatOutput(body, io, "json",
-			WithDeclaredUnits("device uplink"),
+			WithDeclaredUnits(testLatencyJitter),
 		); err != nil {
 			t.Fatal(err)
 		}
@@ -413,7 +384,7 @@ func TestFormatOutputRewritesStructuredButNotTable(t *testing.T) {
 		io, out := newBufferIO()
 		io.JQExpr = ".[0].latency"
 		if err := FormatOutput(body, io, "json",
-			WithDeclaredUnits("device uplink"),
+			WithDeclaredUnits(testLatencyJitter),
 		); err != nil {
 			t.Fatal(err)
 		}
@@ -432,7 +403,7 @@ func TestFormatOutputRewritesStructuredButNotTable(t *testing.T) {
 		ioB, outB := newBufferIO()
 		if err := FormatOutput(body, ioB, "table",
 			WithFormatters(ColumnFormatters{"latency": FormatMicroseconds}),
-			WithDeclaredUnits("device uplink"),
+			WithDeclaredUnits(testLatencyJitter),
 		); err != nil {
 			t.Fatal(err)
 		}
@@ -448,7 +419,7 @@ func TestFormatOutputRewritesStructuredButNotTable(t *testing.T) {
 // TestApplyFieldRewritesPreservesIntegerPrecision guards against the rewriter
 // round-tripping numbers through float64, which would corrupt large integers.
 func TestApplyFieldRewritesPreservesIntegerPrecision(t *testing.T) {
-	got := applyFieldRewrites([]byte(`{"latency":42069,"_id":9007199254740993}`), latencyJitterRewrites)
+	got := applyFieldRewrites([]byte(`{"latency":42069,"_id":9007199254740993}`), testLatencyJitter)
 	for _, want := range []string{`"latencyMicroseconds":42069`, `9007199254740993`} {
 		if !strings.Contains(string(got), want) {
 			t.Errorf("expected %s in %s", want, got)

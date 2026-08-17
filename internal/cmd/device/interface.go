@@ -8,6 +8,7 @@ import (
 
 	"github.com/inhandnet/incloud-cli/internal/factory"
 	"github.com/inhandnet/incloud-cli/internal/iostreams"
+	"github.com/inhandnet/incloud-cli/internal/unitdecl"
 )
 
 type InterfaceOptions struct {
@@ -67,7 +68,7 @@ Table output uses different, shorter field names.`,
 			output, _ := cmd.Flags().GetString("output")
 			return iostreams.FormatOutput(body, f.IO, output,
 				iostreams.WithTransform(flattenInterfaces),
-				iostreams.WithDeclaredUnits("device interface"),
+				iostreams.WithDeclaredUnits(unitdecl.DeviceInterface),
 			)
 		},
 	}
