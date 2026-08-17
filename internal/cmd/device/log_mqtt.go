@@ -29,7 +29,15 @@ func NewCmdLogMqtt(f *factory.Factory) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "mqtt <device-id>",
 		Short: "View MQTT communication logs",
-		Long:  "View MQTT message logs for a device, including publish, connect, and disconnect events.",
+		Long: `View MQTT message logs for a device, including publish, connect, and disconnect events.
+
+Units in -o json / -o yaml / --jq output:
+  latencyUs, jitterUs   microseconds (divide by 1000 for milliseconds)
+
+These fields appear inside the reported message payloads. In structured output
+they are renamed so the unit is visible; see 'incloud device uplink --help' for
+the latencyStatus / jitterStatus sentinel annotations. Table output keeps the
+payload verbatim.`,
 		Example: `  # View recent MQTT logs
   incloud device log mqtt 507f1f77bcf86cd799439011
 
@@ -89,7 +97,10 @@ func NewCmdLogMqtt(f *factory.Factory) *cobra.Command {
 			if opts.Order == "desc" {
 				transform = iostreams.ChainTransforms(extractResultArray, iostreams.ReverseJSONArray)
 			}
-			if err := iostreams.FormatOutput(body, f.IO, output, iostreams.WithTransform(transform)); err != nil {
+			if err := iostreams.FormatOutput(body, f.IO, output,
+				iostreams.WithTransform(transform),
+				iostreams.WithJSONFieldRewrites(iostreams.LatencyJitterRewrites),
+			); err != nil {
 				return err
 			}
 			if output == "table" {

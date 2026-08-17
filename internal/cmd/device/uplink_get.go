@@ -17,7 +17,13 @@ func newCmdUplinkGet(f *factory.Factory) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "get <uplink-id>",
 		Short: "Get uplink details",
-		Long:  "Get detailed information for a specific uplink by its ID.",
+		Long: `Get detailed information for a specific uplink by its ID.
+
+Units in -o json / -o yaml / --jq output:
+  latencyUs, jitterUs   microseconds (divide by 1000 for milliseconds)
+
+See 'incloud device uplink --help' for the latencyStatus / jitterStatus
+sentinel annotations.`,
 		Example: `  # Get uplink details
   incloud device uplink get 69b27e3e6e65fb572c20fab4
 
@@ -40,6 +46,7 @@ func newCmdUplinkGet(f *factory.Factory) *cobra.Command {
 			output, _ := cmd.Flags().GetString("output")
 			return iostreams.FormatOutput(body, f.IO, output,
 				iostreams.WithFormatters(uplinkFormatters),
+				iostreams.WithJSONFieldRewrites(iostreams.LatencyJitterRewrites),
 			)
 		},
 	}
