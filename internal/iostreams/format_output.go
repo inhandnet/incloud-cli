@@ -17,6 +17,7 @@ type formatOptions struct {
 	transform  TransformFunc
 	formatters ColumnFormatters
 	columns    []string
+	rewrites   FieldRewrites
 }
 
 // WithTransform sets a transform function applied before table rendering.
@@ -43,6 +44,20 @@ func WithColumns(cols ...string) FormatOption {
 	}
 }
 
+// WithDeclaredUnits opts a command into structured-output field rewriting. It is
+// the mirror image of WithFormatters: formatters carry unit semantics into the
+// table rendering, rewrites carry the same semantics into the yaml / json / --jq
+// output that machine callers read. Table output is left untouched.
+//
+// Commands pass a declaration from internal/unitdecl, which is where the audit
+// record of "this payload's time-field units were confirmed" lives. A command
+// that passes nothing is not rewritten at all.
+func WithDeclaredUnits(rw FieldRewrites) FormatOption {
+	return func(o *formatOptions) {
+		o.rewrites = rw
+	}
+}
+
 // FormatOutput renders body according to the output mode (table/yaml/json/jq/compact).
 func FormatOutput(body []byte, io *IOStreams, output string, opts ...FormatOption) error {
 	var o formatOptions
@@ -50,9 +65,19 @@ func FormatOutput(body []byte, io *IOStreams, output string, opts ...FormatOptio
 		opt(&o)
 	}
 
+	// Structured output (yaml/json/jq) gets field rewrites; table keeps the
+	// original field names and relies on o.formatters instead. Computed lazily so
+	// the table path never pays for a rewrite it does not use.
+	structured := func() []byte {
+		if len(o.rewrites) == 0 {
+			return body
+		}
+		return applyFieldRewrites(body, o.rewrites)
+	}
+
 	// --jq overrides output mode: apply expression on unwrapped data
 	if io.JQExpr != "" {
-		result, err := ApplyJQ(unwrapResult(normalizePage(body)), io.JQExpr)
+		result, err := ApplyJQ(unwrapResult(normalizePage(structured())), io.JQExpr)
 		if err != nil {
 			return err
 		}
@@ -77,16 +102,17 @@ func FormatOutput(body []byte, io *IOStreams, output string, opts ...FormatOptio
 		}
 		return FormatTable(data, io, o.columns)
 	case "yaml":
-		s, err := FormatYAML(unwrapResult(normalizePage(body)))
+		s, err := FormatYAML(unwrapResult(normalizePage(structured())))
 		if err != nil {
 			return err
 		}
 		fmt.Fprintln(io.Out, s)
 	default:
-		if json.Valid(body) {
-			fmt.Fprintln(io.Out, FormatJSON(unwrapResult(normalizePage(body)), io, output))
+		data := structured()
+		if json.Valid(data) {
+			fmt.Fprintln(io.Out, FormatJSON(unwrapResult(normalizePage(data)), io, output))
 		} else {
-			fmt.Fprintln(io.Out, string(body))
+			fmt.Fprintln(io.Out, string(data))
 		}
 	}
 	return nil

@@ -8,6 +8,7 @@ import (
 	"github.com/inhandnet/incloud-cli/internal/cmdutil"
 	"github.com/inhandnet/incloud-cli/internal/factory"
 	"github.com/inhandnet/incloud-cli/internal/iostreams"
+	"github.com/inhandnet/incloud-cli/internal/unitdecl"
 )
 
 type uplinkPerfOptions struct {
@@ -23,7 +24,18 @@ func newCmdUplinkPerf(f *factory.Factory) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "perf <device-id>",
 		Short: "Show uplink performance trend",
-		Long:  "Show uplink performance metrics (throughput, latency, jitter, loss) over time for a specific device uplink.",
+		Long: `Show uplink performance metrics (throughput, latency, jitter, loss) over time for a specific device uplink.
+
+The loss field is a fraction (0.05 = 5%), not a percentage.
+
+-o json / -o yaml / --jq output is columnar: field names appear in "columns" and
+the samples in "values", positionally aligned, one array per row. A
+"latencyStatus" / "jitterStatus" column is appended only when at least one
+sample is not a measurement:
+  "timeout"   the probe timed out for that sample; the value is null.
+
+Table output is flattened into row objects with different, shorter field
+names.`,
 		Example: `  # Show performance trend for wan1
   incloud device uplink perf 507f1f77bcf86cd799439011 --name wan1
 
@@ -67,6 +79,7 @@ func newCmdUplinkPerf(f *factory.Factory) *cobra.Command {
 					"latency":        iostreams.FormatMicroseconds,
 					"jitter":         iostreams.FormatMicroseconds,
 				}),
+				iostreams.WithDeclaredUnits(unitdecl.DeviceUplinkPerf),
 			)
 		},
 	}

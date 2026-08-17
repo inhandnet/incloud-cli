@@ -8,6 +8,7 @@ import (
 
 	"github.com/inhandnet/incloud-cli/internal/factory"
 	"github.com/inhandnet/incloud-cli/internal/iostreams"
+	"github.com/inhandnet/incloud-cli/internal/unitdecl"
 )
 
 type InterfaceOptions struct {
@@ -24,7 +25,14 @@ func NewCmdInterface(f *factory.Factory) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "interface <device-id>",
 		Short: "Show device network interfaces",
-		Long:  "Show network interface information for a specific device.",
+		Long: `Show network interface information for a specific device.
+
+In -o json / -o yaml / --jq output, a "latencyStatus" / "jitterStatus" field
+appears next to the value (including on nested entries such as wan[]) when the
+value is not a measurement:
+  "timeout"   the probe timed out; the numeric field is null.
+
+Table output uses different, shorter field names.`,
 		Example: `  # Show interfaces as JSON
   incloud device interface 507f1f77bcf86cd799439011
 
@@ -58,7 +66,10 @@ func NewCmdInterface(f *factory.Factory) *cobra.Command {
 			}
 
 			output, _ := cmd.Flags().GetString("output")
-			return iostreams.FormatOutput(body, f.IO, output, iostreams.WithTransform(flattenInterfaces))
+			return iostreams.FormatOutput(body, f.IO, output,
+				iostreams.WithTransform(flattenInterfaces),
+				iostreams.WithDeclaredUnits(unitdecl.DeviceInterface),
+			)
 		},
 	}
 

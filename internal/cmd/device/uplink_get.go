@@ -5,6 +5,7 @@ import (
 
 	"github.com/inhandnet/incloud-cli/internal/factory"
 	"github.com/inhandnet/incloud-cli/internal/iostreams"
+	"github.com/inhandnet/incloud-cli/internal/unitdecl"
 )
 
 type uplinkGetOptions struct {
@@ -17,7 +18,13 @@ func newCmdUplinkGet(f *factory.Factory) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "get <uplink-id>",
 		Short: "Get uplink details",
-		Long:  "Get detailed information for a specific uplink by its ID.",
+		Long: `Get detailed information for a specific uplink by its ID.
+
+In -o json / -o yaml / --jq output, a "latencyStatus" / "jitterStatus" field
+appears when the value is not a measurement:
+  "timeout"   the probe timed out; the numeric field is null.
+
+Table output uses different, shorter field names.`,
 		Example: `  # Get uplink details
   incloud device uplink get 69b27e3e6e65fb572c20fab4
 
@@ -40,6 +47,7 @@ func newCmdUplinkGet(f *factory.Factory) *cobra.Command {
 			output, _ := cmd.Flags().GetString("output")
 			return iostreams.FormatOutput(body, f.IO, output,
 				iostreams.WithFormatters(uplinkFormatters),
+				iostreams.WithDeclaredUnits(unitdecl.DeviceUplinkGet),
 			)
 		},
 	}

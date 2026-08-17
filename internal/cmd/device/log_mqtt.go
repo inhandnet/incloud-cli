@@ -9,6 +9,7 @@ import (
 	"github.com/inhandnet/incloud-cli/internal/cmdutil"
 	"github.com/inhandnet/incloud-cli/internal/factory"
 	"github.com/inhandnet/incloud-cli/internal/iostreams"
+	"github.com/inhandnet/incloud-cli/internal/unitdecl"
 )
 
 type LogMqttOptions struct {
@@ -29,7 +30,14 @@ func NewCmdLogMqtt(f *factory.Factory) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "mqtt <device-id>",
 		Short: "View MQTT communication logs",
-		Long:  "View MQTT message logs for a device, including publish, connect, and disconnect events.",
+		Long: `View MQTT message logs for a device, including publish, connect, and disconnect events.
+
+In -o json / -o yaml / --jq output, a "latencyStatus" / "jitterStatus" field
+appears inside the reported message payloads when the value is not a
+measurement:
+  "timeout"   the probe timed out; the numeric field is null.
+
+Table output echoes the payload with its original field names.`,
 		Example: `  # View recent MQTT logs
   incloud device log mqtt 507f1f77bcf86cd799439011
 
@@ -89,7 +97,10 @@ func NewCmdLogMqtt(f *factory.Factory) *cobra.Command {
 			if opts.Order == "desc" {
 				transform = iostreams.ChainTransforms(extractResultArray, iostreams.ReverseJSONArray)
 			}
-			if err := iostreams.FormatOutput(body, f.IO, output, iostreams.WithTransform(transform)); err != nil {
+			if err := iostreams.FormatOutput(body, f.IO, output,
+				iostreams.WithTransform(transform),
+				iostreams.WithDeclaredUnits(unitdecl.DeviceLogMqtt),
+			); err != nil {
 				return err
 			}
 			if output == "table" {
