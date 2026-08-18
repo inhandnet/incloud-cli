@@ -94,13 +94,17 @@ Table output echoes the payload with its original field names.`,
 
 			output, _ := cmd.Flags().GetString("output")
 			transform := iostreams.TransformFunc(extractResultArray)
+			formatOpts := []iostreams.FormatOption{}
 			if opts.Order == "desc" {
 				transform = iostreams.ChainTransforms(extractResultArray, iostreams.ReverseJSONArray)
+				formatOpts = append(formatOpts,
+					iostreams.WithStructuredTransform(iostreams.ReverseJSONArray))
 			}
-			if err := iostreams.FormatOutput(body, f.IO, output,
+			formatOpts = append(formatOpts,
 				iostreams.WithTransform(transform),
 				iostreams.WithDeclaredUnits(unitdecl.DeviceLogMqtt),
-			); err != nil {
+			)
+			if err := iostreams.FormatOutput(body, f.IO, output, formatOpts...); err != nil {
 				return err
 			}
 			if output == "table" {

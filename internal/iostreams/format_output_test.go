@@ -2,6 +2,7 @@ package iostreams
 
 import (
 	"encoding/json"
+	"strings"
 	"testing"
 )
 
@@ -118,6 +119,123 @@ func TestChainTransforms_ErrorPropagation(t *testing.T) {
 	if err == nil {
 		t.Error("expected error from first transform to propagate")
 	}
+}
+
+func TestReverseSeriesData(t *testing.T) {
+	tests := []struct {
+		name string
+		data string
+		want string
+	}{
+		{
+			name: "samples reversed, fields and envelope kept",
+			data: `{"series":[{"fields":["time","rsrp"],"data":[["t1",-100],["t2",-90],["t3",-80]]}]}`,
+			want: `{"series":[{"fields":["time","rsrp"],"data":[["t3",-80],["t2",-90],["t1",-100]]}]}`,
+		},
+		{
+			name: "values naming convention",
+			data: `{"series":[{"columns":["time","rx"],"values":[["t1",1],["t2",2]]}]}`,
+			want: `{"series":[{"columns":["time","rx"],"values":[["t2",2],["t1",1]]}]}`,
+		},
+		{
+			name: "each series reversed independently",
+			data: `{"series":[{"type":"a","data":[[1],[2]]},{"type":"b","data":[[3],[4]]}]}`,
+			want: `{"series":[{"type":"a","data":[[2],[1]]},{"type":"b","data":[[4],[3]]}]}`,
+		},
+		{
+			name: "single sample",
+			data: `{"series":[{"data":[["t1",-100]]}]}`,
+			want: `{"series":[{"data":[["t1",-100]]}]}`,
+		},
+		{
+			name: "empty series list",
+			data: `{"series":[]}`,
+			want: `{"series":[]}`,
+		},
+		{
+			name: "not series-shaped — unchanged",
+			data: `{"result":[{"t":1},{"t":2}]}`,
+			want: `{"result":[{"t":1},{"t":2}]}`,
+		},
+		{
+			name: "bare array — unchanged",
+			data: `[{"t":1},{"t":2}]`,
+			want: `[{"t":1},{"t":2}]`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := ReverseSeriesData([]byte(tt.data))
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if !jsonEqual(t, got, []byte(tt.want)) {
+				t.Errorf("got %s, want %s", got, tt.want)
+			}
+		})
+	}
+}
+
+// TestFormatOutputStructuredTransformReachesMachineCallers is the regression for
+// IM-3194: a reordering asked for by a flag has to reach json / yaml / --jq
+// callers, not only the table renderer.
+func TestFormatOutputStructuredTransformReachesMachineCallers(t *testing.T) {
+	body := []byte(`{"result":{"series":[{"fields":["time"],"data":[["t1"],["t2"],["t3"]]}]}}`)
+
+	t.Run("json output is reordered", func(t *testing.T) {
+		io, out := newBufferIO()
+		if err := FormatOutput(body, io, "json",
+			WithTransform(FlattenSeries),
+			WithStructuredTransform(ReverseSeriesData),
+		); err != nil {
+			t.Fatal(err)
+		}
+		if got := out.String(); strings.Index(got, "t3") > strings.Index(got, "t1") {
+			t.Errorf("expected newest sample first, got %s", got)
+		}
+	})
+
+	t.Run("yaml output is reordered", func(t *testing.T) {
+		io, out := newBufferIO()
+		if err := FormatOutput(body, io, "yaml",
+			WithTransform(FlattenSeries),
+			WithStructuredTransform(ReverseSeriesData),
+		); err != nil {
+			t.Fatal(err)
+		}
+		if got := out.String(); strings.Index(got, "t3") > strings.Index(got, "t1") {
+			t.Errorf("expected newest sample first, got %s", got)
+		}
+	})
+
+	t.Run("jq sees the reordered payload", func(t *testing.T) {
+		io, out := newBufferIO()
+		io.JQExpr = ".series[0].data[0][0]"
+		if err := FormatOutput(body, io, "json",
+			WithTransform(FlattenSeries),
+			WithStructuredTransform(ReverseSeriesData),
+		); err != nil {
+			t.Fatal(err)
+		}
+		if got := strings.TrimSpace(out.String()); !strings.Contains(got, "t3") {
+			t.Errorf("expected jq to see the newest sample first, got %s", got)
+		}
+	})
+
+	t.Run("without a structured transform the payload is untouched", func(t *testing.T) {
+		io, out := newBufferIO()
+		if err := FormatOutput(body, io, "json", WithTransform(FlattenSeries)); err != nil {
+			t.Fatal(err)
+		}
+		got := out.String()
+		if strings.Index(got, "t1") > strings.Index(got, "t3") {
+			t.Errorf("expected the original order to survive, got %s", got)
+		}
+		if !strings.Contains(got, "series") {
+			t.Errorf("expected the series shape to survive, got %s", got)
+		}
+	})
 }
 
 // jsonEqual compares two JSON byte slices for semantic equality.
