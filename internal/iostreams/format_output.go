@@ -14,10 +14,11 @@ type TransformFunc func([]byte) ([]byte, error)
 type FormatOption func(*formatOptions)
 
 type formatOptions struct {
-	transform  TransformFunc
-	formatters ColumnFormatters
-	columns    []string
-	rewrites   FieldRewrites
+	transform           TransformFunc
+	structuredTransform TransformFunc
+	formatters          ColumnFormatters
+	columns             []string
+	rewrites            FieldRewrites
 }
 
 // WithTransform sets a transform function applied before table rendering.
@@ -25,6 +26,21 @@ type formatOptions struct {
 func WithTransform(fn TransformFunc) FormatOption {
 	return func(o *formatOptions) {
 		o.transform = fn
+	}
+}
+
+// WithStructuredTransform sets a transform applied to the yaml / json / --jq
+// payload, after envelope unwrapping. It is the counterpart to WithTransform:
+// a command whose rendering does more than reformat — reordering samples, for
+// one — has to carry that through to machine callers too, or the flag that asked
+// for it silently applies to table output only.
+//
+// The transform sees the payload structured callers actually parse (envelope
+// unwrapped, pagination normalized), not the flattened rows a table shows, so it
+// must preserve that shape rather than reshape it into table rows.
+func WithStructuredTransform(fn TransformFunc) FormatOption {
+	return func(o *formatOptions) {
+		o.structuredTransform = fn
 	}
 }
 
@@ -75,9 +91,23 @@ func FormatOutput(body []byte, io *IOStreams, output string, opts ...FormatOptio
 		return applyFieldRewrites(body, o.rewrites)
 	}
 
+	// The payload structured callers read: rewrites, pagination, unwrapping, then
+	// the command's own structured transform.
+	structuredBody := func() ([]byte, error) {
+		data := unwrapResult(normalizePage(structured()))
+		if o.structuredTransform == nil {
+			return data, nil
+		}
+		return o.structuredTransform(data)
+	}
+
 	// --jq overrides output mode: apply expression on unwrapped data
 	if io.JQExpr != "" {
-		result, err := ApplyJQ(unwrapResult(normalizePage(structured())), io.JQExpr)
+		data, err := structuredBody()
+		if err != nil {
+			return err
+		}
+		result, err := ApplyJQ(data, io.JQExpr)
 		if err != nil {
 			return err
 		}
@@ -102,18 +132,25 @@ func FormatOutput(body []byte, io *IOStreams, output string, opts ...FormatOptio
 		}
 		return FormatTable(data, io, o.columns)
 	case "yaml":
-		s, err := FormatYAML(unwrapResult(normalizePage(structured())))
+		data, err := structuredBody()
+		if err != nil {
+			return err
+		}
+		s, err := FormatYAML(data)
 		if err != nil {
 			return err
 		}
 		fmt.Fprintln(io.Out, s)
 	default:
-		data := structured()
-		if json.Valid(data) {
-			fmt.Fprintln(io.Out, FormatJSON(unwrapResult(normalizePage(data)), io, output))
-		} else {
-			fmt.Fprintln(io.Out, string(data))
+		if !json.Valid(structured()) {
+			fmt.Fprintln(io.Out, string(structured()))
+			return nil
 		}
+		data, err := structuredBody()
+		if err != nil {
+			return err
+		}
+		fmt.Fprintln(io.Out, FormatJSON(data, io, output))
 	}
 	return nil
 }
@@ -266,6 +303,53 @@ func ReverseJSONArray(data []byte) ([]byte, error) {
 		return json.Marshal(arr)
 	}
 	return data, nil
+}
+
+// ReverseSeriesData reverses the sample order within each series of a
+// time-series payload, leaving the envelope, the field list and the series
+// grouping as they are. It is the structured-output counterpart to reversing the
+// flattened rows a table renders: json / yaml callers keep the series shape they
+// already parse, only the samples inside it run newest-first.
+//
+// Handles both naming conventions FlattenSeries supports (data and values).
+// Payloads that are not series-shaped are returned untouched.
+func ReverseSeriesData(data []byte) ([]byte, error) {
+	var envelope map[string]json.RawMessage
+	if err := json.Unmarshal(data, &envelope); err != nil {
+		return data, nil
+	}
+	seriesRaw, ok := envelope["series"]
+	if !ok {
+		return data, nil
+	}
+	var series []map[string]json.RawMessage
+	if err := json.Unmarshal(seriesRaw, &series); err != nil {
+		return data, nil
+	}
+	for _, s := range series {
+		for _, key := range []string{"data", "values"} {
+			raw, ok := s[key]
+			if !ok {
+				continue
+			}
+			var rows []json.RawMessage
+			if err := json.Unmarshal(raw, &rows); err != nil {
+				continue
+			}
+			slices.Reverse(rows)
+			reversed, err := json.Marshal(rows)
+			if err != nil {
+				continue
+			}
+			s[key] = reversed
+		}
+	}
+	reordered, err := json.Marshal(series)
+	if err != nil {
+		return data, nil
+	}
+	envelope["series"] = reordered
+	return json.Marshal(envelope)
 }
 
 // FlattenSeries converts a time-series API response (FluxResult) into a flat

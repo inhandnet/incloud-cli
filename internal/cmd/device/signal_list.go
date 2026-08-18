@@ -66,10 +66,14 @@ func newCmdSignalList(f *factory.Factory) *cobra.Command {
 				output = "table"
 			}
 			transform := iostreams.TransformFunc(iostreams.FlattenSeries)
+			formatOpts := []iostreams.FormatOption{}
 			if opts.Order == "desc" {
 				transform = iostreams.ChainTransforms(iostreams.FlattenSeries, iostreams.ReverseJSONArray)
+				formatOpts = append(formatOpts,
+					iostreams.WithStructuredTransform(iostreams.ReverseSeriesData))
 			}
-			return iostreams.FormatOutput(body, f.IO, output, iostreams.WithTransform(transform))
+			formatOpts = append(formatOpts, iostreams.WithTransform(transform))
+			return iostreams.FormatOutput(body, f.IO, output, formatOpts...)
 		},
 	}
 
