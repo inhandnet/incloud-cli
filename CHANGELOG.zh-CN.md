@@ -1,3 +1,18 @@
+# v0.10.1 (2026-08-18)
+
+## 改进
+
+- **时间类字段把单位写进字段名** — `-o json` / `-o yaml` / `--jq` 输出中，时延与抖动改为 `latencyMicroseconds` / `jitterMicroseconds`，`overview offline` 的离线时长改为 `totalOfflineDurationSeconds` / `avgOfflineDurationSeconds` / `maxOfflineDurationSeconds`。**数值本身没有变**——它们本来就分别是微秒和秒，只是现在名字说出来了。此前 AI 按裸字段名 `latency` 当毫秒读，报出的数字差 1000 倍。表格输出不受影响。
+- **`-1` 超时哨兵不再以数字形式流向下游** — 探测超时时设备上报 `-1`。这类采样现在输出为 `null`，并伴随 `latencyStatus` / `jitterStatus` 取值 `"timeout"`，而不是一个会被下游直接参与求平均的负数。未超时的采样不带 status 字段。
+
+受影响的命令：`device uplink`、`device uplink get`、`device uplink perf`、`device interface`、`device log mqtt`、`overview offline`。
+
+## 破坏性变更
+
+- **时延、抖动、离线时长的 JSON / YAML 字段名变更** — 从上述六个命令的 `-o json` / `-o yaml` / `--jq` 输出中读取 `latency`、`jitter`、`totalOfflineDuration`、`avgOfflineDuration`、`maxOfflineDuration` 的脚本，需改用带后缀的新名字。时延 / 抖动还有两处连带影响：原先取 `-1` 的位置现在可能是 `null`（超时）；`device uplink perf` 的列式输出中，只要该 series 里存在任一超时采样，就会出现 `latencyStatus` / `jitterStatus` 列。`-o table` 输出不变。
+
+---
+
 # v0.10.0 (2026-08-04)
 
 ## 新功能
