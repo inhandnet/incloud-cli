@@ -1,3 +1,18 @@
+# v0.11.0 (2026-08-18)
+
+## Improvements
+
+- **Time-valued fields carry their unit in the field name** — In `-o json` / `-o yaml` / `--jq` output, latency and jitter are emitted as `latencyMicroseconds` / `jitterMicroseconds`, and the offline durations of `overview offline` as `totalOfflineDurationSeconds` / `avgOfflineDurationSeconds` / `maxOfflineDurationSeconds`. The values are unchanged — they were already microseconds and seconds respectively; only the names now say so. AI agents consuming this output were reading the bare `latency` as milliseconds and reporting figures 1000x off. Table output is untouched.
+- **The `-1` timeout sentinel no longer reaches consumers as a number** — Devices report `-1` for latency / jitter when a probe times out. Such a sample is now emitted as `null` with a companion `latencyStatus` / `jitterStatus` of `"timeout"`, instead of a negative measurement that downstream arithmetic would happily average in. Samples that did not time out carry no status field.
+
+Affected commands: `device uplink`, `device uplink get`, `device uplink perf`, `device interface`, `device log mqtt`, `overview offline`.
+
+## Breaking Changes
+
+- **JSON / YAML field names changed for latency, jitter, and offline durations** — Scripts that read `latency`, `jitter`, `totalOfflineDuration`, `avgOfflineDuration`, or `maxOfflineDuration` out of `-o json` / `-o yaml` / `--jq` output from the six commands listed above must be updated to the suffixed names. Two further consequences for latency / jitter: the field may now be `null` (timeout) where it was previously `-1`, and in the columnar output of `device uplink perf` the `latencyStatus` / `jitterStatus` columns appear whenever at least one sample in the series timed out. `-o table` output is unchanged.
+
+---
+
 # v0.10.0 (2026-08-04)
 
 ## New Features
