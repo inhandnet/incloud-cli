@@ -229,6 +229,51 @@ func runINOSMode(f *factory.Factory, tc *telnetClient, opts *CliOptions, prompts
 	return err
 }
 
+// shellPasswordPromptRE matches the password prompt the 'inhand' command emits.
+// It anchors on the trailing colon rather than on the word "password", because
+// the prompt is localized: Chinese firmware answers with GBK-encoded
+// "请输入密码:", which carries no ASCII letters to match against.
+//
+// The colon has to be the last thing received so far, which is what keeps a
+// banner line such as "Warning:" from counting — its newline arrives and moves
+// the colon off the end. A device that emitted such a line and had it split
+// right at the colon would still match, but that costs one wasted password
+// write and an "incorrect shell password" error, not a wrong shell session.
+var shellPasswordPromptRE = regexp.MustCompile(`[:：] ?$`)
+
+// errNoInhandCommand means the device has no 'inhand' command at all. Devices
+// that log straight into a shell behave this way, and for them shell mode is
+// unnecessary rather than broken.
+var errNoInhandCommand = errors.New("device has no 'inhand' command")
+
+// awaitShellPasswordPrompt waits for the password prompt that 'inhand' emits,
+// distinguishing a device that never offers one from a prompt we failed to read.
+func awaitShellPasswordPrompt(tc *telnetClient, timeout time.Duration) error {
+	text, idx := tc.readUntil([]*regexp.Regexp{shellPasswordPromptRE}, timeout)
+	if idx != -1 {
+		return nil
+	}
+
+	cleaned := cleanOutput(text)
+	if strings.Contains(cleaned, "not found") {
+		return fmt.Errorf("shell mode: %w, it logs into a shell directly: drop --shell and run the command as-is", errNoInhandCommand)
+	}
+	return fmt.Errorf("shell mode: no password prompt from 'inhand' command (got: %s)", truncate(cleaned, 200))
+}
+
+// awaitShellEntry decides whether the shell password was accepted. A rejected
+// password leaves the session sitting at the INOS prompt, which is what we look
+// for: the refusal message itself is localized, and the default shell prompt
+// pattern matches the INOS prompt too, so neither is safe to judge entry by.
+func awaitShellEntry(tc *telnetClient, inosPrompts, shellPrompts []*regexp.Regexp, timeout time.Duration) error {
+	patterns := append(append([]*regexp.Regexp{}, inosPrompts...), shellPrompts...)
+	_, idx := tc.readUntil(patterns, timeout)
+	if idx == -1 || idx < len(inosPrompts) {
+		return fmt.Errorf("shell mode: incorrect shell password")
+	}
+	return nil
+}
+
 // runShellMode enters BusyBox shell, executes a command, then exits back to INOS.
 func runShellMode(f *factory.Factory, tc *telnetClient, opts *CliOptions, inosPrompts []*regexp.Regexp) error {
 	if opts.ShellPassword == "" {
@@ -242,15 +287,13 @@ func runShellMode(f *factory.Factory, tc *telnetClient, opts *CliOptions, inosPr
 	shellPrompts := []*regexp.Regexp{shellPromptRE}
 
 	tc.write("inhand\r")
-	_, idx := tc.readUntilLiteral([]string{"assword:", "password:"}, opts.Timeout)
-	if idx == -1 {
-		return fmt.Errorf("shell mode: no password prompt from 'inhand' command")
+	if err := awaitShellPasswordPrompt(tc, opts.Timeout); err != nil {
+		return err
 	}
 
 	tc.write(opts.ShellPassword + "\r")
-	text, idx := tc.readUntil(shellPrompts, opts.Timeout)
-	if idx == -1 || strings.Contains(text, "Bad password") {
-		return fmt.Errorf("shell mode: incorrect shell password")
+	if err := awaitShellEntry(tc, inosPrompts, shellPrompts, opts.Timeout); err != nil {
+		return err
 	}
 
 	output, err := execShellCommand(tc, opts.Command, shellPrompts, opts.Timeout)
