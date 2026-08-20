@@ -1,6 +1,10 @@
 package iostreams
 
-import "github.com/muesli/termenv"
+import (
+	"io"
+
+	"github.com/muesli/termenv"
+)
 
 // Colorizer wraps a termenv.Output for producing styled strings.
 type Colorizer struct {
@@ -8,6 +12,11 @@ type Colorizer struct {
 }
 
 func NewColorizer(out *termenv.Output) *Colorizer {
+	if out == nil {
+		// IOStreams built without System() (e.g. in tests) has no termOut;
+		// degrade to plain text instead of panicking on the first style call.
+		out = termenv.NewOutput(io.Discard, termenv.WithProfile(termenv.Ascii))
+	}
 	return &Colorizer{out: out}
 }
 
