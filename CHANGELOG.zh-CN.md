@@ -6,7 +6,7 @@
 
 ## 新增命令
 
-- **`knowledge browse <document_id> [--section <id>]`** — 查看文档（或某子树）的章节目录，输出 section ID 可直接喂给 `knowledge read`。
+- **`knowledge browse [<path>] [--section <id>]`** — 像文件系统一样浏览知识库：无 path 列出全部文档，path 前缀过滤目录，唯一命中展开该文档章节目录（section ID 可直接喂给 `knowledge read`）。
 - **`knowledge grep <pattern> [--doc <id>] [--path <前缀>] [-i] [--limit N]`** — 全语料正则术语定位（带行号）；非法正则自动降级为字面子串匹配。
 - **`knowledge read <section_id|document_id> [--offset N] [--limit N]`** — 读取章节（或整篇文档）原始正文，支持行分页与 12000 字符截断保护。
 

@@ -6,7 +6,7 @@
 
 ## New Commands
 
-- **`knowledge browse <document_id> [--section <id>]`** — section outline of a document (or a subtree), with section IDs ready for `knowledge read`.
+- **`knowledge browse [<path>] [--section <id>]`** — browse the corpus like a filesystem: no path lists all documents, a path prefix filters the catalog, a unique match opens that document's section outline (with section IDs ready for `knowledge read`).
 - **`knowledge grep <pattern> [--doc <id>] [--path <prefix>] [-i] [--limit N]`** — regex term search across the corpus with line numbers; invalid regex degrades to a literal substring match.
 - **`knowledge read <section_id|document_id> [--offset N] [--limit N]`** — raw text of a section (or a whole document) with line pagination and a 12000-character truncation guard.
 

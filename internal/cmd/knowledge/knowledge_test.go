@@ -223,17 +223,32 @@ const browseTree = `{
   "nodes": [
     {"section_id": "sec-1", "title": "4 网络", "level": 1, "char_count": 800, "child_count": 2},
     {"section_id": "sec-2", "title": "4.2 IPSec VPN", "level": 2, "char_count": 300, "child_count": 0}
+  ],
+  "documents": []
+}`
+
+const browseCatalog = `{
+  "document_id": "",
+  "title": "",
+  "nodes": [],
+  "documents": [
+    {"document_id": "doc-1", "title": "ER805 用户手册", "source": "device_er805_用户手册.md",
+     "s3_key": "cn/device_er805_用户手册.md", "document_type": "device", "model": "er805",
+     "region": "cn", "section_count": 12, "char_count": 13000},
+    {"document_id": "doc-2", "title": "小星云管家用户手册", "source": "platform_小星云管家用户手册.md",
+     "s3_key": "cn/platform_小星云管家用户手册.md", "document_type": "platform", "model": "default",
+     "region": "cn", "section_count": 5, "char_count": 4000}
   ]
 }`
 
-func TestBrowse_OutlineTree(t *testing.T) {
+func TestBrowse_TreeOnUniquePathMatch(t *testing.T) {
 	var cap captured
 	srv := captureServer(t, &cap, browseTree)
 	defer srv.Close()
 
 	f, _ := newTestFactory(t, srv.URL)
 	root := newKnowledgeRoot(f)
-	root.SetArgs([]string{"knowledge", "browse", "doc-1", "--section", "sec-1", "-o", "table"})
+	root.SetArgs([]string{"knowledge", "browse", "device_er805_用户手册", "--section", "sec-1", "-o", "table"})
 	if err := root.Execute(); err != nil {
 		t.Fatalf("knowledge browse: %v", err)
 	}
@@ -241,9 +256,9 @@ func TestBrowse_OutlineTree(t *testing.T) {
 	if cap.Path != "/api/v1/knowledge/agentic/browse" {
 		t.Errorf("got path %s", cap.Path)
 	}
-	if !strings.Contains(string(cap.Body), `"document_id":"doc-1"`) ||
+	if !strings.Contains(string(cap.Body), `"path":"device_er805_用户手册"`) ||
 		!strings.Contains(string(cap.Body), `"section_id":"sec-1"`) {
-		t.Errorf("request body %s missing ids", cap.Body)
+		t.Errorf("request body %s missing path/section_id", cap.Body)
 	}
 
 	out := stdoutOf(f).String()
@@ -262,8 +277,45 @@ func TestBrowse_OutlineTree(t *testing.T) {
 	}
 }
 
-func TestBrowse_DocumentNotFound(t *testing.T) {
-	srv := captureServer(t, nil, `{"document_id": "nope", "title": "", "nodes": []}`)
+func TestBrowse_RootAndPrefixCatalog(t *testing.T) {
+	var cap captured
+	srv := captureServer(t, &cap, browseCatalog)
+	defer srv.Close()
+
+	f, _ := newTestFactory(t, srv.URL)
+	root := newKnowledgeRoot(f)
+	root.SetArgs([]string{"knowledge", "browse", "-o", "table"})
+	if err := root.Execute(); err != nil {
+		t.Fatalf("knowledge browse: %v", err)
+	}
+
+	// 无位置参数：path 省略（语料根目录）
+	if strings.Contains(string(cap.Body), "path") {
+		t.Errorf("request body %s should omit path at corpus root", cap.Body)
+	}
+
+	out := stdoutOf(f).String()
+	if !strings.Contains(out, "ER805 用户手册") || !strings.Contains(out, "小星云管家用户手册") {
+		t.Errorf("catalog output missing document titles: %q", out)
+	}
+	if !strings.Contains(out, "[ER805] device_er805_用户手册.md · 12 sections · 13000 chars [doc-1]") {
+		t.Errorf("catalog output missing meta line: %q", out)
+	}
+	if strings.Contains(out, "[DEFAULT]") {
+		t.Errorf("default model should not get a [MODEL] prefix: %q", out)
+	}
+
+	root.SetArgs([]string{"knowledge", "browse", "device_", "-o", "table"})
+	if err := root.Execute(); err != nil {
+		t.Fatalf("knowledge browse prefix: %v", err)
+	}
+	if !strings.Contains(string(cap.Body), `"path":"device_"`) {
+		t.Errorf("request body %s should carry path prefix", cap.Body)
+	}
+}
+
+func TestBrowse_NothingFound(t *testing.T) {
+	srv := captureServer(t, nil, `{"document_id": "", "title": "", "nodes": [], "documents": []}`)
 	defer srv.Close()
 
 	f, errBuf := newTestFactory(t, srv.URL)
@@ -272,7 +324,7 @@ func TestBrowse_DocumentNotFound(t *testing.T) {
 	if err := root.Execute(); err != nil {
 		t.Fatalf("knowledge browse: %v", err)
 	}
-	if !strings.Contains(errBuf.String(), "Document not found") {
+	if !strings.Contains(errBuf.String(), "Nothing found") {
 		t.Errorf("stderr %q missing not-found hint", errBuf.String())
 	}
 }
