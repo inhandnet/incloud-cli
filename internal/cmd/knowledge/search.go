@@ -13,49 +13,52 @@ import (
 )
 
 type searchRequest struct {
-	Query   string `json:"query"`
-	Model   string `json:"model,omitempty"`
-	Rewrite bool   `json:"rewrite,omitempty"`
-	Limit   int    `json:"limit,omitempty"`
+	Query string `json:"query"`
+	Model string `json:"model,omitempty"`
+	Path  string `json:"path,omitempty"`
+	Limit int    `json:"limit,omitempty"`
 }
 
 type searchResponse struct {
-	Query            string         `json:"query"`
-	RewrittenQueries []string       `json:"rewritten_queries"`
-	Results          []searchResult `json:"results"`
+	Status  string         `json:"status"`
+	Results []searchResult `json:"results"`
 }
 
 type searchResult struct {
-	Content      string `json:"content"`
-	Source       string `json:"source"`
-	Heading      string `json:"heading"`
-	DocumentType string `json:"document_type"`
-	Model        string `json:"model"`
+	Source       string  `json:"source"`
+	DocumentID   string  `json:"document_id"`
+	SectionID    string  `json:"section_id"`
+	HeadingPath  string  `json:"heading_path"`
+	DocumentType string  `json:"document_type"`
+	Model        string  `json:"model"`
+	FromFallback bool    `json:"from_fallback"`
+	Score        float64 `json:"score"`
+	Snippet      string  `json:"snippet"`
 }
 
 var collapseWS = regexp.MustCompile(`\s+`)
 
 func NewCmdSearch(f *factory.Factory) *cobra.Command {
 	var (
-		model   string
-		rewrite bool
-		limit   int
+		model string
+		path  string
+		limit int
 	)
 
 	cmd := &cobra.Command{
 		Use:   "search <query>",
 		Short: "Search the knowledge base",
-		Long:  "Search device documentation and return matching results.",
+		Long:  "Search device documentation and return addressable section candidates. Snippets are for picking a section only; fetch the body with `knowledge read`.",
 		Example: `  # Search for configuration guides
   incloud knowledge search "how to configure VPN"
 
   # Filter by device model
   incloud knowledge search "factory reset" --model IR915L
 
-  # Enable query rewriting for better results
-  incloud knowledge search "VPN setup" --rewrite
+  # Filter by corpus path prefix (s3_key or filename)
+  incloud knowledge search "firewall rules" --path device_
 
-  # Limit results and output as JSON
+  # Limit results and output as JSON (full fields incl. ids)
   incloud knowledge search "firewall rules" --limit 3 -o json`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -65,13 +68,13 @@ func NewCmdSearch(f *factory.Factory) *cobra.Command {
 			}
 
 			req := searchRequest{
-				Query:   args[0],
-				Model:   model,
-				Rewrite: rewrite,
-				Limit:   limit,
+				Query: args[0],
+				Model: model,
+				Path:  path,
+				Limit: limit,
 			}
 
-			body, err := client.Post("/api/v1/knowledge/search", req)
+			body, err := client.Post(agenticBase+"/search", req)
 			if err != nil {
 				return err
 			}
@@ -87,7 +90,19 @@ func NewCmdSearch(f *factory.Factory) *cobra.Command {
 			}
 
 			out := f.IO.Out
+			errOut := f.IO.ErrOut
 			c := iostreams.NewColorizer(f.IO.TermOutput())
+
+			switch resp.Status {
+			case "kb_not_ready":
+				fmt.Fprintln(errOut, "Knowledge base is not ready. Try again later.")
+				return nil
+			case "failed":
+				fmt.Fprintln(errOut, "Search failed on the server. Try again later.")
+				return nil
+			case "model_not_found":
+				fmt.Fprintln(errOut, "No dedicated docs for this model; showing fallback results from the whole corpus.")
+			}
 
 			for i, r := range resp.Results {
 				if i > 0 {
@@ -97,14 +112,16 @@ func NewCmdSearch(f *factory.Factory) *cobra.Command {
 				if r.Model != "" && r.Model != "default" {
 					meta = fmt.Sprintf("[%s] %s", strings.ToUpper(r.Model), meta)
 				}
-				fmt.Fprintln(out, c.Bold(r.Heading))
+				if r.FromFallback {
+					meta += " (fallback)"
+				}
+				fmt.Fprintln(out, c.Bold(r.HeadingPath))
 				fmt.Fprintln(out, c.Gray(meta))
-				snippet := collapseWS.ReplaceAllString(strings.TrimSpace(r.Content), " ")
-				fmt.Fprintln(out, snippet)
+				fmt.Fprintln(out, collapseWS.ReplaceAllString(strings.TrimSpace(r.Snippet), " "))
 			}
 
 			if len(resp.Results) == 0 {
-				fmt.Fprintln(f.IO.ErrOut, "No results found.")
+				fmt.Fprintln(errOut, "No results found.")
 			}
 
 			return nil
@@ -112,8 +129,8 @@ func NewCmdSearch(f *factory.Factory) *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&model, "model", "", "Filter by device model (e.g. IR915L)")
-	cmd.Flags().BoolVar(&rewrite, "rewrite", false, "Enable LLM query rewriting")
-	cmd.Flags().IntVar(&limit, "limit", 6, "Max number of results (1-20)")
+	cmd.Flags().StringVar(&path, "path", "", "Filter by corpus path prefix (s3_key or filename)")
+	cmd.Flags().IntVar(&limit, "limit", 10, "Max number of results (1-50)")
 
 	return cmd
 }

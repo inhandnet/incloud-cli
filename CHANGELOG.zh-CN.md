@@ -1,3 +1,15 @@
+# Unreleased
+
+## 破坏性变更
+
+- **`knowledge search` 改打 agentic 检索端点** — 结果变为可寻址的章节候选：每条携带 `document_id` / `section_id` / `heading_path` / `score` 与短 `snippet`，不再返回全文片段（`content`）。正文请用新命令 `knowledge read` 获取。移除 `--rewrite` 标志；新增 `--path` 按语料路径前缀过滤；`--limit` 默认改为 10（1–50）。
+
+## 新增命令
+
+- **`knowledge browse <document_id> [--section <id>]`** — 查看文档（或某子树）的章节目录，输出 section ID 可直接喂给 `knowledge read`。
+- **`knowledge grep <pattern> [--doc <id>] [--path <前缀>] [-i] [--limit N]`** — 全语料正则术语定位（带行号）；非法正则自动降级为字面子串匹配。
+- **`knowledge read <section_id|document_id> [--offset N] [--limit N]`** — 读取章节（或整篇文档）原始正文，支持行分页与 12000 字符截断保护。
+
 # v0.11.0 (2026-08-18)
 
 ## 改进
