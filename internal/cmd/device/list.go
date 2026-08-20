@@ -31,9 +31,12 @@ func NewCmdList(f *factory.Factory) *cobra.Command {
 	opts := &ListOptions{}
 
 	cmd := &cobra.Command{
-		Use:     "list",
-		Short:   "List devices",
-		Long:    "List devices on the InCloud platform with optional filtering, searching, and pagination.",
+		Use:   "list",
+		Short: "List devices",
+		Long: `List devices on the InCloud platform with optional filtering, searching, and pagination.
+
+Substring filters (-q, --name, --serial-number, --mac, --iccid) are
+case-insensitive, so letter case never changes the result.`,
 		Aliases: []string{"ls"},
 		Example: `  # Search by name or serial number
   incloud device list -q "router"
@@ -117,12 +120,12 @@ func NewCmdList(f *factory.Factory) *cobra.Command {
 	cmd.Flags().StringArrayVar(&opts.Group, "group", nil, "Filter by device group ID (can be repeated)")
 	cmd.Flags().StringVar(&opts.Org, "org", "", "Filter by organization ID")
 	cmd.Flags().StringVar(&opts.Firmware, "firmware", "", "Filter by firmware version")
-	cmd.Flags().StringVar(&opts.Name, "name", "", "Filter by device name (exact match)")
-	cmd.Flags().StringVar(&opts.SerialNumber, "serial-number", "", "Filter by serial number (exact match)")
+	cmd.Flags().StringVar(&opts.Name, "name", "", "Filter by device name (substring match)")
+	cmd.Flags().StringVar(&opts.SerialNumber, "serial-number", "", "Filter by serial number (substring match)")
 	cmd.Flags().StringVar(&opts.IP, "ip", "", "Filter by IP address")
 	cmd.Flags().StringArrayVar(&opts.Label, "label", nil, "Filter by label key=value (can be repeated)")
-	cmd.Flags().StringVar(&opts.ICCID, "iccid", "", "Filter by ICCID")
-	cmd.Flags().StringVar(&opts.MAC, "mac", "", "Filter by MAC address")
+	cmd.Flags().StringVar(&opts.ICCID, "iccid", "", "Filter by ICCID reported in device state (substring match; devices that never reported are excluded)")
+	cmd.Flags().StringVar(&opts.MAC, "mac", "", "Filter by MAC address reported in device state, colon-separated (substring match; devices that never reported are excluded)")
 	opts.RegisterExpand(cmd, "org", "license", "licenseType")
 
 	return cmd
