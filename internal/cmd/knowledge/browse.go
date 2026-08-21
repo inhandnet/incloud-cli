@@ -101,10 +101,11 @@ Feed section IDs into ` + "`knowledge read`" + `.`,
 
 			switch {
 			case len(resp.Documents) > 0:
-				for i, d := range resp.Documents {
+				for i := range resp.Documents {
 					if i > 0 {
 						fmt.Fprintln(out)
 					}
+					d := &resp.Documents[i]
 					meta := fmt.Sprintf("%s · %d sections · %d chars",
 						d.Source, d.SectionCount, d.CharCount)
 					if d.Model != "" && d.Model != "default" {

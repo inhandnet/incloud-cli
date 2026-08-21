@@ -104,10 +104,11 @@ func NewCmdSearch(f *factory.Factory) *cobra.Command {
 				fmt.Fprintln(errOut, "No dedicated docs for this model; showing fallback results from the whole corpus.")
 			}
 
-			for i, r := range resp.Results {
+			for i := range resp.Results {
 				if i > 0 {
 					fmt.Fprintln(out)
 				}
+				r := &resp.Results[i]
 				meta := r.Source
 				if r.Model != "" && r.Model != "default" {
 					meta = fmt.Sprintf("[%s] %s", strings.ToUpper(r.Model), meta)
