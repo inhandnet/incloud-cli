@@ -1,3 +1,15 @@
+# Unreleased
+
+## Breaking Changes
+
+- **`knowledge search` now hits the agentic search endpoint** — results are addressable section candidates: each item carries `document_id` / `section_id` / `heading_path` / `score` and a short `snippet` instead of a full-text fragment (`content`). Fetch the body with the new `knowledge read`. The `--rewrite` flag is removed; a new `--path` flag filters by corpus path prefix, and `--limit` defaults to 10 (1–50).
+
+## New Commands
+
+- **`knowledge browse [<path>] [--section <id>]`** — browse the corpus like a filesystem: no path lists all documents, a path prefix filters the catalog, a unique match opens that document's section outline (with section IDs ready for `knowledge read`).
+- **`knowledge grep <pattern> [--doc <id>] [--path <prefix>] [-i] [--limit N]`** — regex term search across the corpus with line numbers; invalid regex degrades to a literal substring match.
+- **`knowledge read <section_id|document_id> [--offset N] [--limit N]`** — raw text of a section (or a whole document) with line pagination and a 12000-character truncation guard.
+
 # v0.11.0 (2026-08-18)
 
 ## Improvements
