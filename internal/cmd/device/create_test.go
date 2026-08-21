@@ -123,6 +123,47 @@ func TestCreateDevice_SNNotFound(t *testing.T) {
 	}
 }
 
+func TestCreateDevice_SNNotFoundInFactoryRecords(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+		_, _ = w.Write([]byte(`{"error":"resource_not_found","message":"Requested mesDevice FN0122502NPKI21 not found","ext":{"type":"mesDevice"}}`))
+	}))
+	defer server.Close()
+
+	f, _ := newTestFactory(t, server.URL)
+	cmd := NewCmdCreate(f)
+	cmd.SetArgs([]string{"--name", "test", "--sn", "FN0122502NPKI21"})
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatal("expected error for SN missing from factory records")
+	}
+	if !strings.Contains(err.Error(), "factory records") {
+		t.Errorf("expected 'factory records' in error, got: %v", err)
+	}
+	if !strings.Contains(err.Error(), "nameplate") {
+		t.Errorf("expected nameplate hint in error, got: %v", err)
+	}
+}
+
+func TestCreateDevice_SNProductNotRegistered(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+		_, _ = w.Write([]byte(`{"error":"resource_not_found","ext":{"type":"product"}}`))
+	}))
+	defer server.Close()
+
+	f, _ := newTestFactory(t, server.URL)
+	cmd := NewCmdCreate(f)
+	cmd.SetArgs([]string{"--name", "test", "--sn", "UNKNOWNMODEL000"})
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatal("expected error for unregistered product model")
+	}
+	if !strings.Contains(err.Error(), "not registered on this platform") {
+		t.Errorf("expected 'not registered on this platform' in error, got: %v", err)
+	}
+}
+
 func TestCreateDevice_SNInvalidState(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnprocessableEntity)

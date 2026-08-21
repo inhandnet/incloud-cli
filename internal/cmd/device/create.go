@@ -193,7 +193,17 @@ func formatSNValidationError(sn string, body []byte, originalErr error) error {
 	errCode := gjson.GetBytes(body, "error").String()
 	switch errCode {
 	case "resource_not_found":
-		return fmt.Errorf("serial number %q is not recognized; it may be unsupported or the product is obsolete", sn)
+		// ext.type distinguishes which lookup failed: "mesDevice" means the SN
+		// is not in the MES factory records; "product" means MES knows the SN
+		// but the platform has no matching product model.
+		switch gjson.GetBytes(body, "ext.type").String() {
+		case "mesDevice":
+			return fmt.Errorf("serial number %q was not found in factory records; double-check it against the device nameplate", sn)
+		case "product":
+			return fmt.Errorf("serial number %q belongs to a product model not registered on this platform", sn)
+		default:
+			return fmt.Errorf("serial number %q is not recognized", sn)
+		}
 	case "invalid_request":
 		return fmt.Errorf("serial number %q has an invalid format", sn)
 	case "invalid_state":
