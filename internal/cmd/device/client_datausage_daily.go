@@ -20,7 +20,8 @@ func newCmdClientDatausageDaily(f *factory.Factory) *cobra.Command {
   # Specific month
   incloud device client datausage-daily 507f1f77bcf86cd799439011 --month 2026-03`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return fetchClientSeries(f, cmd, args[0], "datausage-daily", opts, defaultClientDatausageFields, clientDatausageFormatters)
+			return fetchClientSeries(f, cmd, args[0], "datausage-daily", opts, defaultClientDatausageFields,
+				clientDatausageFormatters, clientDatausageStructuredTransform)
 		},
 	}
 
