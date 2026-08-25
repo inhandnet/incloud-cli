@@ -96,6 +96,7 @@ func fetchDatausageSeries(f *factory.Factory, cmd *cobra.Command, deviceID, endp
 	output, _ := cmd.Flags().GetString("output")
 	return iostreams.FormatOutput(body, f.IO, output,
 		iostreams.WithTransform(iostreams.FlattenSeries),
+		iostreams.WithStructuredTransform(iostreams.AddTrafficHumanFields),
 		iostreams.WithFormatters(iostreams.ColumnFormatters{
 			"tx":    iostreams.FormatBytes,
 			"rx":    iostreams.FormatBytes,

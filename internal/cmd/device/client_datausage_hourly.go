@@ -15,6 +15,8 @@ var clientDatausageFormatters = iostreams.WithFormatters(iostreams.ColumnFormatt
 	"total": iostreams.FormatBytes,
 })
 
+var clientDatausageStructuredTransform = iostreams.WithStructuredTransform(iostreams.AddTrafficHumanFields)
+
 func newCmdClientDatausageHourly(f *factory.Factory) *cobra.Command {
 	opts := &clientSeriesOptions{}
 
@@ -24,7 +26,8 @@ func newCmdClientDatausageHourly(f *factory.Factory) *cobra.Command {
 		Long:  "Display hourly data usage (tx/rx) time-series for a client.",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return fetchClientSeries(f, cmd, args[0], "datausage-hourly", opts, defaultClientDatausageFields, clientDatausageFormatters)
+			return fetchClientSeries(f, cmd, args[0], "datausage-hourly", opts, defaultClientDatausageFields,
+				clientDatausageFormatters, clientDatausageStructuredTransform)
 		},
 	}
 

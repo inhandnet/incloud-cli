@@ -69,6 +69,7 @@ func newCmdDatausageList(f *factory.Factory) *cobra.Command {
 			output, _ := cmd.Flags().GetString("output")
 			return iostreams.FormatOutput(body, f.IO, output,
 				iostreams.WithTransform(flattenDatausageDetails),
+				iostreams.WithStructuredTransform(iostreams.AddTrafficHumanFields),
 				iostreams.WithFormatters(datausageListFormatters),
 			)
 		},

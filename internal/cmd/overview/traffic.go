@@ -141,7 +141,8 @@ func runTraffic(cmd *cobra.Command, f *factory.Factory, opts *TrafficOptions) er
 			"topDevices": results["topk"],
 		}
 		b, _ := json.Marshal(merged)
-		return iostreams.FormatOutput(b, f.IO, output)
+		return iostreams.FormatOutput(b, f.IO, output,
+			iostreams.WithStructuredTransform(iostreams.AddTrafficHumanFields))
 
 	default: // table and human-readable
 		return printTrafficDashboard(f.IO, results)
