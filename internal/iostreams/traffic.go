@@ -9,13 +9,33 @@ import (
 )
 
 const (
-	// TrafficHumanUnit is the single unit used by structured traffic output.
+	// TrafficHumanUnit is the default unit kept for compatibility with callers
+	// that used the original fixed-unit implementation. Structured output now
+	// selects the unit from trafficUnits based on the largest value.
 	TrafficHumanUnit = "GiB"
-	// TrafficUnitSystem describes the byte base used by TrafficHumanUnit.
+	// TrafficUnitSystem describes the default unit's byte base.
 	TrafficUnitSystem = "IEC (1 GiB = 1024^3 B)"
-	// TrafficBytesPerUnit is the number of bytes in one TrafficHumanUnit.
+	// TrafficBytesPerUnit is the number of bytes in the default unit.
 	TrafficBytesPerUnit int64 = 1 << 30
 )
+
+type trafficUnit struct {
+	name         string
+	bytesPerUnit int64
+	power        uint
+}
+
+var trafficUnits = []trafficUnit{
+	{name: "B", bytesPerUnit: 1},
+	{name: "KiB", bytesPerUnit: 1 << 10, power: 1},
+	{name: "MiB", bytesPerUnit: 1 << 20, power: 2},
+	{name: "GiB", bytesPerUnit: 1 << 30, power: 3},
+	{name: "TiB", bytesPerUnit: 1 << 40, power: 4},
+	{name: "PiB", bytesPerUnit: 1 << 50, power: 5},
+	{name: "EiB", bytesPerUnit: 1 << 60, power: 6},
+}
+
+const trafficHumanPrecision = 3
 
 var trafficRawFields = []struct {
 	raw   string
@@ -41,29 +61,94 @@ func AddTrafficHumanFields(body []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	normalizeTrafficValue(payload)
+	unit := selectTrafficUnit(payload)
+	normalizeTrafficValue(payload, unit)
 	return json.Marshal(payload)
 }
 
-func normalizeTrafficValue(value any) {
+func selectTrafficUnit(value any) trafficUnit {
+	maxBytes := new(big.Int)
+	collectTrafficBytes(value, maxBytes)
+
+	selected := trafficUnits[0]
+	for _, candidate := range trafficUnits {
+		if maxBytes.Cmp(big.NewInt(candidate.bytesPerUnit)) >= 0 {
+			selected = candidate
+		}
+	}
+	return selected
+}
+
+func collectTrafficBytes(value any, maxBytes *big.Int) {
 	switch v := value.(type) {
 	case map[string]any:
-		for _, child := range v {
-			normalizeTrafficValue(child)
+		for _, field := range trafficRawFields {
+			if raw, ok := v[field.raw]; ok {
+				updateMaxTrafficBytes(raw, maxBytes)
+			}
 		}
-		normalizeTrafficSeries(v)
-		addTrafficObjectFields(v)
-		if _, ok := v["summary"]; ok {
-			setTrafficMetadata(v)
+
+		// Columnar series keep field names in a separate columns/fields array,
+		// so inspect those rows explicitly before walking nested values.
+		if columnKey, rowKey := seriesKeys(v); columnKey != "" {
+			columns, _ := v[columnKey].([]any)
+			rows, _ := v[rowKey].([]any)
+			indexes := make(map[string]int, len(columns))
+			for i, column := range columns {
+				if name, ok := column.(string); ok {
+					indexes[name] = i
+				}
+			}
+			for _, field := range trafficRawFields {
+				index, ok := indexes[field.raw]
+				if !ok {
+					continue
+				}
+				for _, row := range rows {
+					cells, ok := row.([]any)
+					if ok && index < len(cells) {
+						updateMaxTrafficBytes(cells[index], maxBytes)
+					}
+				}
+			}
+		}
+
+		for _, child := range v {
+			collectTrafficBytes(child, maxBytes)
 		}
 	case []any:
 		for _, child := range v {
-			normalizeTrafficValue(child)
+			collectTrafficBytes(child, maxBytes)
 		}
 	}
 }
 
-func addTrafficObjectFields(obj map[string]any) {
+func updateMaxTrafficBytes(value any, maxBytes *big.Int) {
+	bytesValue, ok := trafficBytesValue(value)
+	if ok && bytesValue.Cmp(maxBytes) > 0 {
+		maxBytes.Set(bytesValue)
+	}
+}
+
+func normalizeTrafficValue(value any, unit trafficUnit) {
+	switch v := value.(type) {
+	case map[string]any:
+		for _, child := range v {
+			normalizeTrafficValue(child, unit)
+		}
+		normalizeTrafficSeries(v, unit)
+		addTrafficObjectFields(v, unit)
+		if _, ok := v["summary"]; ok {
+			setTrafficMetadata(v, unit)
+		}
+	case []any:
+		for _, child := range v {
+			normalizeTrafficValue(child, unit)
+		}
+	}
+}
+
+func addTrafficObjectFields(obj map[string]any, unit trafficUnit) {
 	var (
 		values  = make(map[string]*big.Int, len(trafficRawFields))
 		matched bool
@@ -78,7 +163,7 @@ func addTrafficObjectFields(obj map[string]any) {
 		if !ok {
 			continue
 		}
-		obj[field.human] = formatTrafficGiB(bytesValue)
+		obj[field.human] = formatTraffic(bytesValue, unit)
 		values[field.raw] = bytesValue
 		matched = true
 	}
@@ -87,7 +172,7 @@ func addTrafficObjectFields(obj map[string]any) {
 		return
 	}
 
-	setTrafficMetadata(obj)
+	setTrafficMetadata(obj, unit)
 	if len(values) == len(trafficRawFields) {
 		var parts big.Int
 		parts.Add(values["rx"], values["tx"])
@@ -95,7 +180,7 @@ func addTrafficObjectFields(obj map[string]any) {
 	}
 }
 
-func normalizeTrafficSeries(obj map[string]any) {
+func normalizeTrafficSeries(obj map[string]any, unit trafficUnit) {
 	columnKey, rowKey := seriesKeys(obj)
 	if columnKey == "" {
 		return
@@ -140,7 +225,7 @@ func normalizeTrafficSeries(obj map[string]any) {
 		}
 	}
 
-	setTrafficMetadata(obj)
+	setTrafficMetadata(obj, unit)
 	for rowIndex, row := range rows {
 		cells, ok := row.([]any)
 		if !ok {
@@ -156,7 +241,7 @@ func normalizeTrafficSeries(obj map[string]any) {
 				continue
 			}
 			if bytesValue, ok := trafficBytesValue(cells[rawIndex]); ok {
-				cells[humanIndex] = formatTrafficGiB(bytesValue)
+				cells[humanIndex] = formatTraffic(bytesValue, unit)
 			}
 		}
 		if reconciledIndex >= 0 {
@@ -182,10 +267,10 @@ func normalizeTrafficSeries(obj map[string]any) {
 	obj[rowKey] = rows
 }
 
-func setTrafficMetadata(obj map[string]any) {
-	obj["trafficUnit"] = TrafficHumanUnit
-	obj["trafficUnitSystem"] = TrafficUnitSystem
-	obj["trafficBytesPerUnit"] = TrafficBytesPerUnit
+func setTrafficMetadata(obj map[string]any, unit trafficUnit) {
+	obj["trafficUnit"] = unit.name
+	obj["trafficUnitSystem"] = unit.system()
+	obj["trafficBytesPerUnit"] = unit.bytesPerUnit
 }
 
 func trafficBytesValue(value any) (*big.Int, bool) {
@@ -220,8 +305,15 @@ func trafficNumberString(value any) (string, bool) {
 	}
 }
 
-func formatTrafficGiB(bytesValue *big.Int) string {
+func (u trafficUnit) system() string {
+	if u.power == 0 {
+		return "IEC (bytes)"
+	}
+	return fmt.Sprintf("IEC (1 %s = 1024^%d B)", u.name, u.power)
+}
+
+func formatTraffic(bytesValue *big.Int, unit trafficUnit) string {
 	value := new(big.Rat).SetInt(bytesValue)
-	value.Quo(value, new(big.Rat).SetInt64(TrafficBytesPerUnit))
-	return fmt.Sprintf("%s %s", value.FloatString(2), TrafficHumanUnit)
+	value.Quo(value, new(big.Rat).SetInt64(unit.bytesPerUnit))
+	return fmt.Sprintf("%s %s", value.FloatString(trafficHumanPrecision), unit.name)
 }
