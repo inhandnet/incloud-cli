@@ -55,8 +55,8 @@ func TestAddTrafficHumanFields_Rows(t *testing.T) {
 	}
 
 	trend := payload.Trend[0]
-	if trend["totalHuman"] != "1.137 GiB" {
-		t.Errorf("trend totalHuman = %v, want 1.137 GiB", trend["totalHuman"])
+	if trend["totalHuman"] != "1.138 GiB" {
+		t.Errorf("trend totalHuman = %v, want 1.138 GiB", trend["totalHuman"])
 	}
 }
 
@@ -135,7 +135,8 @@ func TestAddTrafficHumanFields_AdaptiveUnitIsShared(t *testing.T) {
 	input := []byte(`{
 		"summary":[
 			{"tx":4434710,"rx":4466763,"total":8901473},
-			{"tx":25670393,"rx":141266066,"total":166936459}
+			{"tx":25670393,"rx":141266066,"total":166936459},
+			{"tx":1771548,"rx":1592811,"total":3364359}
 		]
 	}`)
 
@@ -175,6 +176,44 @@ func TestAddTrafficHumanFields_AdaptiveUnitIsShared(t *testing.T) {
 	if got := payload.Summary[1]["totalHuman"]; got != "159.203 MiB" {
 		t.Errorf("second totalHuman = %v, want 159.203 MiB", got)
 	}
+	if got := payload.Summary[2]["totalHuman"]; got != "3.208 MiB" {
+		t.Errorf("rounded-parts totalHuman = %v, want 3.208 MiB", got)
+	}
+}
+
+func TestAddTrafficHumanFields_ColumnarTotalUsesRoundedParts(t *testing.T) {
+	input := []byte(`{
+		"series":[{
+			"fields":["time","tx","rx","total"],
+			"data":[["2026-08-19",1771548,1592811,3364359]]
+		}]
+	}`)
+
+	got, err := AddTrafficHumanFields(input)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	var payload struct {
+		Series []struct {
+			Fields []string        `json:"fields"`
+			Data   [][]interface{} `json:"data"`
+		} `json:"series"`
+	}
+	if err := json.Unmarshal(got, &payload); err != nil {
+		t.Fatalf("invalid output: %v", err)
+	}
+	if len(payload.Series) != 1 || len(payload.Series[0].Data) != 1 {
+		t.Fatalf("unexpected series data: %#v", payload.Series)
+	}
+
+	row := payload.Series[0].Data[0]
+	if row[4] != "1.689 MiB" || row[5] != "1.519 MiB" || row[6] != "3.208 MiB" {
+		t.Errorf("human cells = %v, want [1.689 MiB 1.519 MiB 3.208 MiB]", row[4:])
+	}
+	if row[7] != true {
+		t.Errorf("trafficReconciled = %v, want true", row[7])
+	}
 }
 
 func TestAddTrafficHumanFields_IM3173Samples(t *testing.T) {
@@ -201,8 +240,8 @@ func TestAddTrafficHumanFields_IM3173Samples(t *testing.T) {
 		tx, rx, total string
 	}{
 		{date: "08-06", tx: "0.291 GiB", rx: "3.045 GiB", total: "3.336 GiB"},
-		{date: "08-07", tx: "0.266 GiB", rx: "0.872 GiB", total: "1.137 GiB"},
-		{date: "08-13", tx: "0.056 GiB", rx: "0.671 GiB", total: "0.728 GiB"},
+		{date: "08-07", tx: "0.266 GiB", rx: "0.872 GiB", total: "1.138 GiB"},
+		{date: "08-13", tx: "0.056 GiB", rx: "0.671 GiB", total: "0.727 GiB"},
 		{date: "summary", tx: "1.210 GiB", rx: "10.515 GiB", total: "11.725 GiB"},
 	}
 	if len(payload.Rows) != len(want) {

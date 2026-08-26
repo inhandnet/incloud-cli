@@ -174,9 +174,14 @@ func addTrafficObjectFields(obj map[string]any, unit trafficUnit) {
 
 	setTrafficMetadata(obj, unit)
 	if len(values) == len(trafficRawFields) {
-		var parts big.Int
-		parts.Add(values["rx"], values["tx"])
-		obj["trafficReconciled"] = parts.Cmp(values["total"]) == 0
+		reconciled := trafficValuesReconciled(values)
+		obj["trafficReconciled"] = reconciled
+		if reconciled {
+			// Keep the displayed row internally additive: totalHuman is the
+			// sum of the already-rounded RX/TX values, not an independent
+			// rounding of the raw total.
+			obj["totalHuman"] = formatTrafficParts(values["rx"], values["tx"], unit)
+		}
 	}
 }
 
@@ -234,6 +239,7 @@ func normalizeTrafficSeries(obj map[string]any, unit trafficUnit) {
 		for len(cells) < len(columns) {
 			cells = append(cells, nil)
 		}
+		values := make(map[string]*big.Int, len(trafficRawFields))
 		for _, field := range trafficRawFields {
 			rawIndex, rawOK := indexes[field.raw]
 			humanIndex, humanOK := humanIndexes[field.raw]
@@ -242,21 +248,15 @@ func normalizeTrafficSeries(obj map[string]any, unit trafficUnit) {
 			}
 			if bytesValue, ok := trafficBytesValue(cells[rawIndex]); ok {
 				cells[humanIndex] = formatTraffic(bytesValue, unit)
+				values[field.raw] = bytesValue
 			}
 		}
 		if reconciledIndex >= 0 {
-			values := make(map[string]*big.Int, len(trafficRawFields))
-			for _, field := range trafficRawFields {
-				rawIndex := indexes[field.raw]
-				if bytesValue, ok := trafficBytesValue(cells[rawIndex]); ok {
-					values[field.raw] = bytesValue
-				}
-			}
-			reconciled := false
-			if len(values) == len(trafficRawFields) {
-				var parts big.Int
-				parts.Add(values["rx"], values["tx"])
-				reconciled = parts.Cmp(values["total"]) == 0
+			reconciled := trafficValuesReconciled(values)
+			if reconciled {
+				cells[humanIndexes["total"]] = formatTrafficParts(
+					values["rx"], values["tx"], unit,
+				)
 			}
 			cells[reconciledIndex] = reconciled
 		}
@@ -305,6 +305,16 @@ func trafficNumberString(value any) (string, bool) {
 	}
 }
 
+func trafficValuesReconciled(values map[string]*big.Int) bool {
+	if len(values) != len(trafficRawFields) {
+		return false
+	}
+
+	var parts big.Int
+	parts.Add(values["rx"], values["tx"])
+	return parts.Cmp(values["total"]) == 0
+}
+
 func (u trafficUnit) system() string {
 	if u.power == 0 {
 		return "IEC (bytes)"
@@ -313,7 +323,27 @@ func (u trafficUnit) system() string {
 }
 
 func formatTraffic(bytesValue *big.Int, unit trafficUnit) string {
+	return formatTrafficRat(roundedTrafficValue(bytesValue, unit), unit)
+}
+
+func formatTrafficParts(rx, tx *big.Int, unit trafficUnit) string {
+	value := new(big.Rat).Add(
+		roundedTrafficValue(rx, unit),
+		roundedTrafficValue(tx, unit),
+	)
+	return formatTrafficRat(value, unit)
+}
+
+func roundedTrafficValue(bytesValue *big.Int, unit trafficUnit) *big.Rat {
 	value := new(big.Rat).SetInt(bytesValue)
 	value.Quo(value, new(big.Rat).SetInt64(unit.bytesPerUnit))
+	rounded, ok := new(big.Rat).SetString(value.FloatString(trafficHumanPrecision))
+	if !ok {
+		return value
+	}
+	return rounded
+}
+
+func formatTrafficRat(value *big.Rat, unit trafficUnit) string {
 	return fmt.Sprintf("%s %s", value.FloatString(trafficHumanPrecision), unit.name)
 }
