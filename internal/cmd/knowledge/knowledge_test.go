@@ -408,6 +408,46 @@ func TestGrep_FixedAndContextRequest(t *testing.T) {
 	}
 }
 
+func TestGrep_ContextMergesOverlappingGroups(t *testing.T) {
+	srv := captureServer(t, nil, `{
+  "pattern": "hit", "match_count": 3, "truncated": false,
+  "matches": [
+    {"document_id": "d", "section_id": "s1", "heading_path": "A > B", "line": 42, "text": "match 42",
+     "context_before": [{"line": 41, "text": "context 41"}],
+     "context_after": [{"line": 43, "text": "context version 43"}]},
+    {"document_id": "d", "section_id": "s1", "heading_path": "A > B", "line": 43, "text": "match 43",
+     "context_before": [{"line": 42, "text": "context version 42"}],
+     "context_after": [{"line": 44, "text": "context 44"}]},
+    {"document_id": "d", "section_id": "s1", "heading_path": "A > B", "line": 50, "text": "match 50",
+     "context_before": [{"line": 49, "text": "context 49"}],
+     "context_after": [{"line": 51, "text": "context 51"}]}
+  ]
+}`)
+	defer srv.Close()
+
+	f, _ := newTestFactory(t, srv.URL)
+	root := newKnowledgeRoot(f)
+	root.SetArgs([]string{"knowledge", "grep", "hit", "-C", "1", "-o", "table"})
+	if err := root.Execute(); err != nil {
+		t.Fatalf("knowledge grep: %v", err)
+	}
+
+	out := stdoutOf(f).String()
+	for _, want := range []string{"context 41", "match 42", "match 43", "context 44", "context 49", "match 50", "context 51"} {
+		if strings.Count(out, want) != 1 {
+			t.Errorf("output should contain %q exactly once: %q", want, out)
+		}
+	}
+	for _, duplicateContext := range []string{"context version 42", "context version 43"} {
+		if strings.Contains(out, duplicateContext) {
+			t.Errorf("match line should replace duplicate context %q: %q", duplicateContext, out)
+		}
+	}
+	if got := strings.Count(out, "--\n"); got != 1 {
+		t.Errorf("expected one separator between disjoint groups, got %d: %q", got, out)
+	}
+}
+
 func TestGrep_IgnoreCaseFlagAndNoMatches(t *testing.T) {
 	var cap captured
 	srv := captureServer(t, &cap, `{"pattern": "x", "match_count": 0, "matches": [], "truncated": false}`)
@@ -435,7 +475,8 @@ const readBody = `{
     "title": "ER805 用户手册", "heading_path": "ER805 用户手册 > 4 网络 > 4.2 IPSec VPN"
   },
   "truncated": false,
-  "total_lines": 210
+  "total_lines": 210,
+  "next_cursor": null
 }`
 
 func TestRead_DualIDAndRange(t *testing.T) {
@@ -492,6 +533,11 @@ func TestRead_LineModeFlags(t *testing.T) {
 			want: []string{`"mode":"around"`, `"around_line":186`, `"before":30`, `"after":50`},
 		},
 		{
+			name: "around preserves explicit zero context",
+			args: []string{"--mode", "around", "--around", "1", "--before", "0", "--after", "0"},
+			want: []string{`"mode":"around"`, `"around_line":1`, `"before":0`, `"after":0`},
+		},
+		{
 			name: "head with limit",
 			args: []string{"--mode", "head", "--limit", "100"},
 			want: []string{`"mode":"head"`, `"limit":100`},
@@ -529,6 +575,70 @@ func TestRead_LineModeFlags(t *testing.T) {
 	}
 }
 
+func TestRead_CursorRequest(t *testing.T) {
+	var cap captured
+	srv := captureServer(t, &cap, readBody)
+	defer srv.Close()
+
+	f, _ := newTestFactory(t, srv.URL)
+	root := newKnowledgeRoot(f)
+	root.SetArgs([]string{"knowledge", "read", "sec-1", "--cursor", "cursor-token", "-o", "table"})
+	if err := root.Execute(); err != nil {
+		t.Fatalf("knowledge read: %v", err)
+	}
+
+	body := string(cap.Body)
+	if !strings.Contains(body, `"cursor":"cursor-token"`) {
+		t.Fatalf("request body %s missing cursor", cap.Body)
+	}
+	for _, omitted := range []string{"mode", "line_start", "line_end", "around_line", "before", "after", "limit"} {
+		if strings.Contains(body, omitted) {
+			t.Errorf("cursor request body %s should omit %s", cap.Body, omitted)
+		}
+	}
+}
+
+func TestRead_InvalidFlagCombinationsFailBeforeRequest(t *testing.T) {
+	tests := []struct {
+		name    string
+		args    []string
+		wantErr string
+	}{
+		{name: "invalid mode", args: []string{"--mode", "invalid"}, wantErr: "invalid --mode"},
+		{name: "full rejects range flag", args: []string{"--line-start", "1"}, wantErr: "not valid with --mode full"},
+		{name: "range requires bound", args: []string{"--mode", "range"}, wantErr: "requires --line-start or --line-end"},
+		{name: "range rejects negative bound", args: []string{"--mode", "range", "--line-start", "-5"}, wantErr: "--line-start must be at least 1"},
+		{name: "range rejects reversed bounds", args: []string{"--mode", "range", "--line-start", "10", "--line-end", "5"}, wantErr: "cannot be greater"},
+		{name: "around requires center", args: []string{"--mode", "around"}, wantErr: "requires --around"},
+		{name: "around rejects negative context", args: []string{"--mode", "around", "--around", "10", "--before", "-5"}, wantErr: "--before must be between"},
+		{name: "head requires limit", args: []string{"--mode", "head"}, wantErr: "requires --limit"},
+		{name: "head rejects range flag", args: []string{"--mode", "head", "--limit", "5", "--line-start", "1"}, wantErr: "not valid with --mode head"},
+		{name: "limit has upper bound", args: []string{"--mode", "tail", "--limit", "2001"}, wantErr: "--limit must be between"},
+		{name: "cursor rejects mode", args: []string{"--cursor", "c", "--mode", "full"}, wantErr: "--mode is not valid with --cursor"},
+		{name: "cursor rejects line flag", args: []string{"--cursor", "c", "--line-start", "1"}, wantErr: "--line-start is not valid with --cursor"},
+		{name: "cursor rejects empty value", args: []string{"--cursor", ""}, wantErr: "--cursor cannot be empty"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var cap captured
+			srv := captureServer(t, &cap, readBody)
+			defer srv.Close()
+
+			f, _ := newTestFactory(t, srv.URL)
+			root := newKnowledgeRoot(f)
+			root.SetArgs(append([]string{"knowledge", "read", "sec-1"}, tt.args...))
+			err := root.Execute()
+			if err == nil || !strings.Contains(err.Error(), tt.wantErr) {
+				t.Fatalf("got error %v, want substring %q", err, tt.wantErr)
+			}
+			if cap.Method != "" {
+				t.Fatalf("invalid flags should fail before request, got %s %s", cap.Method, cap.Path)
+			}
+		})
+	}
+}
+
 func TestRead_DefaultBodyOmitsLineParams(t *testing.T) {
 	var cap captured
 	srv := captureServer(t, &cap, readBody)
@@ -541,7 +651,7 @@ func TestRead_DefaultBodyOmitsLineParams(t *testing.T) {
 		t.Fatalf("knowledge read: %v", err)
 	}
 
-	for _, omitted := range []string{"mode", "line_start", "line_end", "around_line", "before", "after", "limit", "offset"} {
+	for _, omitted := range []string{"mode", "line_start", "line_end", "around_line", "before", "after", "limit", "offset", "cursor"} {
 		if strings.Contains(string(cap.Body), omitted) {
 			t.Errorf("request body %s should omit %s by default", cap.Body, omitted)
 		}
@@ -579,7 +689,7 @@ func TestRead_NotFoundAndTruncatedHint(t *testing.T) {
 		t.Errorf("stderr %q missing not-found hint", errBuf.String())
 	}
 
-	srv2 := captureServer(t, nil, `{"text": "…", "source": {"document_id": "d", "section_id": "", "s3_key": "k", "title": "T", "heading_path": "H"}, "truncated": true, "total_lines": 900}`)
+	srv2 := captureServer(t, nil, `{"text": "…", "source": {"document_id": "d", "section_id": "", "s3_key": "k", "title": "T", "heading_path": "H"}, "truncated": true, "total_lines": 900, "next_cursor": "cursor-token"}`)
 	defer srv2.Close()
 	f2, errBuf2 := newTestFactory(t, srv2.URL)
 	root2 := newKnowledgeRoot(f2)
@@ -587,7 +697,7 @@ func TestRead_NotFoundAndTruncatedHint(t *testing.T) {
 	if err := root2.Execute(); err != nil {
 		t.Fatalf("knowledge read: %v", err)
 	}
-	if !strings.Contains(errBuf2.String(), "--mode range") {
+	if !strings.Contains(errBuf2.String(), "--cursor 'cursor-token'") {
 		t.Errorf("stderr %q missing truncation hint", errBuf2.String())
 	}
 }
