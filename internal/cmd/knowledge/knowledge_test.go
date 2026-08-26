@@ -357,6 +357,10 @@ func TestGrep_MatchesAndRequestShape(t *testing.T) {
 	if !strings.Contains(string(cap.Body), `"document_id":"d"`) {
 		t.Errorf("request body %s missing document_id", cap.Body)
 	}
+	// 默认不开 -F/-C：请求体省略两字段（走服务端默认）
+	if strings.Contains(string(cap.Body), "fixed") || strings.Contains(string(cap.Body), "context") {
+		t.Errorf("request body %s should omit fixed/context by default", cap.Body)
+	}
 
 	out := stdoutOf(f).String()
 	if !strings.Contains(out, "A > B : 42 : IKE UDP 500") {
@@ -364,6 +368,43 @@ func TestGrep_MatchesAndRequestShape(t *testing.T) {
 	}
 	if !strings.Contains(errBuf.String(), "truncated") {
 		t.Errorf("stderr %q missing truncated hint", errBuf.String())
+	}
+}
+
+func TestGrep_FixedAndContextRequest(t *testing.T) {
+	var cap captured
+	srv := captureServer(t, &cap, `{
+  "pattern": "5.1", "match_count": 1, "truncated": false,
+  "matches": [
+    {"document_id": "d", "section_id": "s1", "heading_path": "A > B", "line": 42, "text": "version 5.1 released",
+     "context_before": [{"line": 41, "text": "before line"}],
+     "context_after": [{"line": 43, "text": "after line"}]}
+  ]
+}`)
+	defer srv.Close()
+
+	f, _ := newTestFactory(t, srv.URL)
+	root := newKnowledgeRoot(f)
+	root.SetArgs([]string{"knowledge", "grep", "5.1", "-F", "-C", "1", "-o", "table"})
+	if err := root.Execute(); err != nil {
+		t.Fatalf("knowledge grep: %v", err)
+	}
+
+	if !strings.Contains(string(cap.Body), `"fixed":true`) ||
+		!strings.Contains(string(cap.Body), `"context":1`) {
+		t.Errorf("request body %s missing fixed/context", cap.Body)
+	}
+
+	out := stdoutOf(f).String()
+	// 命中行 + 上下文行（同格式渲染）
+	for _, want := range []string{
+		"A > B : 42 : version 5.1 released",
+		"A > B : 41 : before line",
+		"A > B : 43 : after line",
+	} {
+		if !strings.Contains(out, want) {
+			t.Errorf("output missing %q: %q", want, out)
+		}
 	}
 }
 
@@ -393,17 +434,18 @@ const readBody = `{
     "document_id": "doc-1", "section_id": "sec-1", "s3_key": "cn/device_er805.md",
     "title": "ER805 用户手册", "heading_path": "ER805 用户手册 > 4 网络 > 4.2 IPSec VPN"
   },
-  "truncated": false
+  "truncated": false,
+  "total_lines": 210
 }`
 
-func TestRead_DualIDAndPagination(t *testing.T) {
+func TestRead_DualIDAndRange(t *testing.T) {
 	var cap captured
 	srv := captureServer(t, &cap, readBody)
 	defer srv.Close()
 
 	f, _ := newTestFactory(t, srv.URL)
 	root := newKnowledgeRoot(f)
-	root.SetArgs([]string{"knowledge", "read", "sec-1", "--offset", "10", "--limit", "50", "-o", "table"})
+	root.SetArgs([]string{"knowledge", "read", "sec-1", "--mode", "range", "--line-start", "10", "--line-end", "50", "-o", "table"})
 	if err := root.Execute(); err != nil {
 		t.Fatalf("knowledge read: %v", err)
 	}
@@ -416,9 +458,14 @@ func TestRead_DualIDAndPagination(t *testing.T) {
 		!strings.Contains(string(cap.Body), `"document_id":"sec-1"`) {
 		t.Errorf("request body %s should carry the arg as both ids", cap.Body)
 	}
-	if !strings.Contains(string(cap.Body), `"offset":10`) ||
-		!strings.Contains(string(cap.Body), `"limit":50`) {
-		t.Errorf("request body %s missing pagination", cap.Body)
+	if !strings.Contains(string(cap.Body), `"mode":"range"`) ||
+		!strings.Contains(string(cap.Body), `"line_start":10`) ||
+		!strings.Contains(string(cap.Body), `"line_end":50`) {
+		t.Errorf("request body %s missing range params", cap.Body)
+	}
+	// offset 已删除：不得再发送
+	if strings.Contains(string(cap.Body), "offset") {
+		t.Errorf("request body %s should not carry offset (removed)", cap.Body)
 	}
 
 	out := stdoutOf(f).String()
@@ -428,10 +475,98 @@ func TestRead_DualIDAndPagination(t *testing.T) {
 	if !strings.Contains(out, "[source: ER805 用户手册 > ER805 用户手册 > 4 网络 > 4.2 IPSec VPN]") {
 		t.Errorf("output missing source meta: %q", out)
 	}
+	if !strings.Contains(out, "210 lines total") {
+		t.Errorf("output missing total_lines meta: %q", out)
+	}
+}
+
+func TestRead_LineModeFlags(t *testing.T) {
+	tests := []struct {
+		name string
+		args []string
+		want []string
+	}{
+		{
+			name: "around with before/after",
+			args: []string{"--mode", "around", "--around", "186", "--before", "30", "--after", "50"},
+			want: []string{`"mode":"around"`, `"around_line":186`, `"before":30`, `"after":50`},
+		},
+		{
+			name: "head with limit",
+			args: []string{"--mode", "head", "--limit", "100"},
+			want: []string{`"mode":"head"`, `"limit":100`},
+		},
+		{
+			name: "tail with limit",
+			args: []string{"--mode", "tail", "--limit", "20"},
+			want: []string{`"mode":"tail"`, `"limit":20`},
+		},
+		{
+			name: "line_start only",
+			args: []string{"--mode", "range", "--line-start", "28"},
+			want: []string{`"mode":"range"`, `"line_start":28`},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var cap captured
+			srv := captureServer(t, &cap, readBody)
+			defer srv.Close()
+
+			f, _ := newTestFactory(t, srv.URL)
+			root := newKnowledgeRoot(f)
+			args := append([]string{"knowledge", "read", "sec-1", "-o", "table"}, tt.args...)
+			root.SetArgs(args)
+			if err := root.Execute(); err != nil {
+				t.Fatalf("knowledge read: %v", err)
+			}
+			for _, w := range tt.want {
+				if !strings.Contains(string(cap.Body), w) {
+					t.Errorf("request body %s missing %s", cap.Body, w)
+				}
+			}
+		})
+	}
+}
+
+func TestRead_DefaultBodyOmitsLineParams(t *testing.T) {
+	var cap captured
+	srv := captureServer(t, &cap, readBody)
+	defer srv.Close()
+
+	f, _ := newTestFactory(t, srv.URL)
+	root := newKnowledgeRoot(f)
+	root.SetArgs([]string{"knowledge", "read", "sec-1", "-o", "table"})
+	if err := root.Execute(); err != nil {
+		t.Fatalf("knowledge read: %v", err)
+	}
+
+	for _, omitted := range []string{"mode", "line_start", "line_end", "around_line", "before", "after", "limit", "offset"} {
+		if strings.Contains(string(cap.Body), omitted) {
+			t.Errorf("request body %s should omit %s by default", cap.Body, omitted)
+		}
+	}
+}
+
+func TestRead_TotalLinesJSONPassthrough(t *testing.T) {
+	srv := captureServer(t, nil, readBody)
+	defer srv.Close()
+
+	f, _ := newTestFactory(t, srv.URL)
+	root := newKnowledgeRoot(f)
+	root.SetArgs([]string{"knowledge", "read", "sec-1", "-o", "json"})
+	if err := root.Execute(); err != nil {
+		t.Fatalf("knowledge read: %v", err)
+	}
+
+	out := stdoutOf(f).String()
+	if !strings.Contains(out, `"total_lines":210`) {
+		t.Errorf("json output missing total_lines: %q", out)
+	}
 }
 
 func TestRead_NotFoundAndTruncatedHint(t *testing.T) {
-	srv := captureServer(t, nil, `{"text": "", "source": null, "truncated": false}`)
+	srv := captureServer(t, nil, `{"text": "", "source": null, "truncated": false, "total_lines": 0}`)
 	defer srv.Close()
 
 	f, errBuf := newTestFactory(t, srv.URL)
@@ -444,7 +579,7 @@ func TestRead_NotFoundAndTruncatedHint(t *testing.T) {
 		t.Errorf("stderr %q missing not-found hint", errBuf.String())
 	}
 
-	srv2 := captureServer(t, nil, `{"text": "…", "source": {"document_id": "d", "section_id": "", "s3_key": "k", "title": "T", "heading_path": "H"}, "truncated": true}`)
+	srv2 := captureServer(t, nil, `{"text": "…", "source": {"document_id": "d", "section_id": "", "s3_key": "k", "title": "T", "heading_path": "H"}, "truncated": true, "total_lines": 900}`)
 	defer srv2.Close()
 	f2, errBuf2 := newTestFactory(t, srv2.URL)
 	root2 := newKnowledgeRoot(f2)
@@ -452,7 +587,7 @@ func TestRead_NotFoundAndTruncatedHint(t *testing.T) {
 	if err := root2.Execute(); err != nil {
 		t.Fatalf("knowledge read: %v", err)
 	}
-	if !strings.Contains(errBuf2.String(), "--offset") {
+	if !strings.Contains(errBuf2.String(), "--mode range") {
 		t.Errorf("stderr %q missing truncation hint", errBuf2.String())
 	}
 }
