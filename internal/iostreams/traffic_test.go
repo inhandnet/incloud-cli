@@ -41,22 +41,22 @@ func TestAddTrafficHumanFields_Rows(t *testing.T) {
 	if row["tx"] != float64(312377884) {
 		t.Errorf("raw tx was changed: %v", row["tx"])
 	}
-	if row["txHuman"] != "0.29 GiB" {
-		t.Errorf("txHuman = %v, want 0.29 GiB", row["txHuman"])
+	if row["txHuman"] != "0.291 GiB" {
+		t.Errorf("txHuman = %v, want 0.291 GiB", row["txHuman"])
 	}
-	if row["rxHuman"] != "3.04 GiB" {
-		t.Errorf("rxHuman = %v, want 3.04 GiB", row["rxHuman"])
+	if row["rxHuman"] != "3.045 GiB" {
+		t.Errorf("rxHuman = %v, want 3.045 GiB", row["rxHuman"])
 	}
-	if row["totalHuman"] != "3.34 GiB" {
-		t.Errorf("totalHuman = %v, want 3.34 GiB", row["totalHuman"])
+	if row["totalHuman"] != "3.336 GiB" {
+		t.Errorf("totalHuman = %v, want 3.336 GiB", row["totalHuman"])
 	}
 	if row["trafficReconciled"] != true {
 		t.Errorf("trafficReconciled = %v, want true", row["trafficReconciled"])
 	}
 
 	trend := payload.Trend[0]
-	if trend["totalHuman"] != "1.14 GiB" {
-		t.Errorf("trend totalHuman = %v, want 1.14 GiB", trend["totalHuman"])
+	if trend["totalHuman"] != "1.137 GiB" {
+		t.Errorf("trend totalHuman = %v, want 1.137 GiB", trend["totalHuman"])
 	}
 }
 
@@ -95,14 +95,85 @@ func TestAddTrafficHumanFields_ColumnarSeries(t *testing.T) {
 		t.Fatalf("unexpected data shape: %#v", series.Data)
 	}
 	row := series.Data[0]
-	if row[4] != "0.29 GiB" || row[5] != "3.04 GiB" || row[6] != "3.34 GiB" || row[7] != true {
-		t.Errorf("human cells = %v, want [0.29 GiB 3.04 GiB 3.34 GiB]", row[4:])
+	if row[4] != "0.291 GiB" || row[5] != "3.045 GiB" || row[6] != "3.336 GiB" || row[7] != true {
+		t.Errorf("human cells = %v, want [0.291 GiB 3.045 GiB 3.336 GiB]", row[4:])
 	}
 }
 
 func TestAddTrafficHumanFields_InvalidJSON(t *testing.T) {
 	if _, err := AddTrafficHumanFields([]byte("not-json")); err == nil {
 		t.Fatal("expected invalid JSON error")
+	}
+}
+
+func TestSelectTrafficUnit(t *testing.T) {
+	tests := []struct {
+		name  string
+		bytes int64
+		want  string
+	}{
+		{name: "bytes", bytes: 1023, want: "B"},
+		{name: "kib", bytes: 1 << 10, want: "KiB"},
+		{name: "mib", bytes: 1 << 20, want: "MiB"},
+		{name: "gib", bytes: 1 << 30, want: "GiB"},
+		{name: "tib", bytes: 1 << 40, want: "TiB"},
+		{name: "pib", bytes: 1 << 50, want: "PiB"},
+		{name: "eib", bytes: 1 << 60, want: "EiB"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := selectTrafficUnit(map[string]any{"total": tt.bytes})
+			if got.name != tt.want {
+				t.Errorf("unit = %q, want %q", got.name, tt.want)
+			}
+		})
+	}
+}
+
+func TestAddTrafficHumanFields_AdaptiveUnitIsShared(t *testing.T) {
+	input := []byte(`{
+		"summary":[
+			{"tx":4434710,"rx":4466763,"total":8901473},
+			{"tx":25670393,"rx":141266066,"total":166936459}
+		]
+	}`)
+
+	got, err := AddTrafficHumanFields(input)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	var payload struct {
+		TrafficUnit         string                   `json:"trafficUnit"`
+		TrafficUnitSystem   string                   `json:"trafficUnitSystem"`
+		TrafficBytesPerUnit int64                    `json:"trafficBytesPerUnit"`
+		Summary             []map[string]interface{} `json:"summary"`
+	}
+	if err := json.Unmarshal(got, &payload); err != nil {
+		t.Fatalf("invalid output: %v", err)
+	}
+
+	if payload.TrafficUnit != "MiB" {
+		t.Errorf("trafficUnit = %q, want MiB", payload.TrafficUnit)
+	}
+	if payload.TrafficUnitSystem != "IEC (1 MiB = 1024^2 B)" {
+		t.Errorf("trafficUnitSystem = %q", payload.TrafficUnitSystem)
+	}
+	if payload.TrafficBytesPerUnit != 1<<20 {
+		t.Errorf("trafficBytesPerUnit = %d, want %d", payload.TrafficBytesPerUnit, 1<<20)
+	}
+	if got := payload.Summary[0]["txHuman"]; got != "4.229 MiB" {
+		t.Errorf("txHuman = %v, want 4.229 MiB", got)
+	}
+	if got := payload.Summary[0]["rxHuman"]; got != "4.260 MiB" {
+		t.Errorf("rxHuman = %v, want 4.260 MiB", got)
+	}
+	if got := payload.Summary[0]["totalHuman"]; got != "8.489 MiB" {
+		t.Errorf("totalHuman = %v, want 8.489 MiB", got)
+	}
+	if got := payload.Summary[1]["totalHuman"]; got != "159.203 MiB" {
+		t.Errorf("second totalHuman = %v, want 159.203 MiB", got)
 	}
 }
 
@@ -129,10 +200,10 @@ func TestAddTrafficHumanFields_IM3173Samples(t *testing.T) {
 		date          string
 		tx, rx, total string
 	}{
-		{date: "08-06", tx: "0.29 GiB", rx: "3.04 GiB", total: "3.34 GiB"},
-		{date: "08-07", tx: "0.27 GiB", rx: "0.87 GiB", total: "1.14 GiB"},
-		{date: "08-13", tx: "0.06 GiB", rx: "0.67 GiB", total: "0.73 GiB"},
-		{date: "summary", tx: "1.21 GiB", rx: "10.52 GiB", total: "11.73 GiB"},
+		{date: "08-06", tx: "0.291 GiB", rx: "3.045 GiB", total: "3.336 GiB"},
+		{date: "08-07", tx: "0.266 GiB", rx: "0.872 GiB", total: "1.137 GiB"},
+		{date: "08-13", tx: "0.056 GiB", rx: "0.671 GiB", total: "0.728 GiB"},
+		{date: "summary", tx: "1.210 GiB", rx: "10.515 GiB", total: "11.725 GiB"},
 	}
 	if len(payload.Rows) != len(want) {
 		t.Fatalf("got %d rows, want %d", len(payload.Rows), len(want))
@@ -156,7 +227,7 @@ func TestTrafficHumanFieldsStructuredOnly(t *testing.T) {
 	if err := FormatOutput(body, jsonIO, "json", WithStructuredTransform(AddTrafficHumanFields)); err != nil {
 		t.Fatalf("json output: %v", err)
 	}
-	if !strings.Contains(jsonOut.String(), `"totalHuman"`) || !strings.Contains(jsonOut.String(), `3.34 GiB`) {
+	if !strings.Contains(jsonOut.String(), `"totalHuman"`) || !strings.Contains(jsonOut.String(), `3.336 GiB`) {
 		t.Errorf("structured output missing totalHuman: %s", jsonOut.String())
 	}
 
