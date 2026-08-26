@@ -183,7 +183,7 @@ func mergeGrepContextGroups(matches []grepMatch) []grepDisplayGroup {
 		}
 
 		lastIndex := len(groups) - 1
-		if lastIndex >= 0 && sameGrepSection(groups[lastIndex], match) &&
+		if lastIndex >= 0 && sameGrepSection(groups[lastIndex], match.DocumentID, match.SectionID) &&
 			lines[0].Line <= groups[lastIndex].Lines[len(groups[lastIndex].Lines)-1].Line+1 {
 			groups[lastIndex].Lines = mergeGrepDisplayLines(groups[lastIndex].Lines, lines)
 			continue
@@ -198,8 +198,8 @@ func mergeGrepContextGroups(matches []grepMatch) []grepDisplayGroup {
 	return groups
 }
 
-func sameGrepSection(group grepDisplayGroup, match grepMatch) bool {
-	return group.DocumentID == match.DocumentID && group.SectionID == match.SectionID
+func sameGrepSection(group grepDisplayGroup, documentID, sectionID string) bool {
+	return group.DocumentID == documentID && group.SectionID == sectionID
 }
 
 func mergeGrepDisplayLines(existing, incoming []grepDisplayLine) []grepDisplayLine {
