@@ -122,6 +122,20 @@ func TestObjectIDCSVArgs(t *testing.T) {
 	})
 }
 
+func TestObjectIDCSVArgsFunc_ScopedFindCommand(t *testing.T) {
+	validator := ObjectIDCSVArgsFunc(cobra.ExactArgs(2), 1, "layerfs id", func(args []string, _ string) string {
+		return "incloud device group layerfs list " + args[0]
+	})
+	cmd := &cobra.Command{}
+
+	err := validator(cmd, []string{"507f1f77bcf86cd799439011", "653b1ff2a84e171614d88695,bad-id"})
+	requireErrContains(t, err,
+		`"bad-id"`,
+		"layerfs id",
+		"incloud device group layerfs list 507f1f77bcf86cd799439011",
+	)
+}
+
 func TestObjectIDArgsAll(t *testing.T) {
 	validator := ObjectIDArgsAll(cobra.MinimumNArgs(1), "asset id", "incloud device asset list --name %s")
 	cmd := &cobra.Command{}

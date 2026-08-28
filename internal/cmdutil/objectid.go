@@ -95,6 +95,16 @@ func ObjectIDArgsFunc(argCount cobra.PositionalArgs, pos int, resource string, f
 // comma-separated list of ids (e.g. "id1,id2,id3"); every element must be a
 // valid ObjectId.
 func ObjectIDCSVArgs(argCount cobra.PositionalArgs, pos int, resource, findCmdTemplate string) cobra.PositionalArgs {
+	return ObjectIDCSVArgsFunc(argCount, pos, resource, func(_ []string, v string) string {
+		return FindCmd(findCmdTemplate, v)
+	})
+}
+
+// ObjectIDCSVArgsFunc is like ObjectIDCSVArgs but lets the caller build the
+// find command from the full argument list and the offending element, e.g.
+// to scope it by an already-validated parent id (args[0]) rather than the
+// offending value itself.
+func ObjectIDCSVArgsFunc(argCount cobra.PositionalArgs, pos int, resource string, findCmd func(args []string, value string) string) cobra.PositionalArgs {
 	return func(cmd *cobra.Command, args []string) error {
 		if argCount != nil {
 			if err := argCount(cmd, args); err != nil {
@@ -106,7 +116,7 @@ func ObjectIDCSVArgs(argCount cobra.PositionalArgs, pos int, resource, findCmdTe
 		}
 		for _, v := range strings.Split(args[pos], ",") {
 			if !IsObjectID(v) {
-				return objectIDError(resource, v, FindCmd(findCmdTemplate, v))
+				return objectIDError(resource, v, findCmd(args, v))
 			}
 		}
 		return nil
