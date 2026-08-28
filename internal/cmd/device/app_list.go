@@ -16,7 +16,7 @@ func newCmdAppList(f *factory.Factory) *cobra.Command {
 		Aliases: []string{"ls"},
 		Example: `  # List apps on a device
   incloud device app list 507f1f77bcf86cd799439011`,
-		Args: cobra.ExactArgs(1),
+		Args: cmdutil.ObjectIDArgs(cobra.ExactArgs(1), 0, "device id", "incloud device list -q %s"),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := f.APIClient()
 			if err != nil {

@@ -9,6 +9,7 @@ import (
 	"github.com/tidwall/gjson"
 
 	"github.com/inhandnet/incloud-cli/internal/api"
+	"github.com/inhandnet/incloud-cli/internal/cmdutil"
 	"github.com/inhandnet/incloud-cli/internal/factory"
 	"github.com/inhandnet/incloud-cli/internal/iostreams"
 )
@@ -33,7 +34,7 @@ func NewCmdExecCapture(f *factory.Factory) *cobra.Command {
 
   # Capture and download the pcap file
   incloud device exec capture 507f1f77bcf86cd799439011 --interface eth0 --download capture.pcap`,
-		Args: cobra.ExactArgs(1),
+		Args: cmdutil.ObjectIDArgs(cobra.ExactArgs(1), 0, "device id", "incloud device list -q %s"),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runCaptureAndWait(f, cmd, args[0], map[string]interface{}{
 				"interface":     iface,

@@ -22,7 +22,7 @@ func newCmdClientOnlineStats(f *factory.Factory) *cobra.Command {
 		Use:   "online-stats <client-id>",
 		Short: "Client online statistics",
 		Long:  "Display online time, offline count, online rate, and event timeline for a client.",
-		Args:  cobra.ExactArgs(1),
+		Args:  cmdutil.ObjectIDArgs(cobra.ExactArgs(1), 0, "client id", "incloud device client list -q %s"),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := f.APIClient()
 			if err != nil {

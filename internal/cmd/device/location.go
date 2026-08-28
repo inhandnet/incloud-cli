@@ -7,6 +7,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/inhandnet/incloud-cli/internal/cmdutil"
 	"github.com/inhandnet/incloud-cli/internal/factory"
 	"github.com/inhandnet/incloud-cli/internal/iostreams"
 )
@@ -36,7 +37,7 @@ func newCmdLocationGet(f *factory.Factory) *cobra.Command {
 
   # Table output
   incloud device location get 507f1f77bcf86cd799439011 -o table`,
-		Args: cobra.ExactArgs(1),
+		Args: cmdutil.ObjectIDArgs(cobra.ExactArgs(1), 0, "device id", "incloud device list -q %s"),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			deviceID := args[0]
 			output, _ := cmd.Flags().GetString("output")
@@ -81,7 +82,7 @@ func newCmdLocationSet(f *factory.Factory) *cobra.Command {
 		Example: `  # Set device location
   incloud device location set 507f1f77bcf86cd799439011 \
     --longitude 119.26 --latitude 30.92 --address "Hangzhou, China"`,
-		Args: cobra.ExactArgs(1),
+		Args: cmdutil.ObjectIDArgs(cobra.ExactArgs(1), 0, "device id", "incloud device list -q %s"),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			deviceID := args[0]
 			output, _ := cmd.Flags().GetString("output")
@@ -130,7 +131,7 @@ func newCmdLocationUnpin(f *factory.Factory) *cobra.Command {
 		Long:  "Remove the pinned location and restore automatic positioning (GPS/cell towers).",
 		Example: `  # Unpin device location
   incloud device location unpin 507f1f77bcf86cd799439011`,
-		Args: cobra.ExactArgs(1),
+		Args: cmdutil.ObjectIDArgs(cobra.ExactArgs(1), 0, "device id", "incloud device list -q %s"),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			deviceID := args[0]
 			output, _ := cmd.Flags().GetString("output")
@@ -165,7 +166,7 @@ func newCmdLocationRefresh(f *factory.Factory) *cobra.Command {
 		Long:  "Trigger a location refresh using LBS (cell tower positioning).",
 		Example: `  # Refresh device location
   incloud device location refresh 507f1f77bcf86cd799439011`,
-		Args: cobra.ExactArgs(1),
+		Args: cmdutil.ObjectIDArgs(cobra.ExactArgs(1), 0, "device id", "incloud device list -q %s"),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			deviceID := args[0]
 			output, _ := cmd.Flags().GetString("output")

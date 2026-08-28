@@ -7,6 +7,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/inhandnet/incloud-cli/internal/cmdutil"
 	"github.com/inhandnet/incloud-cli/internal/factory"
 )
 
@@ -23,7 +24,7 @@ func newCmdClientSetPosReady(f *factory.Factory) *cobra.Command {
 			"  priority  prioritize this client's POS traffic\n" +
 			"  default   no special handling (equivalent to unmarked)\n" +
 			"  bypass    exclude this client from POS handling",
-		Args: cobra.ExactArgs(1),
+		Args: cmdutil.ObjectIDArgs(cobra.ExactArgs(1), 0, "client id", "incloud device client list -q %s"),
 		Example: `  # Prioritize a client's POS traffic
   incloud device client set-pos-ready 69b8c537e7f8d2c1e5fffdbc --level priority
 

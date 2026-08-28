@@ -6,6 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/inhandnet/incloud-cli/internal/cmdutil"
 	"github.com/inhandnet/incloud-cli/internal/factory"
 	"github.com/inhandnet/incloud-cli/internal/iostreams"
 )
@@ -30,7 +31,7 @@ func newCmdGroupProjectCreate(f *factory.Factory) *cobra.Command {
 
   # Create with artifact and layerfs
   incloud device group project create 507f1f77bcf86cd799439011 --docker-compose "..." --artifact-key "path/to/artifact" --layerfs-id 653b1ff2a84e171614d88695`,
-		Args: cobra.ExactArgs(1),
+		Args: cmdutil.ObjectIDArgs(cobra.ExactArgs(1), 0, "device group id", "incloud device group list --name %s"),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := f.APIClient()
 			if err != nil {

@@ -42,7 +42,7 @@ Use --daily to show daily offline statistics instead (last 30 days).`,
 
   # Daily stats for a specific month
   incloud device online 507f1f77bcf86cd799439011 --daily --after 2025-03-01T00:00:00Z --before 2025-03-31T00:00:00Z`,
-		Args: cobra.ExactArgs(1),
+		Args: cmdutil.ObjectIDArgs(cobra.ExactArgs(1), 0, "device id", "incloud device list -q %s"),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if opts.Daily {
 				return runOnlineDaily(f, args[0], opts, cmd)

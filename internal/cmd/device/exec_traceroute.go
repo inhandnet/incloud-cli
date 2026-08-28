@@ -3,6 +3,7 @@ package device
 import (
 	"github.com/spf13/cobra"
 
+	"github.com/inhandnet/incloud-cli/internal/cmdutil"
 	"github.com/inhandnet/incloud-cli/internal/factory"
 )
 
@@ -21,7 +22,7 @@ The command starts a traceroute task on the device, subscribes to the result str
 and prints each line as it arrives. Press Ctrl+C to cancel.`,
 		Example: `  # Traceroute to a host from the device
   incloud device exec traceroute 507f1f77bcf86cd799439011 --host 8.8.8.8`,
-		Args: cobra.ExactArgs(1),
+		Args: cmdutil.ObjectIDArgs(cobra.ExactArgs(1), 0, "device id", "incloud device list -q %s"),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runDiagnosisStream(f, cmd, args[0], "traceroute", map[string]any{
 				"host":      host,

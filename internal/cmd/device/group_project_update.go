@@ -6,6 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/inhandnet/incloud-cli/internal/cmdutil"
 	"github.com/inhandnet/incloud-cli/internal/factory"
 	"github.com/inhandnet/incloud-cli/internal/iostreams"
 )
@@ -28,7 +29,13 @@ func newCmdGroupProjectUpdate(f *factory.Factory) *cobra.Command {
 
   # Update description only (works for published projects)
   incloud device group project update 507f1f77bcf86cd799439011 653b1ff2a84e171614d88695 --description "Updated release"`,
-		Args: cobra.ExactArgs(2),
+		Args: cmdutil.ObjectIDArgsFunc(
+			cmdutil.ObjectIDArgs(cobra.ExactArgs(2), 0, "device group id", "incloud device group list --name %s"),
+			1, "project id",
+			func(args []string) string {
+				return "incloud device group project list " + args[0]
+			},
+		),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := f.APIClient()
 			if err != nil {

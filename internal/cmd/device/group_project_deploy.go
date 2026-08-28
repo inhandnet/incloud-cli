@@ -5,6 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/inhandnet/incloud-cli/internal/cmdutil"
 	"github.com/inhandnet/incloud-cli/internal/factory"
 	"github.com/inhandnet/incloud-cli/internal/iostreams"
 	"github.com/inhandnet/incloud-cli/internal/ui"
@@ -22,7 +23,13 @@ func newCmdGroupProjectDeploy(f *factory.Factory) *cobra.Command {
 
   # Skip confirmation
   incloud device group project deploy 507f1f77bcf86cd799439011 653b1ff2a84e171614d88695 --yes`,
-		Args: cobra.ExactArgs(2),
+		Args: cmdutil.ObjectIDArgsFunc(
+			cmdutil.ObjectIDArgs(cobra.ExactArgs(2), 0, "device group id", "incloud device group list --name %s"),
+			1, "project id",
+			func(args []string) string {
+				return "incloud device group project list " + args[0]
+			},
+		),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			groupID := args[0]
 			projectID := args[1]

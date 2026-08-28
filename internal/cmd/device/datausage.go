@@ -34,7 +34,7 @@ func NewCmdDatausage(f *factory.Factory) *cobra.Command {
 
   # Monthly data usage for a specific year
   incloud device datausage 507f1f77bcf86cd799439011 --interval monthly --year 2024`,
-		Args: cobra.MaximumNArgs(1),
+		Args: cmdutil.ObjectIDArgs(cobra.MaximumNArgs(1), 0, "device id", "incloud device list -q %s"),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) == 0 {
 				return cmd.Help()

@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/inhandnet/incloud-cli/internal/cmd/tunnel"
+	"github.com/inhandnet/incloud-cli/internal/cmdutil"
 	"github.com/inhandnet/incloud-cli/internal/factory"
 )
 
@@ -47,7 +48,7 @@ and prompt are stripped. stdout contains only the command output.`,
   # With longer timeout for slow commands
   incloud device exec cli 507f1f77bcf86cd799439011 --user adm --password 123456 \
     --timeout 60 "ping 8.8.8.8"`,
-		Args: cobra.ExactArgs(2),
+		Args: cmdutil.ObjectIDArgs(cobra.ExactArgs(2), 0, "device id", "incloud device list -q %s"),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			deviceID := args[0]
 

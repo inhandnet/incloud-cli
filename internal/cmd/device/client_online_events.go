@@ -23,7 +23,7 @@ func newCmdClientOnlineEvents(f *factory.Factory) *cobra.Command {
 		Use:   "online-events <client-id>",
 		Short: "Client connect/disconnect events",
 		Long:  "List online/offline events (connect and disconnect history) for a client.",
-		Args:  cobra.ExactArgs(1),
+		Args:  cmdutil.ObjectIDArgs(cobra.ExactArgs(1), 0, "client id", "incloud device client list -q %s"),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := f.APIClient()
 			if err != nil {

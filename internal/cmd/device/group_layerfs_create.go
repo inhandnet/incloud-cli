@@ -5,6 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/inhandnet/incloud-cli/internal/cmdutil"
 	"github.com/inhandnet/incloud-cli/internal/factory"
 	"github.com/inhandnet/incloud-cli/internal/iostreams"
 )
@@ -25,7 +26,7 @@ func newCmdGroupLayerfsCreate(f *factory.Factory) *cobra.Command {
 
   # With description
   incloud device group layerfs create 507f1f77bcf86cd799439011 --name my-snapshot --device-id 653b1ff2a84e171614d88695 --description "Base image v1"`,
-		Args: cobra.ExactArgs(1),
+		Args: cmdutil.ObjectIDArgs(cobra.ExactArgs(1), 0, "device group id", "incloud device group list --name %s"),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := f.APIClient()
 			if err != nil {

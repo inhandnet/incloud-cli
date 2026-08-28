@@ -5,6 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/inhandnet/incloud-cli/internal/cmdutil"
 	"github.com/inhandnet/incloud-cli/internal/factory"
 	"github.com/inhandnet/incloud-cli/internal/iostreams"
 )
@@ -19,7 +20,13 @@ func newCmdConfigHistoryGet(f *factory.Factory) *cobra.Command {
 
   # YAML output
   incloud device config snapshots get 507f1f77bcf86cd799439011 69ba26b4ed93070787cea168 -o yaml`,
-		Args: cobra.ExactArgs(2),
+		Args: cmdutil.ObjectIDArgsFunc(
+			cmdutil.ObjectIDArgs(cobra.ExactArgs(2), 0, "device id", "incloud device list -q %s"),
+			1, "snapshot id",
+			func(args []string) string {
+				return "incloud device config history list " + args[0]
+			},
+		),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			deviceID := args[0]
 			snapshotID := args[1]

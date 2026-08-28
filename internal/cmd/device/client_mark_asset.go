@@ -5,6 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/inhandnet/incloud-cli/internal/cmdutil"
 	"github.com/inhandnet/incloud-cli/internal/factory"
 )
 
@@ -13,7 +14,7 @@ func newCmdClientMarkAsset(f *factory.Factory) *cobra.Command {
 		Use:   "mark-asset <client-id> [client-id...]",
 		Short: "Mark clients as assets",
 		Long:  "Convert one or more connected clients into tracked network assets.",
-		Args:  cobra.MinimumNArgs(1),
+		Args:  cmdutil.ObjectIDArgsAll(cobra.MinimumNArgs(1), "client id", "incloud device client list -q %s"),
 		Example: `  # Mark a single client as asset
   incloud device client mark-asset 507f1f77bcf86cd799439011
 

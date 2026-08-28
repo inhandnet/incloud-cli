@@ -52,7 +52,7 @@ start of today (UTC) and --before defaults to now if not specified.`,
 
   # Filter by keywords
   incloud device log syslog 60af...id --after 2024-01-01T00:00:00Z --before 2024-01-01T01:00:00Z --keywords error --keywords warning`,
-		Args: cobra.ExactArgs(1),
+		Args: cmdutil.ObjectIDArgs(cobra.ExactArgs(1), 0, "device id", "incloud device list -q %s"),
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			if !opts.Fetch {
 				if opts.After == "" {
