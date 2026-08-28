@@ -3,6 +3,7 @@ package device
 import (
 	"github.com/spf13/cobra"
 
+	"github.com/inhandnet/incloud-cli/internal/cmdutil"
 	"github.com/inhandnet/incloud-cli/internal/factory"
 )
 
@@ -13,7 +14,7 @@ func newCmdClientDatausageDaily(f *factory.Factory) *cobra.Command {
 		Use:   "datausage-daily <client-id>",
 		Short: "Client daily data usage",
 		Long:  "Display daily data usage (tx/rx) for a client in a given month.",
-		Args:  cobra.ExactArgs(1),
+		Args:  cmdutil.ObjectIDArgs(cobra.ExactArgs(1), 0, "client id", "incloud device client list -q %s"),
 		Example: `  # Current month
   incloud device client datausage-daily 507f1f77bcf86cd799439011
 

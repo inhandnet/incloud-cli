@@ -57,7 +57,7 @@ func TestDeleteDevice_WithYesFlag(t *testing.T) {
 	f, errBuf := newTestFactory(t, server.URL)
 
 	cmd := NewCmdDelete(f)
-	cmd.SetArgs([]string{"abc123", "--yes"})
+	cmd.SetArgs([]string{"507f1f77bcf86cd799439031", "--yes"})
 	err := cmd.Execute()
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -66,10 +66,10 @@ func TestDeleteDevice_WithYesFlag(t *testing.T) {
 	if gotMethod != http.MethodDelete {
 		t.Errorf("expected DELETE, got %s", gotMethod)
 	}
-	if gotPath != "/api/v1/devices/abc123" {
+	if gotPath != "/api/v1/devices/507f1f77bcf86cd799439031" {
 		t.Errorf("unexpected path: %s", gotPath)
 	}
-	if !strings.Contains(errBuf.String(), "Device abc123 deleted.") {
+	if !strings.Contains(errBuf.String(), "Device 507f1f77bcf86cd799439031 deleted.") {
 		t.Errorf("unexpected output: %s", errBuf.String())
 	}
 }
@@ -77,18 +77,18 @@ func TestDeleteDevice_WithYesFlag(t *testing.T) {
 func TestDeleteDevice_WithYesFlag_200Response(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte(`{"result":{"_id":"abc123","name":"test"}}`))
+		_, _ = w.Write([]byte(`{"result":{"_id":"507f1f77bcf86cd799439031","name":"test"}}`))
 	}))
 	defer server.Close()
 
 	f, errBuf := newTestFactory(t, server.URL)
 
 	cmd := NewCmdDelete(f)
-	cmd.SetArgs([]string{"abc123", "--yes"})
+	cmd.SetArgs([]string{"507f1f77bcf86cd799439031", "--yes"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if !strings.Contains(errBuf.String(), "Device abc123 deleted.") {
+	if !strings.Contains(errBuf.String(), "Device 507f1f77bcf86cd799439031 deleted.") {
 		t.Errorf("unexpected output: %s", errBuf.String())
 	}
 }
@@ -103,7 +103,7 @@ func TestDeleteDevice_HTTPError(t *testing.T) {
 	f, _ := newTestFactory(t, server.URL)
 
 	cmd := NewCmdDelete(f)
-	cmd.SetArgs([]string{"notfound", "--yes"})
+	cmd.SetArgs([]string{"507f1f77bcf86cd799439032", "--yes"})
 	err := cmd.Execute()
 	if err == nil {
 		t.Fatal("expected error")
@@ -120,7 +120,7 @@ func TestDeleteDevice_NonTTYWithoutYes(t *testing.T) {
 	f, _ := newTestFactory(t, "https://example.com")
 	// In is a strings.Reader (not a *os.File), so it's non-TTY
 	cmd := NewCmdDelete(f)
-	cmd.SetArgs([]string{"abc123"})
+	cmd.SetArgs([]string{"507f1f77bcf86cd799439031"})
 	err := cmd.Execute()
 	if err == nil {
 		t.Fatal("expected error for non-TTY without --yes")
@@ -143,7 +143,7 @@ func TestDeleteDevice_ConfirmationAbort(t *testing.T) {
 	f.IO.In = r
 
 	cmd := NewCmdDelete(f)
-	cmd.SetArgs([]string{"abc123"})
+	cmd.SetArgs([]string{"507f1f77bcf86cd799439031"})
 	// This will fail the isatty check since a pipe is not a terminal
 	execErr := cmd.Execute()
 	// Pipe is not a TTY, so it should error asking for --yes

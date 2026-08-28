@@ -235,7 +235,7 @@ func TestAssetDeleteBatch(t *testing.T) {
 
 	f, _ := newTestFactory(t, srv.URL)
 	root := newAssetRoot(f)
-	root.SetArgs([]string{"asset", "delete", "id1", "id2", "id3", "-y"})
+	root.SetArgs([]string{"asset", "delete", "507f1f77bcf86cd799439011", "507f1f77bcf86cd799439012", "507f1f77bcf86cd799439013", "-y"})
 	if err := root.Execute(); err != nil {
 		t.Fatalf("asset delete batch: %v", err)
 	}

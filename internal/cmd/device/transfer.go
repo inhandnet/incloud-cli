@@ -5,6 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/inhandnet/incloud-cli/internal/cmdutil"
 	"github.com/inhandnet/incloud-cli/internal/factory"
 	"github.com/inhandnet/incloud-cli/internal/ui"
 )
@@ -27,7 +28,7 @@ source organization and recreated in the target organization.`,
 
   # Skip confirmation
   incloud device transfer 507f1f77bcf86cd799439011 --org 60b76cb7ee4e6d5d842429da -y`,
-		Args: cobra.ExactArgs(1),
+		Args: cmdutil.ObjectIDArgs(cobra.ExactArgs(1), 0, "device id", "incloud device list -q %s"),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			deviceID := args[0]
 

@@ -6,6 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/inhandnet/incloud-cli/internal/cmdutil"
 	"github.com/inhandnet/incloud-cli/internal/factory"
 	"github.com/inhandnet/incloud-cli/internal/iostreams"
 	"github.com/inhandnet/incloud-cli/internal/unitdecl"
@@ -44,7 +45,7 @@ Table output uses different, shorter field names.`,
 
   # Table with selected fields
   incloud device interface 507f1f77bcf86cd799439011 -o table -f name -f type -f state -f gateway`,
-		Args: cobra.ExactArgs(1),
+		Args: cmdutil.ObjectIDArgs(cobra.ExactArgs(1), 0, "device id", "incloud device list -q %s"),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			deviceID := args[0]
 

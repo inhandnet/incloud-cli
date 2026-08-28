@@ -5,6 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/inhandnet/incloud-cli/internal/cmdutil"
 	"github.com/inhandnet/incloud-cli/internal/factory"
 )
 
@@ -19,7 +20,7 @@ func NewCmdExecSpeedtestConfig(f *factory.Factory) *cobra.Command {
 
   # Refresh server nodes for a specific interface
   incloud device exec speedtest-config 507f1f77bcf86cd799439011 --interface eth0`,
-		Args: cobra.ExactArgs(1),
+		Args: cmdutil.ObjectIDArgs(cobra.ExactArgs(1), 0, "device id", "incloud device list -q %s"),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			q := url.Values{}
 			if iface != "" {

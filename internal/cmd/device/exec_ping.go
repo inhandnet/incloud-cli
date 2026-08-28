@@ -3,6 +3,7 @@ package device
 import (
 	"github.com/spf13/cobra"
 
+	"github.com/inhandnet/incloud-cli/internal/cmdutil"
 	"github.com/inhandnet/incloud-cli/internal/factory"
 )
 
@@ -28,7 +29,7 @@ Press Ctrl+C to cancel.`,
 
   # With specific interface and count
   incloud device exec ping 507f1f77bcf86cd799439011 --host 8.8.8.8 --interface eth0 --count 10`,
-		Args: cobra.ExactArgs(1),
+		Args: cmdutil.ObjectIDArgs(cobra.ExactArgs(1), 0, "device id", "incloud device list -q %s"),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runDiagnosisStream(f, cmd, args[0], "ping", map[string]any{
 				"host":       host,

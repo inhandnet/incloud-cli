@@ -20,7 +20,13 @@ func newCmdGroupProjectGet(f *factory.Factory) *cobra.Command {
 
   # With expanded resources
   incloud device group project get 507f1f77bcf86cd799439011 653b1ff2a84e171614d88695 --expand creator,edge-layerfs`,
-		Args: cobra.ExactArgs(2),
+		Args: cmdutil.ObjectIDArgsFunc(
+			cmdutil.ObjectIDArgs(cobra.ExactArgs(2), 0, "device group id", "incloud device group list --name %s"),
+			1, "project id",
+			func(args []string) string {
+				return "incloud device group project list " + args[0]
+			},
+		),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := f.APIClient()
 			if err != nil {

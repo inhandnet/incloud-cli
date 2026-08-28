@@ -6,6 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/inhandnet/incloud-cli/internal/cmdutil"
 	"github.com/inhandnet/incloud-cli/internal/factory"
 	"github.com/inhandnet/incloud-cli/internal/iostreams"
 	"github.com/inhandnet/incloud-cli/internal/ui"
@@ -23,7 +24,13 @@ func newCmdConfigHistoryRestore(f *factory.Factory) *cobra.Command {
 
   # Skip confirmation
   incloud device config snapshots restore 507f1f77bcf86cd799439011 69ba26b4ed93070787cea168 --yes`,
-		Args: cobra.ExactArgs(2),
+		Args: cmdutil.ObjectIDArgsFunc(
+			cmdutil.ObjectIDArgs(cobra.ExactArgs(2), 0, "device id", "incloud device list -q %s"),
+			1, "snapshot id",
+			func(args []string) string {
+				return "incloud device config history list " + args[0]
+			},
+		),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			deviceID := args[0]
 			snapshotID := args[1]

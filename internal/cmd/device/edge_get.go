@@ -15,7 +15,7 @@ func newCmdEdgeGet(f *factory.Factory) *cobra.Command {
 		Long:  "Get edge-specific properties of a device including project status, environment variables, and CLI configuration.",
 		Example: `  # Get edge device info
   incloud device edge get 507f1f77bcf86cd799439011`,
-		Args: cobra.ExactArgs(1),
+		Args: cmdutil.ObjectIDArgs(cobra.ExactArgs(1), 0, "device id", "incloud device list -q %s"),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := f.APIClient()
 			if err != nil {

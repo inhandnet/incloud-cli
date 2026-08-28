@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/inhandnet/incloud-cli/internal/api"
+	"github.com/inhandnet/incloud-cli/internal/cmdutil"
 	"github.com/inhandnet/incloud-cli/internal/factory"
 	"github.com/inhandnet/incloud-cli/internal/iostreams"
 )
@@ -30,7 +31,7 @@ is used and the request is processed asynchronously.`,
 
   # Bulk invoke a method on multiple devices
   incloud device exec method 507f1f77bcf86cd799439011,653b1ff2a84e171614d88695 syncTime`,
-		Args: cobra.ExactArgs(2),
+		Args: cmdutil.ObjectIDCSVArgs(cobra.ExactArgs(2), 0, "device id", "incloud device list -q %s"),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			idsArg := args[0]
 			method := args[1]

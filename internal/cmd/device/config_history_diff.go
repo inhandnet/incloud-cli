@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/tidwall/gjson"
 
+	"github.com/inhandnet/incloud-cli/internal/cmdutil"
 	"github.com/inhandnet/incloud-cli/internal/factory"
 	"github.com/inhandnet/incloud-cli/internal/iostreams"
 )
@@ -22,7 +23,19 @@ func newCmdConfigHistoryDiff(f *factory.Factory) *cobra.Command {
 
   # JSON output with structured differences
   incloud device config snapshots diff 507f1f77bcf86cd799439011 SNAP_ID_1 SNAP_ID_2 -o json`,
-		Args: cobra.ExactArgs(3),
+		Args: cmdutil.ObjectIDArgsFunc(
+			cmdutil.ObjectIDArgsFunc(
+				cmdutil.ObjectIDArgs(cobra.ExactArgs(3), 0, "device id", "incloud device list -q %s"),
+				1, "snapshot id",
+				func(args []string) string {
+					return "incloud device config history list " + args[0]
+				},
+			),
+			2, "snapshot id",
+			func(args []string) string {
+				return "incloud device config history list " + args[0]
+			},
+		),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			deviceID := args[0]
 			snapshotID1 := args[1]

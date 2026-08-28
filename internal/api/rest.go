@@ -16,9 +16,29 @@ import (
 type HTTPError struct {
 	StatusCode int
 	Body       []byte
+
+	// Path is the request path that produced this error. It's only used to
+	// build the no-route-matched message below; callers that only care about
+	// StatusCode/Body (e.g. errors.As(err, &httpErr) fallback logic) are
+	// unaffected.
+	Path string
 }
 
+// noRouteBody is the exact body the gateway (a Traefik fork) returns from its
+// default http.NotFoundHandler() when a request path doesn't match any
+// configured route. Routes are matched by shape (e.g. an ObjectId-looking
+// path segment), so this fires for malformed ids/paths, not missing
+// resources — those come back from the backend as a JSON
+// {"error":"resource_not_found",...} body instead.
+const noRouteBody = "404 page not found"
+
 func (e *HTTPError) Error() string {
+	if e.StatusCode == http.StatusNotFound && strings.TrimSpace(string(e.Body)) == noRouteBody {
+		return fmt.Sprintf(
+			"HTTP 404: no API route matched %q — the path or one of its id segments is malformed (ids are 24-character hex ObjectIds); this is not a \"resource not found\" response",
+			e.Path,
+		)
+	}
 	return fmt.Sprintf("HTTP %d: %s", e.StatusCode, string(e.Body))
 }
 
@@ -137,7 +157,7 @@ func (c *APIClient) execute(r *resty.Request, method, path string) ([]byte, erro
 	}
 	body := resp.Body()
 	if resp.IsError() {
-		return body, &HTTPError{StatusCode: resp.StatusCode(), Body: body}
+		return body, &HTTPError{StatusCode: resp.StatusCode(), Body: body, Path: path}
 	}
 	return body, nil
 }
@@ -163,7 +183,7 @@ func (c *APIClient) Download(path, destFile string) error {
 
 	if resp.StatusCode >= 400 {
 		body, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("HTTP %d: %s", resp.StatusCode, string(body))
+		return &HTTPError{StatusCode: resp.StatusCode, Body: body, Path: path}
 	}
 
 	f, err := os.Create(destFile)

@@ -1,9 +1,11 @@
 package api
 
 import (
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strings"
 	"testing"
 )
 
@@ -78,6 +80,47 @@ func TestAPIClient_GetError(t *testing.T) {
 	}
 	if got := err.Error(); got != `HTTP 404: {"error":"not found"}` {
 		t.Errorf("unexpected error message: %s", got)
+	}
+}
+
+func TestAPIClient_GetError_NoRouteMatched(t *testing.T) {
+	// Reproduces the gateway's default http.NotFoundHandler() response for a
+	// path that doesn't match any route shape (e.g. a malformed id segment) —
+	// distinct from a resource-level 404, which comes back as JSON.
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		w.WriteHeader(http.StatusNotFound)
+		_, _ = w.Write([]byte("404 page not found\n"))
+	}))
+	defer srv.Close()
+
+	client := NewAPIClient(srv.URL, http.DefaultTransport)
+
+	_, err := client.Get("/api/v1/devices/17572", nil)
+	if err == nil {
+		t.Fatal("expected error for 404 response")
+	}
+
+	var httpErr *HTTPError
+	if !errors.As(err, &httpErr) {
+		t.Fatalf("expected *HTTPError, got %T", err)
+	}
+	if httpErr.StatusCode != http.StatusNotFound {
+		t.Errorf("expected StatusCode 404, got %d", httpErr.StatusCode)
+	}
+
+	msg := err.Error()
+	for _, want := range []string{
+		"/api/v1/devices/17572",
+		"no API route matched",
+		"24-character hex ObjectId",
+	} {
+		if !strings.Contains(msg, want) {
+			t.Errorf("error message %q does not contain %q", msg, want)
+		}
+	}
+	if strings.Contains(msg, "404 page not found") {
+		t.Errorf("error message should not leak the raw gateway body verbatim: %q", msg)
 	}
 }
 

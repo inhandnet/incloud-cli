@@ -5,6 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/inhandnet/incloud-cli/internal/cmdutil"
 	"github.com/inhandnet/incloud-cli/internal/factory"
 	"github.com/inhandnet/incloud-cli/internal/iostreams"
 )
@@ -20,7 +21,7 @@ func newCmdEdgeList(f *factory.Factory) *cobra.Command {
 
   # Get edge info for multiple devices
   incloud device edge list 507f1f77bcf86cd799439011,653b1ff2a84e171614d88695`,
-		Args: cobra.ExactArgs(1),
+		Args: cmdutil.ObjectIDCSVArgs(cobra.ExactArgs(1), 0, "device id", "incloud device list -q %s"),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := f.APIClient()
 			if err != nil {

@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/tidwall/gjson"
 
+	"github.com/inhandnet/incloud-cli/internal/cmdutil"
 	"github.com/inhandnet/incloud-cli/internal/factory"
 	"github.com/inhandnet/incloud-cli/internal/iostreams"
 )
@@ -39,7 +40,7 @@ configuration layers instead (actual, target, pending, group, individual).`,
 
   # Get only the DNS config section
   incloud device config get 507f1f77bcf86cd799439011 --key dns`,
-		Args: cobra.ExactArgs(1),
+		Args: cmdutil.ObjectIDArgs(cobra.ExactArgs(1), 0, "device id", "incloud device list -q %s"),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			deviceID := args[0]
 

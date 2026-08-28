@@ -5,6 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/inhandnet/incloud-cli/internal/cmdutil"
 	"github.com/inhandnet/incloud-cli/internal/factory"
 )
 
@@ -22,7 +23,7 @@ func newCmdAssetUpdate(f *factory.Factory) *cobra.Command {
 		Use:   "update <asset-id>",
 		Short: "Update a network asset",
 		Long:  "Update the properties of an existing network asset. Name, category, and status are required by the API; omitting them will result in a server-side validation error.",
-		Args:  cobra.ExactArgs(1),
+		Args:  cmdutil.ObjectIDArgs(cobra.ExactArgs(1), 0, "asset id", "incloud device asset list --name %s"),
 		Example: `  # Update status only (name and category still required by API)
   incloud device asset update 507f1f77bcf86cd799439011 \
     --name "Office Router" --category router --status decommissioned

@@ -3,6 +3,7 @@ package device
 import (
 	"github.com/spf13/cobra"
 
+	"github.com/inhandnet/incloud-cli/internal/cmdutil"
 	"github.com/inhandnet/incloud-cli/internal/factory"
 	"github.com/inhandnet/incloud-cli/internal/iostreams"
 )
@@ -24,7 +25,7 @@ func newCmdClientDatausageHourly(f *factory.Factory) *cobra.Command {
 		Use:   "datausage-hourly <client-id>",
 		Short: "Client hourly data usage",
 		Long:  "Display hourly data usage (tx/rx) time-series for a client.",
-		Args:  cobra.ExactArgs(1),
+		Args:  cmdutil.ObjectIDArgs(cobra.ExactArgs(1), 0, "client id", "incloud device client list -q %s"),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return fetchClientSeries(f, cmd, args[0], "datausage-hourly", opts, defaultClientDatausageFields,
 				clientDatausageFormatters, clientDatausageStructuredTransform)

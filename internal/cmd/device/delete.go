@@ -5,6 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/inhandnet/incloud-cli/internal/cmdutil"
 	"github.com/inhandnet/incloud-cli/internal/factory"
 	"github.com/inhandnet/incloud-cli/internal/ui"
 )
@@ -16,7 +17,7 @@ func NewCmdDelete(f *factory.Factory) *cobra.Command {
 		Use:     "delete <id>",
 		Aliases: []string{"rm"},
 		Short:   "Delete a device",
-		Args:    cobra.ExactArgs(1),
+		Args:    cmdutil.ObjectIDArgs(cobra.ExactArgs(1), 0, "device id", "incloud device list -q %s"),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			id := args[0]
 

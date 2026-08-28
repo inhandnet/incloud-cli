@@ -30,7 +30,7 @@ func NewCmdAntenna(f *factory.Factory) *cobra.Command {
 
   # Table output with selected fields
   incloud device antenna 507f1f77bcf86cd799439011 --after 2024-01-01T00:00:00Z --before 2024-01-02T00:00:00Z -o table -f time -f antenna -f rsrp`,
-		Args: cobra.ExactArgs(1),
+		Args: cmdutil.ObjectIDArgs(cobra.ExactArgs(1), 0, "device id", "incloud device list -q %s"),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			deviceID := args[0]
 

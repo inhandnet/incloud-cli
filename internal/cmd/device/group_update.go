@@ -6,6 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/inhandnet/incloud-cli/internal/cmdutil"
 	"github.com/inhandnet/incloud-cli/internal/factory"
 	"github.com/inhandnet/incloud-cli/internal/iostreams"
 )
@@ -30,7 +31,7 @@ func newCmdGroupUpdate(f *factory.Factory) *cobra.Command {
 
   # Set tags
   incloud device group update 507f1f77bcf86cd799439011 --tag env=prod --tag region=us`,
-		Args: cobra.ExactArgs(1),
+		Args: cmdutil.ObjectIDArgs(cobra.ExactArgs(1), 0, "device group id", "incloud device group list --name %s"),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			body := map[string]any{}
 

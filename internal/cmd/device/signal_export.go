@@ -32,7 +32,7 @@ func newCmdSignalExport(f *factory.Factory) *cobra.Command {
 
   # Export to stdout (pipe to file)
   incloud device signal export 507f1f77bcf86cd799439011 > signal.xlsx`,
-		Args: cobra.ExactArgs(1),
+		Args: cmdutil.ObjectIDArgs(cobra.ExactArgs(1), 0, "device id", "incloud device list -q %s"),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			deviceID := args[0]
 

@@ -55,7 +55,7 @@ Table output echoes the payload with its original field names.`,
 
   # Show all fields including payload
   incloud device log mqtt 507f1f77bcf86cd799439011 -o table -f timestamp -f logType -f topic -f payload`,
-		Args: cobra.ExactArgs(1),
+		Args: cmdutil.ObjectIDArgs(cobra.ExactArgs(1), 0, "device id", "incloud device list -q %s"),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if opts.Order != "asc" && opts.Order != "desc" {
 				return fmt.Errorf("invalid --order value %q: must be asc or desc", opts.Order)

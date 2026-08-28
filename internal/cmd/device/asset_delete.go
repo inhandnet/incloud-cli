@@ -6,6 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/inhandnet/incloud-cli/internal/cmdutil"
 	"github.com/inhandnet/incloud-cli/internal/factory"
 	"github.com/inhandnet/incloud-cli/internal/ui"
 )
@@ -18,7 +19,7 @@ func newCmdAssetDelete(f *factory.Factory) *cobra.Command {
 		Aliases: []string{"rm"},
 		Short:   "Delete network assets",
 		Long:    "Delete one or more network assets. Supports both single and batch deletion.",
-		Args:    cobra.MinimumNArgs(1),
+		Args:    cmdutil.ObjectIDArgsAll(cobra.MinimumNArgs(1), "asset id", "incloud device asset list --name %s"),
 		Example: `  # Delete a single asset
   incloud device asset delete 507f1f77bcf86cd799439011
 

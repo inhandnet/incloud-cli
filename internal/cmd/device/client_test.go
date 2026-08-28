@@ -49,7 +49,7 @@ func TestClientMarkAsset(t *testing.T) {
 
 	f, _ := newTestFactory(t, srv.URL)
 	root := newClientRoot(f)
-	root.SetArgs([]string{"client", "mark-asset", "c1", "c2"})
+	root.SetArgs([]string{"client", "mark-asset", "507f1f77bcf86cd799439021", "507f1f77bcf86cd799439022"})
 	if err := root.Execute(); err != nil {
 		t.Fatalf("client mark-asset: %v", err)
 	}
@@ -62,7 +62,7 @@ func TestClientMarkAsset(t *testing.T) {
 	}
 	ids, ok := gotBody["ids"].([]interface{})
 	if !ok || len(ids) != 2 {
-		t.Errorf("body.ids = %v, want [c1 c2]", gotBody["ids"])
+		t.Errorf("body.ids = %v, want [507f1f77bcf86cd799439021 507f1f77bcf86cd799439022]", gotBody["ids"])
 	}
 }
 
@@ -177,11 +177,11 @@ func TestClientGet_Basic(t *testing.T) {
 
 	f, _ := newTestFactory(t, server.URL)
 	cmd := newClientRoot(f)
-	cmd.SetArgs([]string{"client", "get", "client123", "-o", "json"})
+	cmd.SetArgs([]string{"client", "get", "507f1f77bcf86cd799439023", "-o", "json"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if gotPath != "/api/v1/network/clients/client123" {
+	if gotPath != "/api/v1/network/clients/507f1f77bcf86cd799439023" {
 		t.Errorf("unexpected path: %s", gotPath)
 	}
 }
@@ -204,7 +204,7 @@ func TestClientGet_HTTPError(t *testing.T) {
 
 	f, _ := newTestFactory(t, server.URL)
 	cmd := newClientRoot(f)
-	cmd.SetArgs([]string{"client", "get", "nonexistent", "-o", "json"})
+	cmd.SetArgs([]string{"client", "get", "507f1f77bcf86cd799439024", "-o", "json"})
 	err := cmd.Execute()
 	if err == nil {
 		t.Fatal("expected error")
@@ -224,27 +224,27 @@ func TestClientUpdate_Basic(t *testing.T) {
 		gotMethod = r.Method
 		_ = json.NewDecoder(r.Body).Decode(&gotBody)
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{
-			"result": map[string]interface{}{"_id": "c1", "name": "NewName"},
+			"result": map[string]interface{}{"_id": "507f1f77bcf86cd799439021", "name": "NewName"},
 		})
 	}))
 	defer server.Close()
 
 	f, errBuf := newTestFactory(t, server.URL)
 	cmd := newClientRoot(f)
-	cmd.SetArgs([]string{"client", "update", "c1", "--name", "NewName"})
+	cmd.SetArgs([]string{"client", "update", "507f1f77bcf86cd799439021", "--name", "NewName"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if gotMethod != http.MethodPut {
 		t.Errorf("expected PUT, got %s", gotMethod)
 	}
-	if gotPath != "/api/v1/network/clients/c1" {
+	if gotPath != "/api/v1/network/clients/507f1f77bcf86cd799439021" {
 		t.Errorf("unexpected path: %s", gotPath)
 	}
 	if gotBody["name"] != "NewName" {
 		t.Errorf("unexpected body: %v", gotBody)
 	}
-	if !strings.Contains(errBuf.String(), `Client "NewName" (c1) updated.`) {
+	if !strings.Contains(errBuf.String(), `Client "NewName" (507f1f77bcf86cd799439021) updated.`) {
 		t.Errorf("unexpected stderr: %s", errBuf.String())
 	}
 }
@@ -252,7 +252,7 @@ func TestClientUpdate_Basic(t *testing.T) {
 func TestClientUpdate_RequiresName(t *testing.T) {
 	f, _ := newTestFactory(t, "https://example.com")
 	cmd := newClientRoot(f)
-	cmd.SetArgs([]string{"client", "update", "c1"})
+	cmd.SetArgs([]string{"client", "update", "507f1f77bcf86cd799439021"})
 	if err := cmd.Execute(); err == nil {
 		t.Fatal("expected error for missing --name")
 	}
@@ -267,7 +267,7 @@ func TestClientUpdate_HTTPError(t *testing.T) {
 
 	f, _ := newTestFactory(t, server.URL)
 	cmd := newClientRoot(f)
-	cmd.SetArgs([]string{"client", "update", "c1", "--name", ""})
+	cmd.SetArgs([]string{"client", "update", "507f1f77bcf86cd799439021", "--name", ""})
 	err := cmd.Execute()
 	if err == nil {
 		t.Fatal("expected error")
@@ -284,7 +284,7 @@ func TestClientThroughput_RequiresAfterBefore(t *testing.T) {
 
 	// No flags at all
 	cmd := newClientRoot(f)
-	cmd.SetArgs([]string{"client", "throughput", "c1"})
+	cmd.SetArgs([]string{"client", "throughput", "507f1f77bcf86cd799439021"})
 	err := cmd.Execute()
 	if err == nil {
 		t.Fatal("expected error for missing required flags")
@@ -295,7 +295,7 @@ func TestClientThroughput_RequiresAfterBefore(t *testing.T) {
 
 	// Only --after
 	cmd = newClientRoot(f)
-	cmd.SetArgs([]string{"client", "throughput", "c1", "--after", "2026-03-17T00:00:00Z"})
+	cmd.SetArgs([]string{"client", "throughput", "507f1f77bcf86cd799439021", "--after", "2026-03-17T00:00:00Z"})
 	err = cmd.Execute()
 	if err == nil {
 		t.Fatal("expected error for missing --before")
@@ -315,12 +315,12 @@ func TestClientThroughput_Basic(t *testing.T) {
 
 	f, _ := newTestFactory(t, server.URL)
 	cmd := newClientRoot(f)
-	cmd.SetArgs([]string{"client", "throughput", "c1",
+	cmd.SetArgs([]string{"client", "throughput", "507f1f77bcf86cd799439021",
 		"--after", "2026-03-17T00:00:00Z", "--before", "2026-03-18T00:00:00Z", "-o", "json"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if gotPath != "/api/v1/network/clients/c1/throughput" {
+	if gotPath != "/api/v1/network/clients/507f1f77bcf86cd799439021/throughput" {
 		t.Errorf("unexpected path: %s", gotPath)
 	}
 }
@@ -330,7 +330,7 @@ func TestClientThroughput_Basic(t *testing.T) {
 func TestClientRSSI_RequiresAfterBefore(t *testing.T) {
 	f, _ := newTestFactory(t, "https://example.com")
 	cmd := newClientRoot(f)
-	cmd.SetArgs([]string{"client", "rssi", "c1"})
+	cmd.SetArgs([]string{"client", "rssi", "507f1f77bcf86cd799439021"})
 	err := cmd.Execute()
 	if err == nil {
 		t.Fatal("expected error for missing required flags")
@@ -351,12 +351,12 @@ func TestClientRSSI_Basic(t *testing.T) {
 
 	f, _ := newTestFactory(t, server.URL)
 	cmd := newClientRoot(f)
-	cmd.SetArgs([]string{"client", "rssi", "c1",
+	cmd.SetArgs([]string{"client", "rssi", "507f1f77bcf86cd799439021",
 		"--after", "2026-03-17T00:00:00Z", "--before", "2026-03-18T00:00:00Z", "-o", "json"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if gotPath != "/api/v1/network/clients/c1/rssi" {
+	if gotPath != "/api/v1/network/clients/507f1f77bcf86cd799439021/rssi" {
 		t.Errorf("unexpected path: %s", gotPath)
 	}
 	if !strings.Contains(gotQuery, "after=") || !strings.Contains(gotQuery, "before=") {
@@ -369,7 +369,7 @@ func TestClientRSSI_Basic(t *testing.T) {
 func TestClientSINR_RequiresAfterBefore(t *testing.T) {
 	f, _ := newTestFactory(t, "https://example.com")
 	cmd := newClientRoot(f)
-	cmd.SetArgs([]string{"client", "sinr", "c1"})
+	cmd.SetArgs([]string{"client", "sinr", "507f1f77bcf86cd799439021"})
 	err := cmd.Execute()
 	if err == nil {
 		t.Fatal("expected error for missing required flags")
@@ -391,12 +391,12 @@ func TestClientDatausageHourly_Basic(t *testing.T) {
 
 	f, _ := newTestFactory(t, server.URL)
 	cmd := newClientRoot(f)
-	cmd.SetArgs([]string{"client", "datausage-hourly", "c1",
+	cmd.SetArgs([]string{"client", "datausage-hourly", "507f1f77bcf86cd799439021",
 		"--after", "2026-03-17T00:00:00Z", "--before", "2026-03-18T00:00:00Z", "-o", "json"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if gotPath != "/api/v1/network/clients/c1/datausage-hourly" {
+	if gotPath != "/api/v1/network/clients/507f1f77bcf86cd799439021/datausage-hourly" {
 		t.Errorf("unexpected path: %s", gotPath)
 	}
 }
@@ -414,11 +414,11 @@ func TestClientDatausageDaily_Basic(t *testing.T) {
 
 	f, _ := newTestFactory(t, server.URL)
 	cmd := newClientRoot(f)
-	cmd.SetArgs([]string{"client", "datausage-daily", "c1", "--month", "2026-03", "-o", "json"})
+	cmd.SetArgs([]string{"client", "datausage-daily", "507f1f77bcf86cd799439021", "--month", "2026-03", "-o", "json"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if gotPath != "/api/v1/network/clients/c1/datausage-daily" {
+	if gotPath != "/api/v1/network/clients/507f1f77bcf86cd799439021/datausage-daily" {
 		t.Errorf("unexpected path: %s", gotPath)
 	}
 	if !strings.Contains(gotQuery, "month=2026-03") {
@@ -432,7 +432,7 @@ func TestClientDatausageDaily_NoRequiredFlags(t *testing.T) {
 
 	f, _ := newTestFactory(t, server.URL)
 	cmd := newClientRoot(f)
-	cmd.SetArgs([]string{"client", "datausage-daily", "c1", "-o", "json"})
+	cmd.SetArgs([]string{"client", "datausage-daily", "507f1f77bcf86cd799439021", "-o", "json"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("datausage-daily should work without flags: %v", err)
 	}
@@ -459,12 +459,12 @@ func TestClientOnlineEvents_Basic(t *testing.T) {
 
 	f, _ := newTestFactory(t, server.URL)
 	cmd := newClientRoot(f)
-	cmd.SetArgs([]string{"client", "online-events", "c1",
+	cmd.SetArgs([]string{"client", "online-events", "507f1f77bcf86cd799439021",
 		"--limit", "10", "--after", "2026-03-17T00:00:00Z", "-o", "json"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if gotPath != "/api/v1/network/clients/c1/online-events-list" {
+	if gotPath != "/api/v1/network/clients/507f1f77bcf86cd799439021/online-events-list" {
 		t.Errorf("unexpected path: %s", gotPath)
 	}
 	if !strings.Contains(gotQuery, "limit=10") {
@@ -491,12 +491,12 @@ func TestClientOnlineStats_Basic(t *testing.T) {
 
 	f, _ := newTestFactory(t, server.URL)
 	cmd := newClientRoot(f)
-	cmd.SetArgs([]string{"client", "online-stats", "c1",
+	cmd.SetArgs([]string{"client", "online-stats", "507f1f77bcf86cd799439021",
 		"--after", "2026-03-17T00:00:00Z", "--before", "2026-03-18T00:00:00Z", "-o", "json"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if gotPath != "/api/v1/network/clients/c1/online-events-chart/statistics" {
+	if gotPath != "/api/v1/network/clients/507f1f77bcf86cd799439021/online-events-chart/statistics" {
 		t.Errorf("unexpected path: %s", gotPath)
 	}
 }
@@ -543,13 +543,13 @@ func TestClientSetPosReady_Basic(t *testing.T) {
 
 	f, errBuf := newTestFactory(t, srv.URL)
 	root := newClientRoot(f)
-	root.SetArgs([]string{"client", "set-pos-ready", "c1", "--level", "priority"})
+	root.SetArgs([]string{"client", "set-pos-ready", "507f1f77bcf86cd799439021", "--level", "priority"})
 	if err := root.Execute(); err != nil {
 		t.Fatalf("set-pos-ready: %v", err)
 	}
 
-	if gotPath != "/api/v1/network/clients/c1/pos-ready" {
-		t.Errorf("path = %q, want /api/v1/network/clients/c1/pos-ready", gotPath)
+	if gotPath != "/api/v1/network/clients/507f1f77bcf86cd799439021/pos-ready" {
+		t.Errorf("path = %q, want /api/v1/network/clients/507f1f77bcf86cd799439021/pos-ready", gotPath)
 	}
 	if gotMethod != "POST" {
 		t.Errorf("method = %q, want POST", gotMethod)
@@ -572,7 +572,7 @@ func TestClientSetPosReady_Bypass(t *testing.T) {
 
 	f, errBuf := newTestFactory(t, srv.URL)
 	root := newClientRoot(f)
-	root.SetArgs([]string{"client", "set-pos-ready", "c1", "--level", "bypass"})
+	root.SetArgs([]string{"client", "set-pos-ready", "507f1f77bcf86cd799439021", "--level", "bypass"})
 	if err := root.Execute(); err != nil {
 		t.Fatalf("set-pos-ready bypass: %v", err)
 	}
@@ -595,7 +595,7 @@ func TestClientSetPosReady_NormalizesCase(t *testing.T) {
 
 	f, _ := newTestFactory(t, srv.URL)
 	root := newClientRoot(f)
-	root.SetArgs([]string{"client", "set-pos-ready", "c1", "--level", "PRIORITY"})
+	root.SetArgs([]string{"client", "set-pos-ready", "507f1f77bcf86cd799439021", "--level", "PRIORITY"})
 	if err := root.Execute(); err != nil {
 		t.Fatalf("set-pos-ready: %v", err)
 	}
@@ -607,7 +607,7 @@ func TestClientSetPosReady_NormalizesCase(t *testing.T) {
 func TestClientSetPosReady_InvalidLevel(t *testing.T) {
 	f, _ := newTestFactory(t, "https://example.com")
 	root := newClientRoot(f)
-	root.SetArgs([]string{"client", "set-pos-ready", "c1", "--level", "high"})
+	root.SetArgs([]string{"client", "set-pos-ready", "507f1f77bcf86cd799439021", "--level", "high"})
 	if err := root.Execute(); err == nil {
 		t.Fatal("expected error for invalid --level")
 	}
@@ -616,7 +616,7 @@ func TestClientSetPosReady_InvalidLevel(t *testing.T) {
 func TestClientSetPosReady_RequiresLevel(t *testing.T) {
 	f, _ := newTestFactory(t, "https://example.com")
 	root := newClientRoot(f)
-	root.SetArgs([]string{"client", "set-pos-ready", "c1"})
+	root.SetArgs([]string{"client", "set-pos-ready", "507f1f77bcf86cd799439021"})
 	if err := root.Execute(); err == nil {
 		t.Fatal("expected error for missing --level")
 	}
@@ -640,7 +640,7 @@ func TestClientSetPosReady_HTTPError(t *testing.T) {
 
 	f, _ := newTestFactory(t, srv.URL)
 	root := newClientRoot(f)
-	root.SetArgs([]string{"client", "set-pos-ready", "c1", "--level", "priority"})
+	root.SetArgs([]string{"client", "set-pos-ready", "507f1f77bcf86cd799439021", "--level", "priority"})
 	err := root.Execute()
 	if err == nil {
 		t.Fatal("expected error")

@@ -36,7 +36,7 @@ Use 'incloud device config snapshots get' to view the full snapshot including me
   # Paginate
   incloud device config snapshots list 507f1f77bcf86cd799439011 --page 2 --limit 10`,
 		Aliases: []string{"ls"},
-		Args:    cobra.ExactArgs(1),
+		Args:    cmdutil.ObjectIDArgs(cobra.ExactArgs(1), 0, "device id", "incloud device list -q %s"),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			deviceID := args[0]
 
