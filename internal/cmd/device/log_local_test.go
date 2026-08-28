@@ -169,12 +169,12 @@ func TestLogLocal_E2E_Stdout(t *testing.T) {
 	out := f.IO.Out.(*bytes.Buffer)
 
 	cmd := NewCmdLogLocal(f)
-	cmd.SetArgs([]string{"device123", "--lines", "50", "--path", "/var/log/messages", "--timeout", "45"})
+	cmd.SetArgs([]string{"507f1f77bcf86cd799439041", "--lines", "50", "--path", "/var/log/messages", "--timeout", "45"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if gotPath != "/api/v1/devices/device123/logs/local" {
+	if gotPath != "/api/v1/devices/507f1f77bcf86cd799439041/logs/local" {
 		t.Errorf("unexpected path: %s", gotPath)
 	}
 	if gotQuery["lines"] != "50" {
@@ -213,7 +213,7 @@ func TestLogLocal_E2E_FileOutput(t *testing.T) {
 	outFile := filepath.Join(t.TempDir(), "device.log")
 
 	cmd := NewCmdLogLocal(f)
-	cmd.SetArgs([]string{"device123", "--file", outFile})
+	cmd.SetArgs([]string{"507f1f77bcf86cd799439041", "--file", outFile})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -252,7 +252,7 @@ func TestLogLocal_E2E_AllFlag(t *testing.T) {
 	f, _ := newTestFactory(t, server.URL)
 
 	cmd := NewCmdLogLocal(f)
-	cmd.SetArgs([]string{"device123", "--all"})
+	cmd.SetArgs([]string{"507f1f77bcf86cd799439041", "--all"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -275,7 +275,7 @@ func TestLogLocal_E2E_DeviceError(t *testing.T) {
 	f, _ := newTestFactory(t, server.URL)
 
 	cmd := NewCmdLogLocal(f)
-	cmd.SetArgs([]string{"device123"})
+	cmd.SetArgs([]string{"507f1f77bcf86cd799439041"})
 	err := cmd.Execute()
 	if err == nil {
 		t.Fatal("expected error for device timeout")

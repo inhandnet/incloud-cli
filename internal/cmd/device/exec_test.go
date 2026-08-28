@@ -29,7 +29,7 @@ func TestExecMethod_SingleDevice(t *testing.T) {
 	out := f.IO.Out.(*bytes.Buffer)
 
 	cmd := NewCmdExec(f)
-	cmd.SetArgs([]string{"method", "device123", "myMethod", "--payload", `{"key":"val"}`, "--timeout", "15"})
+	cmd.SetArgs([]string{"method", "507f1f77bcf86cd799439041", "myMethod", "--payload", `{"key":"val"}`, "--timeout", "15"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -37,7 +37,7 @@ func TestExecMethod_SingleDevice(t *testing.T) {
 	if gotMethod != http.MethodPost {
 		t.Errorf("expected POST, got %s", gotMethod)
 	}
-	if gotPath != "/api/v1/devices/device123/methods" {
+	if gotPath != "/api/v1/devices/507f1f77bcf86cd799439041/methods" {
 		t.Errorf("unexpected path: %s", gotPath)
 	}
 	if gotBody["method"] != "myMethod" {
@@ -67,7 +67,7 @@ func TestExecMethod_BulkDevices(t *testing.T) {
 	f, errBuf := newTestFactory(t, server.URL)
 
 	cmd := NewCmdExec(f)
-	cmd.SetArgs([]string{"method", "id1,id2,id3", "syncTime"})
+	cmd.SetArgs([]string{"method", "507f1f77bcf86cd799439042,507f1f77bcf86cd799439043,507f1f77bcf86cd799439044", "syncTime"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -88,7 +88,7 @@ func TestExecMethod_InvalidPayload(t *testing.T) {
 	f, _ := newTestFactory(t, "https://example.com")
 
 	cmd := NewCmdExec(f)
-	cmd.SetArgs([]string{"method", "device123", "myMethod", "--payload", "not-json"})
+	cmd.SetArgs([]string{"method", "507f1f77bcf86cd799439041", "myMethod", "--payload", "not-json"})
 	err := cmd.Execute()
 	if err == nil {
 		t.Fatal("expected error for invalid JSON payload")
@@ -103,7 +103,7 @@ func TestExecReboot_Confirmation(t *testing.T) {
 	// In is strings.Reader (non-TTY), should require --yes
 
 	cmd := NewCmdExec(f)
-	cmd.SetArgs([]string{"reboot", "device123"})
+	cmd.SetArgs([]string{"reboot", "507f1f77bcf86cd799439041"})
 	err := cmd.Execute()
 	if err == nil {
 		t.Fatal("expected error for non-TTY without --yes")
@@ -127,7 +127,7 @@ func TestExecReboot_WithYes(t *testing.T) {
 	f, _ := newTestFactory(t, server.URL)
 
 	cmd := NewCmdExec(f)
-	cmd.SetArgs([]string{"reboot", "device123", "--yes"})
+	cmd.SetArgs([]string{"reboot", "507f1f77bcf86cd799439041", "--yes"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -151,7 +151,7 @@ func TestExecRestoreDefaults_WithYes(t *testing.T) {
 	f, _ := newTestFactory(t, server.URL)
 
 	cmd := NewCmdExec(f)
-	cmd.SetArgs([]string{"restore-defaults", "device123", "--yes"})
+	cmd.SetArgs([]string{"restore-defaults", "507f1f77bcf86cd799439041", "--yes"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -201,12 +201,12 @@ func TestExecPing_Stream(t *testing.T) {
 	out := f.IO.Out.(*bytes.Buffer)
 
 	cmd := NewCmdExec(f)
-	cmd.SetArgs([]string{"ping", "device123", "--host", "8.8.8.8"})
+	cmd.SetArgs([]string{"ping", "507f1f77bcf86cd799439041", "--host", "8.8.8.8"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if gotPath != "/api/v1/devices/device123/diagnosis/ping" {
+	if gotPath != "/api/v1/devices/507f1f77bcf86cd799439041/diagnosis/ping" {
 		t.Errorf("unexpected path: %s", gotPath)
 	}
 	output := out.String()
@@ -230,7 +230,7 @@ func TestExecPing_RequiresHost(t *testing.T) {
 	f, _ := newTestFactory(t, "https://example.com")
 
 	cmd := NewCmdExec(f)
-	cmd.SetArgs([]string{"ping", "device123"})
+	cmd.SetArgs([]string{"ping", "507f1f77bcf86cd799439041"})
 	err := cmd.Execute()
 	if err == nil {
 		t.Fatal("expected error for missing --host")
@@ -268,7 +268,7 @@ func TestExecCapture_WaitForCompletion(t *testing.T) {
 	out := f.IO.Out.(*bytes.Buffer)
 
 	cmd := NewCmdExec(f)
-	cmd.SetArgs([]string{"capture", "device123", "--interface", "eth0", "--duration", "60"})
+	cmd.SetArgs([]string{"capture", "507f1f77bcf86cd799439041", "--interface", "eth0", "--duration", "60"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -353,12 +353,12 @@ func TestExecSpeedtestHistory(t *testing.T) {
 	f, _ := newTestFactory(t, server.URL)
 
 	cmd := NewCmdExec(f)
-	cmd.SetArgs([]string{"speedtest-history", "device123", "--page", "2", "--limit", "5", "--after", "2024-01-01T00:00:00Z"})
+	cmd.SetArgs([]string{"speedtest-history", "507f1f77bcf86cd799439041", "--page", "2", "--limit", "5", "--after", "2024-01-01T00:00:00Z"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if gotPath != "/api/v1/devices/device123/diagnosis/speed-test-histories" {
+	if gotPath != "/api/v1/devices/507f1f77bcf86cd799439041/diagnosis/speed-test-histories" {
 		t.Errorf("unexpected path: %s", gotPath)
 	}
 	if gotPage != "1" { // page 2 (1-based) → API page 1 (0-based)
@@ -385,12 +385,12 @@ func TestExecInterfaces(t *testing.T) {
 	f, _ := newTestFactory(t, server.URL)
 
 	cmd := NewCmdExec(f)
-	cmd.SetArgs([]string{"interfaces", "device123"})
+	cmd.SetArgs([]string{"interfaces", "507f1f77bcf86cd799439041"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if gotPath != "/api/v1/devices/device123/diagnosis/interfaces" {
+	if gotPath != "/api/v1/devices/507f1f77bcf86cd799439041/diagnosis/interfaces" {
 		t.Errorf("unexpected path: %s", gotPath)
 	}
 }
