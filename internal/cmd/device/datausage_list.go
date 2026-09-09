@@ -3,7 +3,6 @@ package device
 import (
 	"encoding/json"
 	"fmt"
-	"net/url"
 	"sort"
 
 	"github.com/spf13/cobra"
@@ -53,15 +52,19 @@ func newCmdDatausageList(f *factory.Factory) *cobra.Command {
 				return err
 			}
 
-			q := url.Values{
-				"after":  {cmdutil.ParseTimeFlag(opts.After)},
-				"before": {cmdutil.ParseTimeFlag(opts.Before)},
-			}
-			for _, g := range opts.Groups {
-				q.Add("groups", g)
+			// 平台 datausage/details 只接受 POST，body 里 after/before 是
+			// LocalDate（纯日期），按服务器时区展开成查询区间。
+			reqBody := struct {
+				After  string   `json:"after,omitempty"`
+				Before string   `json:"before,omitempty"`
+				Groups []string `json:"groups,omitempty"`
+			}{
+				After:  cmdutil.ParseDateFlag(opts.After),
+				Before: cmdutil.ParseDateFlag(opts.Before),
+				Groups: opts.Groups,
 			}
 
-			body, err := client.Get("/api/v1/devices/datausage/details", q)
+			body, err := client.Post("/api/v1/devices/datausage/details?expand=device", reqBody)
 			if err != nil {
 				return err
 			}

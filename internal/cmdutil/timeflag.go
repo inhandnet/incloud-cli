@@ -36,3 +36,33 @@ func ParseTimeFlag(s string) string {
 
 	return s
 }
+
+// ParseDateFlag normalises a date/time string to a date-only value
+// (YYYY-MM-DD), for endpoints whose field is a LocalDate: callers may pass a
+// full datetime but only the calendar day matters. The day is taken in the
+// input's own zone (offset-aware keeps that offset's day; naive uses local).
+// Empty and unrecognised strings are returned as-is.
+func ParseDateFlag(s string) string {
+	if s == "" {
+		return ""
+	}
+
+	// Already date-only.
+	if t, err := time.Parse("2006-01-02", s); err == nil {
+		return t.Format("2006-01-02")
+	}
+
+	// Datetime with timezone — take the date in its own offset.
+	if t, err := time.Parse(time.RFC3339, s); err == nil {
+		return t.Format("2006-01-02")
+	}
+
+	// Datetime without timezone — interpret as local, take the date.
+	for _, layout := range localTimeLayouts {
+		if t, err := time.ParseInLocation(layout, s, time.Local); err == nil {
+			return t.Format("2006-01-02")
+		}
+	}
+
+	return s
+}
