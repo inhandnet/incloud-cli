@@ -72,6 +72,9 @@ var ruleTypeRegistry = []RuleTypeDef{
 		{Name: "sinrThreshold", Type: "number", Unit: "dB", Description: "SINR threshold in dB (e.g. 0)"},
 	}},
 
+	// General — security
+	{Type: "device_login_locked", Category: "general", Description: "Device local login locked after consecutive authentication failures"},
+
 	// Network
 	{Type: "sim_switch", Category: "network", Description: "SIM card switched"},
 	{Type: "uplink_switch", Category: "network", Description: "Primary uplink switched"},
