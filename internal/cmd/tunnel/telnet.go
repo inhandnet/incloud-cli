@@ -6,6 +6,9 @@ import (
 	"regexp"
 	"strings"
 	"time"
+	"unicode/utf8"
+
+	"golang.org/x/text/encoding/simplifiedchinese"
 )
 
 // Telnet protocol constants
@@ -146,7 +149,25 @@ var ansiRE = regexp.MustCompile(`\x1b\[[0-9;]*[A-Za-z]|\r|\x08`)
 
 // cleanOutput strips ANSI escape sequences, carriage returns, and backspaces.
 func cleanOutput(s string) string {
-	return ansiRE.ReplaceAllString(s, "")
+	return ensureUTF8(ansiRE.ReplaceAllString(s, ""))
+}
+
+// ensureUTF8 transcodes non-UTF-8 device output to UTF-8. Chinese-firmware INOS
+// devices answer in GBK (e.g. the parse error with the '^' position marker), and
+// those bytes would otherwise reach the copilot sandbox, which decodes subprocess
+// stdout as UTF-8 with replacement — every GBK byte pair collapses into U+FFFD
+// mojibake before the agent or the user ever sees it. Valid UTF-8 passes through
+// untouched; on GBK decode errors the decoder's own output is kept (incomplete
+// trailing bytes become U+FFFD, no worse than the status quo).
+func ensureUTF8(t string) string {
+	if utf8.ValidString(t) {
+		return t
+	}
+	out, err := simplifiedchinese.GBK.NewDecoder().String(t)
+	if err != nil && !utf8.ValidString(out) {
+		return t
+	}
+	return out
 }
 
 // promptEchoRE matches lines like "8 hostname# cmd" or "14:30:00 hostname# cmd"

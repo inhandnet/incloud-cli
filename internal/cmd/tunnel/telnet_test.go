@@ -244,3 +244,33 @@ func TestCleanAndStrip(t *testing.T) {
 		t.Errorf("cleanAndStrip() = %q, want %q", got, want)
 	}
 }
+
+func TestEnsureUTF8(t *testing.T) {
+	// GBK bytes from a Chinese-firmware INOS parse error should transcode cleanly
+	gbk := []byte("% \xce\xde\xd0\xa7\xb5\xc4\xca\xe4\xc8\xeb\xd4\xda'^'\xb1\xea\xbc\xc7\xb4\xa6!")
+	want := "% 无效的输入在'^'标记处!"
+	if got := ensureUTF8(string(gbk)); got != want {
+		t.Errorf("ensureUTF8(gbk) = %q, want %q", got, want)
+	}
+	// Valid UTF-8 passes through untouched
+	if got := ensureUTF8("正常 UTF-8 中文"); got != "正常 UTF-8 中文" {
+		t.Errorf("ensureUTF8(valid utf-8) = %q, want unchanged", got)
+	}
+	// Pure ASCII passes through unchanged (ANSI stripping is cleanOutput's job)
+	if got := ensureUTF8("show interface\r\x1b[2K"); got != "show interface\r\x1b[2K" {
+		t.Errorf("ensureUTF8(ascii+ansi) = %q, want unchanged", got)
+	}
+	// Truncated GBK tail: decoder substitutes U+FFFD for the dangling byte —
+	// no worse than the sandbox's UTF-8 replacement, and only the last char
+	if got := ensureUTF8("\xce"); got != "�" {
+		t.Errorf("ensureUTF8(lone gbk lead byte) = %q, want U+FFFD", got)
+	}
+}
+
+func TestCleanOutputTranscodesGBK(t *testing.T) {
+	gbk := "% \xce\xde\xd0\xa7\xb5\xc4\xca\xe4\xc8\xeb\xd4\xda'^'\xb1\xea\xbc\xc7\xb4\xa6!"
+	want := "% 无效的输入在'^'标记处!"
+	if got := cleanOutput(gbk); got != want {
+		t.Errorf("cleanOutput(gbk) = %q, want %q", got, want)
+	}
+}
