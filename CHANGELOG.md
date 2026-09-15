@@ -1,5 +1,13 @@
 # Unreleased
 
+## Bug Fixes
+
+- **`device config schema validate --device` now validates the way `config update` writes** (IM-3188) — `config update` applies its payload as a JSON merge patch over the device's current configuration, but `validate` checked the payload as a standalone document. For the 8 of 44 config keys whose schema declares `required` at the block level (`qos`, `ntp`, `admin_access`, `policy_route`, `mac_filter`, `domain_filter`, `link_quality`, `ippt` on FWA02-NAVA/V2.0.16), an incremental payload was rejected by `validate` and then accepted by `update` — so callers were validating one payload and submitting another. With `--device`, the payload is now merged over the current configuration and the merged result is validated. Violations the stored configuration already had are reported but no longer fail the payload, and a failure to read the current configuration is an error rather than a silent downgrade. `--product`/`--version` keeps whole-document validation and now says so when a block-level `required` is what failed.
+
+## New Flags
+
+- **`device config schema validate --whole-document`** — Validate the payload as a complete document instead of merging it over the device's current configuration. Restores the previous behaviour when `--device` is given.
+
 ## Breaking Changes
 
 - **`knowledge search` now hits the agentic search endpoint** — results are addressable section candidates: each item carries `document_id` / `section_id` / `heading_path` / `score` and a short `snippet` instead of a full-text fragment (`content`). Fetch the body with the new `knowledge read`. The `--rewrite` flag is removed; a new `--path` flag filters by corpus path prefix, and `--limit` defaults to 10 (1–50).

@@ -17,9 +17,10 @@ import (
 func newCmdSchemaValidate(f *factory.Factory) *cobra.Command {
 	sf := &schemaFlags{}
 	var (
-		key     string
-		payload string
-		file    string
+		key           string
+		payload       string
+		file          string
+		wholeDocument bool
 	)
 
 	cmd := &cobra.Command{
@@ -27,6 +28,16 @@ func newCmdSchemaValidate(f *factory.Factory) *cobra.Command {
 		Short: "Validate JSON payload against a config schema",
 		Long: `Validate a JSON configuration payload against the device's config schema
 before writing it with 'incloud device config update'.
+
+With --device, the payload is validated the way 'config update' actually applies
+it: the payload is treated as a JSON merge patch over the device's current
+configuration, and the merged result is validated. This means an incremental
+payload that only touches some fields of a config block is accepted, matching
+what 'config update' does.
+
+With --product/--version there is no current configuration to merge onto, so the
+payload is validated as a whole document. Use --whole-document to force that
+behaviour even when --device is given.
 
 Uses JSON Schema draft-07 validation. Exits with code 0 on success, 1 on
 validation failure. Useful for AI tools to pre-check generated config.`,
@@ -37,6 +48,10 @@ validation failure. Useful for AI tools to pre-check generated config.`,
   # Validate from file
   incloud device config schema validate --product MR805 --version V2.0.15-111 \
     --key dns --file dns-config.json
+
+  # Incremental payload: validated against the merged result, like 'config update'
+  incloud device config schema validate --device 507f1f77bcf86cd799439011 \
+    --key qos --payload '{"qos":{"user_rules":[]}}'
 
   # Use in pipeline: validate then apply
   incloud device config schema validate -d <id> --key dns --payload '...' && \
@@ -90,9 +105,20 @@ validation failure. Useful for AI tools to pre-check generated config.`,
 				return fmt.Errorf("config schema %q not found for %s/%s", key, pv.product, pv.version)
 			}
 
-			schemaContent := result.Array()[0].Get("content").String()
+			doc := result.Array()[0]
+			schemaContent := doc.Get("content").String()
 			if schemaContent == "" {
 				return fmt.Errorf("config schema %q has no content", key)
+			}
+
+			var schemaKeys []string
+			for _, jk := range doc.Get("jsonKeys").Array() {
+				if s := jk.String(); s != "" {
+					schemaKeys = append(schemaKeys, s)
+				}
+			}
+			if len(schemaKeys) == 0 {
+				schemaKeys = []string{key}
 			}
 
 			// Parse and compile JSON Schema
@@ -111,22 +137,59 @@ validation failure. Useful for AI tools to pre-check generated config.`,
 				return fmt.Errorf("compiling schema: %w", err)
 			}
 
+			// With a device, model what 'config update' actually does: the payload is a
+			// JSON merge patch over the device's current configuration. Validate the
+			// merged result rather than the bare payload, so that an incremental payload
+			// is judged the same way the write path will treat it.
+			merged := sf.device != "" && !wholeDocument
+			target := payloadObj
+			var preExisting []validationError
+			if merged {
+				current, err := fetchMergedConfig(client, sf.device)
+				if err != nil {
+					// Never fall back to whole-document validation here: silently
+					// downgrading would let the caller believe the merged result was
+					// checked when it was not, which is the very bug this guards.
+					return err
+				}
+				base := pruneToKeys(current, schemaKeys)
+				target = applyMergePatch(base, payloadObj)
+
+				// Stored device configs are not guaranteed to satisfy their own
+				// schema: fields the schema does not declare and values that fail
+				// its formats both occur in practice. Those violations are not
+				// caused by this payload and must not fail it, or an incremental
+				// update gets rejected for something it never touched.
+				preExisting = validationErrors(sch.Validate(base))
+			}
+
 			// Validate
-			validationErr := sch.Validate(payloadObj)
-			if validationErr == nil {
-				fmt.Fprintf(f.IO.ErrOut, "Validation passed.\n")
+			validationErr := sch.Validate(target)
+			causes := validationErrors(validationErr)
+			introduced := subtractErrors(causes, preExisting)
+
+			if len(introduced) == 0 {
+				if merged {
+					fmt.Fprintf(f.IO.ErrOut, "Validation passed (against merged config for device %s).\n", sf.device)
+					writePreExistingNote(f.IO.ErrOut, preExisting)
+				} else {
+					fmt.Fprintf(f.IO.ErrOut, "Validation passed.\n")
+				}
 				return nil
 			}
 
 			// Format validation errors
 			var sb strings.Builder
 			sb.WriteString("Validation failed:\n")
-			if ve, ok := validationErr.(*jsonschema.ValidationError); ok {
-				for _, cause := range flattenValidationErrors(ve) {
-					fmt.Fprintf(&sb, "  - %s: %s\n", cause.path, cause.message)
-				}
-			} else {
-				fmt.Fprintf(&sb, "  - %s\n", validationErr.Error())
+			for _, cause := range introduced {
+				fmt.Fprintf(&sb, "  - %s: %s\n", cause.path, cause.message)
+			}
+			blockLevel := hasBlockLevelRequired(introduced)
+			if !merged && blockLevel {
+				sb.WriteString("\nNote: this key's schema requires the whole block. " +
+					"'config update' performs a partial merge, so an incremental payload may " +
+					"still be accepted. Re-run with --device <id> to validate against the " +
+					"actual merged result.\n")
 			}
 			return fmt.Errorf("%s", sb.String())
 		},
@@ -136,6 +199,7 @@ validation failure. Useful for AI tools to pre-check generated config.`,
 	cmd.Flags().StringVarP(&key, "key", "k", "", "JSON key identifying the config schema to validate against (required; use 'incloud device config schema list' to find keys)")
 	cmd.Flags().StringVar(&payload, "payload", "", "JSON payload to validate")
 	cmd.Flags().StringVar(&file, "file", "", "Path to JSON file to validate")
+	cmd.Flags().BoolVar(&wholeDocument, "whole-document", false, "Validate the payload as a complete document instead of merging it over the device's current configuration (no effect without --device)")
 	_ = cmd.MarkFlagRequired("key")
 
 	return cmd
@@ -144,6 +208,9 @@ validation failure. Useful for AI tools to pre-check generated config.`,
 type validationError struct {
 	path    string
 	message string
+	// depth is the number of segments in the instance location. 0 is the document
+	// root, 1 is a top-level config block such as /qos.
+	depth int
 }
 
 // flattenValidationErrors extracts leaf validation errors with their JSON paths.
@@ -159,7 +226,7 @@ func flattenVE(ve *jsonschema.ValidationError, out *[]validationError) {
 		if path == "/" {
 			path = "$"
 		}
-		*out = append(*out, validationError{path: path, message: ve.Error()})
+		*out = append(*out, validationError{path: path, message: ve.Error(), depth: len(ve.InstanceLocation)})
 		return
 	}
 	for _, cause := range ve.Causes {
