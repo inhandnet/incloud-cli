@@ -21,7 +21,16 @@ func newCmdClientOnlineStats(f *factory.Factory) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "online-stats <client-id>",
 		Short: "Client online statistics",
-		Long:  "Display online time, offline count, online rate, and event timeline for a client.",
+		Long: "Display online time, offline count, online rate, and event timeline for a client.\n\n" +
+			"Fields:\n" +
+			"  onlineTime    seconds the client was online within the window\n" +
+			"  offlineCount  disconnects within the window; both ends of list are\n" +
+			"                excluded from the count\n" +
+			"  onlineRate    onlineTime over the length of the window\n" +
+			"  list          the series the connection-history bar is drawn from; the\n" +
+			"                platform pads each end of the window with a boundary entry,\n" +
+			"                so the first and last entries mark window edges rather than\n" +
+			"                moments something happened",
 		Args:  cmdutil.ObjectIDArgs(cobra.ExactArgs(1), 0, "client id", "incloud device client list -q %s"),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := f.APIClient()
