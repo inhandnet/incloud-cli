@@ -73,11 +73,32 @@ func (t *TokenTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 		}
 		debug.Log("token refreshed, new expiry: %s", newToken.Expiry.Format(time.RFC3339))
 
-		// Retry request with new token
-		req.Header.Set("Authorization", "Bearer "+t.Token)
-		resp, err = t.doRoundTrip(req)
+		// Retry with a new request because the initial round trip consumed its body.
+		retryReq, retryErr := newRetryRequest(req)
+		if retryErr != nil {
+			return nil, retryErr
+		}
+		retryReq.Header.Set("Authorization", "Bearer "+t.Token)
+		resp, err = t.doRoundTrip(retryReq)
 	}
 	return resp, err
+}
+
+func newRetryRequest(req *http.Request) (*http.Request, error) {
+	retryReq := req.Clone(req.Context())
+	if req.Body == nil || req.Body == http.NoBody {
+		return retryReq, nil
+	}
+	if req.GetBody == nil {
+		return nil, fmt.Errorf("cannot retry request with a non-replayable body")
+	}
+
+	body, err := req.GetBody()
+	if err != nil {
+		return nil, fmt.Errorf("recreating request body for retry: %w", err)
+	}
+	retryReq.Body = body
+	return retryReq, nil
 }
 
 // doRoundTrip executes the request with debug logging for request and response.
