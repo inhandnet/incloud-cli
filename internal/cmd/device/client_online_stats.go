@@ -31,7 +31,7 @@ func newCmdClientOnlineStats(f *factory.Factory) *cobra.Command {
 			"                platform pads each end of the window with a boundary entry,\n" +
 			"                so the first and last entries mark window edges rather than\n" +
 			"                moments something happened",
-		Args:  cmdutil.ObjectIDArgs(cobra.ExactArgs(1), 0, "client id", "incloud device client list -q %s"),
+		Args: cmdutil.ObjectIDArgs(cobra.ExactArgs(1), 0, "client id", "incloud device client list -q %s"),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := f.APIClient()
 			if err != nil {

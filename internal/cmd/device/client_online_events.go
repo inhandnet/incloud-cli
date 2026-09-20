@@ -28,7 +28,7 @@ func newCmdClientOnlineEvents(f *factory.Factory) *cobra.Command {
 			"              moment and disconnectedAt is null\n" +
 			"  disconnect  the client went offline at timestamp; connectedAt and\n" +
 			"              disconnectedAt bound the online session that ended there",
-		Args:  cmdutil.ObjectIDArgs(cobra.ExactArgs(1), 0, "client id", "incloud device client list -q %s"),
+		Args: cmdutil.ObjectIDArgs(cobra.ExactArgs(1), 0, "client id", "incloud device client list -q %s"),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := f.APIClient()
 			if err != nil {
