@@ -1,9 +1,5 @@
 # Unreleased
 
-## 问题修复
-
-- **`device create` 接受不带冒号的 MAC，`--name` 不再必填**（IM-3361）— 平台只收 `AA:BB:CC:DD:EE:FF`，`--mac 001805000000`、`00-18-05-00-00-00` 会返回 400，AI Agent 因此让用户重发 MAC。现在 12 位十六进制、用 `:`、`-`、`.`、空格分隔或不分隔的写法都会先转好再提交，其他写法在发出任何请求前就在本地报错并给出正确格式。`--name` 不填时用序列号，help 里不再标为必填。
-
 ## 破坏性变更
 
 - **`knowledge search` 改打 agentic 检索端点** — 结果变为可寻址的章节候选：每条携带 `document_id` / `section_id` / `heading_path` / `score` 与短 `snippet`，不再返回全文片段（`content`）。正文请用新命令 `knowledge read` 获取。移除 `--rewrite` 标志；新增 `--path` 按语料路径前缀过滤；`--limit` 默认改为 10（1–50）。
