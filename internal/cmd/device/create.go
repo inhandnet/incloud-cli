@@ -37,9 +37,16 @@ func NewCmdCreate(f *factory.Factory) *cobra.Command {
 The serial number is validated before creation to detect the product model
 and determine whether a MAC address or IMEI is required. If the required
 credential is not provided via flags and the terminal is interactive, you
-will be prompted to enter it.`,
+will be prompted to enter it.
+
+The name defaults to the serial number. A MAC address may be given as 12 hex
+digits with or without ":", "-", "." or space separators; it is sent to the platform
+as AA:BB:CC:DD:EE:FF.`,
 		Example: `  # Create a device (product auto-detected from serial number)
   incloud device create --name "My Router" --sn "ABC123456789012" --mac "AA:BB:CC:DD:EE:FF"
+
+  # Name defaults to the serial number; MAC separators are optional
+  incloud device create --sn "ABC123456789012" --mac "aabbccddeeff"
 
   # MAC or IMEI will be prompted in TTY if required but not provided
   incloud device create --name "My Router" --sn "ABC123456789012"
@@ -56,17 +63,16 @@ will be prompted to enter it.`,
 		},
 	}
 
-	cmd.Flags().StringVar(&opts.Name, "name", "", "Device name (required)")
+	cmd.Flags().StringVar(&opts.Name, "name", "", "Device name (defaults to the serial number)")
 	cmd.Flags().StringVar(&opts.SN, "sn", "", "Serial number (required)")
 	cmd.Flags().StringVar(&opts.Product, "product", "", "Product model (auto-detected from serial number)")
 	cmd.Flags().StringVar(&opts.Description, "description", "", "Device description (max 256 chars)")
 	cmd.Flags().StringVar(&opts.Group, "group", "", "Device group ID (use 'incloud device group list' to find IDs)")
-	cmd.Flags().StringVar(&opts.Mac, "mac", "", "MAC address (required for some products; prompted if omitted in TTY)")
+	cmd.Flags().StringVar(&opts.Mac, "mac", "", "MAC address, e.g. AA:BB:CC:DD:EE:FF or aabbccddeeff (required for some products; prompted if omitted in TTY)")
 	cmd.Flags().StringVar(&opts.IMEI, "imei", "", "IMEI (required for some products; prompted if omitted in TTY)")
 	cmd.Flags().StringArrayVar(&opts.Labels, "label", nil, "Label in key=value format (repeatable, max 10)")
 	cmd.Flags().StringArrayVar(&opts.Metadata, "metadata", nil, "Metadata in key=value format (repeatable)")
 
-	_ = cmd.MarkFlagRequired("name")
 	_ = cmd.MarkFlagRequired("sn")
 
 	return cmd
@@ -82,6 +88,14 @@ func runCreate(cmd *cobra.Command, f *factory.Factory, opts *CreateOptions) erro
 
 	sn := strings.ToUpper(opts.SN)
 
+	if opts.Mac != "" {
+		mac, macErr := normalizeMAC(opts.Mac)
+		if macErr != nil {
+			return macErr
+		}
+		opts.Mac = mac
+	}
+
 	// Step 1: Validate serial number via API
 	fmt.Fprintf(f.IO.ErrOut, "Validating serial number %s...\n", sn)
 	validation, err := validateSerialNumber(client, sn)
@@ -93,9 +107,13 @@ func runCreate(cmd *cobra.Command, f *factory.Factory, opts *CreateOptions) erro
 	// Step 2: Prompt for MAC/IMEI if required but not provided
 	if validation.ValidatedField == "mac" && opts.Mac == "" {
 		if ui.IsTTY(f) {
-			mac, promptErr := ui.Input(f, "MAC Address", "AA:BB:CC:DD:EE:FF", nil)
+			input, promptErr := ui.Input(f, "MAC Address", "AA:BB:CC:DD:EE:FF", nil)
 			if promptErr != nil {
 				return promptErr
+			}
+			mac, macErr := normalizeMAC(input)
+			if macErr != nil {
+				return macErr
 			}
 			opts.Mac = mac
 		} else {
@@ -112,6 +130,10 @@ func runCreate(cmd *cobra.Command, f *factory.Factory, opts *CreateOptions) erro
 		} else {
 			return fmt.Errorf("serial number %s requires an IMEI; use --imei <15-17 digits>", sn)
 		}
+	}
+
+	if opts.Name == "" {
+		opts.Name = sn
 	}
 
 	// Step 3: Build request body
@@ -164,6 +186,22 @@ func runCreate(cmd *cobra.Command, f *factory.Factory, opts *CreateOptions) erro
 	cmdutil.WriteCreated(f, "Device", respBody)
 
 	return iostreams.FormatOutput(respBody, f.IO, output)
+}
+
+// normalizeMAC accepts 12 hex digits with any mix of ":", "-", ".", space or
+// no separators and returns the colon-separated uppercase form, which is the
+// only form the device create API accepts.
+func normalizeMAC(raw string) (string, error) {
+	hex := strings.NewReplacer(":", "", "-", "", ".", "", " ", "").Replace(strings.TrimSpace(raw))
+	if len(hex) != 12 || strings.Trim(hex, "0123456789abcdefABCDEF") != "" {
+		return "", fmt.Errorf("invalid MAC address %q: expected 12 hex digits such as AA:BB:CC:DD:EE:FF", raw)
+	}
+	hex = strings.ToUpper(hex)
+	pairs := make([]string, 6)
+	for i := range pairs {
+		pairs[i] = hex[i*2 : i*2+2]
+	}
+	return strings.Join(pairs, ":"), nil
 }
 
 // snValidation holds the result of serial number validation.
