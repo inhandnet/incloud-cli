@@ -318,3 +318,97 @@ func TestCreateDevice_SuccessMessage(t *testing.T) {
 		t.Errorf("expected device ID in success message, got: %s", errOutput)
 	}
 }
+
+func TestCreateDevice_NameDefaultsToSN(t *testing.T) {
+	var createBody map[string]interface{}
+	server := newCreateTestServer(t, validSNResponseMAC, func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewDecoder(r.Body).Decode(&createBody)
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(defaultCreateResponse))
+	})
+	defer server.Close()
+
+	f, _ := newTestFactory(t, server.URL)
+	cmd := NewCmdCreate(f)
+	cmd.SetArgs([]string{"--sn", "abcdefghijklmno", "--mac", "AA:BB:CC:DD:EE:FF"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if createBody["name"] != "ABCDEFGHIJKLMNO" {
+		t.Errorf("expected name to default to the serial number, got: %v", createBody["name"])
+	}
+}
+
+func TestCreateDevice_NormalizesMAC(t *testing.T) {
+	for _, input := range []string{
+		"001805000000",
+		"00-18-05-00-00-00",
+		"0018.0500.0000",
+		"00:18:05:00:00:00",
+		" 00:18:05:00:00:00 ",
+	} {
+		t.Run(input, func(t *testing.T) {
+			var createBody map[string]interface{}
+			server := newCreateTestServer(t, validSNResponseMAC, func(w http.ResponseWriter, r *http.Request) {
+				_ = json.NewDecoder(r.Body).Decode(&createBody)
+				w.WriteHeader(http.StatusOK)
+				_, _ = w.Write([]byte(defaultCreateResponse))
+			})
+			defer server.Close()
+
+			f, _ := newTestFactory(t, server.URL)
+			cmd := NewCmdCreate(f)
+			cmd.SetArgs([]string{"--sn", "ABCDEFGHIJKLMNO", "--mac", input})
+			if err := cmd.Execute(); err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if createBody["mac"] != "00:18:05:00:00:00" {
+				t.Errorf("expected colon-separated MAC, got: %v", createBody["mac"])
+			}
+		})
+	}
+
+	t.Run("lowercase hex", func(t *testing.T) {
+		var createBody map[string]interface{}
+		server := newCreateTestServer(t, validSNResponseMAC, func(w http.ResponseWriter, r *http.Request) {
+			_ = json.NewDecoder(r.Body).Decode(&createBody)
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(defaultCreateResponse))
+		})
+		defer server.Close()
+
+		f, _ := newTestFactory(t, server.URL)
+		cmd := NewCmdCreate(f)
+		cmd.SetArgs([]string{"--sn", "ABCDEFGHIJKLMNO", "--mac", "aa-bb-cc-dd-ee-0f"})
+		if err := cmd.Execute(); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if !strings.EqualFold(createBody["mac"].(string), "AA:BB:CC:DD:EE:0F") {
+			t.Errorf("expected colon-separated MAC, got: %v", createBody["mac"])
+		}
+	})
+}
+
+func TestCreateDevice_RejectsMalformedMACBeforeCreate(t *testing.T) {
+	for _, input := range []string{"00180500000", "0018050000000", "00:18:05:00:00:GG"} {
+		t.Run(input, func(t *testing.T) {
+			createCalled := false
+			server := newCreateTestServer(t, validSNResponseMAC, func(w http.ResponseWriter, r *http.Request) {
+				createCalled = true
+				w.WriteHeader(http.StatusOK)
+				_, _ = w.Write([]byte(defaultCreateResponse))
+			})
+			defer server.Close()
+
+			f, _ := newTestFactory(t, server.URL)
+			cmd := NewCmdCreate(f)
+			cmd.SetArgs([]string{"--sn", "ABCDEFGHIJKLMNO", "--mac", input})
+			if err := cmd.Execute(); err == nil {
+				t.Fatal("expected error for malformed MAC")
+			}
+			if createCalled {
+				t.Error("device create API should not be called with a malformed MAC")
+			}
+		})
+	}
+}
