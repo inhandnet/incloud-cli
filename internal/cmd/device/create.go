@@ -40,7 +40,7 @@ credential is not provided via flags and the terminal is interactive, you
 will be prompted to enter it.
 
 The name defaults to the serial number. A MAC address may be given as 12 hex
-digits with or without ":", "-" or "." separators; it is sent to the platform
+digits with or without ":", "-", "." or space separators; it is sent to the platform
 as AA:BB:CC:DD:EE:FF.`,
 		Example: `  # Create a device (product auto-detected from serial number)
   incloud device create --name "My Router" --sn "ABC123456789012" --mac "AA:BB:CC:DD:EE:FF"
@@ -88,6 +88,14 @@ func runCreate(cmd *cobra.Command, f *factory.Factory, opts *CreateOptions) erro
 
 	sn := strings.ToUpper(opts.SN)
 
+	if opts.Mac != "" {
+		mac, macErr := normalizeMAC(opts.Mac)
+		if macErr != nil {
+			return macErr
+		}
+		opts.Mac = mac
+	}
+
 	// Step 1: Validate serial number via API
 	fmt.Fprintf(f.IO.ErrOut, "Validating serial number %s...\n", sn)
 	validation, err := validateSerialNumber(client, sn)
@@ -99,9 +107,13 @@ func runCreate(cmd *cobra.Command, f *factory.Factory, opts *CreateOptions) erro
 	// Step 2: Prompt for MAC/IMEI if required but not provided
 	if validation.ValidatedField == "mac" && opts.Mac == "" {
 		if ui.IsTTY(f) {
-			mac, promptErr := ui.Input(f, "MAC Address", "AA:BB:CC:DD:EE:FF", nil)
+			input, promptErr := ui.Input(f, "MAC Address", "AA:BB:CC:DD:EE:FF", nil)
 			if promptErr != nil {
 				return promptErr
+			}
+			mac, macErr := normalizeMAC(input)
+			if macErr != nil {
+				return macErr
 			}
 			opts.Mac = mac
 		} else {
@@ -120,13 +132,6 @@ func runCreate(cmd *cobra.Command, f *factory.Factory, opts *CreateOptions) erro
 		}
 	}
 
-	if opts.Mac != "" {
-		mac, macErr := normalizeMAC(opts.Mac)
-		if macErr != nil {
-			return macErr
-		}
-		opts.Mac = mac
-	}
 	if opts.Name == "" {
 		opts.Name = sn
 	}
@@ -183,11 +188,11 @@ func runCreate(cmd *cobra.Command, f *factory.Factory, opts *CreateOptions) erro
 	return iostreams.FormatOutput(respBody, f.IO, output)
 }
 
-// normalizeMAC accepts 12 hex digits with any mix of ":", "-", "." or no
-// separators and returns the colon-separated uppercase form, which is the
+// normalizeMAC accepts 12 hex digits with any mix of ":", "-", ".", space or
+// no separators and returns the colon-separated uppercase form, which is the
 // only form the device create API accepts.
 func normalizeMAC(raw string) (string, error) {
-	hex := strings.NewReplacer(":", "", "-", "", ".", "").Replace(strings.TrimSpace(raw))
+	hex := strings.NewReplacer(":", "", "-", "", ".", "", " ", "").Replace(strings.TrimSpace(raw))
 	if len(hex) != 12 || strings.Trim(hex, "0123456789abcdefABCDEF") != "" {
 		return "", fmt.Errorf("invalid MAC address %q: expected 12 hex digits such as AA:BB:CC:DD:EE:FF", raw)
 	}
