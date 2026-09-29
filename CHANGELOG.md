@@ -2,7 +2,6 @@
 
 ## Bug Fixes
 
-- **`device create` accepts MAC addresses without colons and no longer requires `--name`** (IM-3361) — The platform only accepts `AA:BB:CC:DD:EE:FF`, so `--mac 001805000000` or `00-18-05-00-00-00` came back as a 400 and AI agents asked the user to retype the address. 12 hex digits with `:`, `-`, `.`, space or no separators are now converted before any request is sent, and anything else fails locally with the expected format. `--name` defaults to the serial number; the help no longer marks it required.
 - **`device config schema validate --device` now validates the way `config update` writes** (IM-3188) — `config update` applies its payload as a JSON merge patch over the device's current configuration, but `validate` checked the payload as a standalone document. For the 8 of 44 config keys whose schema declares `required` at the block level (`qos`, `ntp`, `admin_access`, `policy_route`, `mac_filter`, `domain_filter`, `link_quality`, `ippt` on FWA02-NAVA/V2.0.16), an incremental payload was rejected by `validate` and then accepted by `update` — so callers were validating one payload and submitting another. With `--device`, the payload is now merged over the current configuration and the merged result is validated. Violations the stored configuration already had are reported but no longer fail the payload, and a failure to read the current configuration is an error rather than a silent downgrade. `--product`/`--version` keeps whole-document validation and now says so when a block-level `required` is what failed.
 
 ## New Flags
