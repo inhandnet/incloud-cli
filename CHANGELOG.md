@@ -14,6 +14,8 @@
 
 ## New Commands
 
+- **`device history list <device-id> [--status open|all] [--after] [--before]`** — the AI assistant's diagnosis records for a device (symptom, root cause, remediation, whether the user confirmed the result), newest first. Lists only records awaiting confirmation by default.
+- **`device history get <record-id>...`** — full content and current status of diagnosis records. Accepts the full id or the 8-character short id shown in the assistant (e.g. `e95bba0b`).
 - **`knowledge browse [<path>] [--section <id>]`** — browse the corpus like a filesystem: no path lists all documents, a path prefix filters the catalog, a unique match opens that document's section outline (with section IDs ready for `knowledge read`).
 - **`knowledge grep <pattern> [--doc <id>] [--path <prefix>] [-i] [--limit N]`** — regex term search across the corpus with line numbers; invalid regex degrades to a literal substring match.
 - **`knowledge read <section_id|document_id> [--offset N] [--limit N]`** — raw text of a section (or a whole document) with line pagination and a 12000-character truncation guard.
