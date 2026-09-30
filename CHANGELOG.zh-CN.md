@@ -6,6 +6,8 @@
 
 ## 新增命令
 
+- **`device history list <device-id> [--status open|all] [--after] [--before]`** — 小星云对设备的诊断记录（症状、根因、处置、用户是否已确认结果），按时间倒序；默认只列待确认的。
+- **`device history get <record-id>...`** — 诊断记录的完整内容和当前状态；支持完整编号，也支持小星云里显示的 8 位短编号（如 `e95bba0b`）。
 - **`knowledge browse [<path>] [--section <id>]`** — 像文件系统一样浏览知识库：无 path 列出全部文档，path 前缀过滤目录，唯一命中展开该文档章节目录（section ID 可直接喂给 `knowledge read`）。
 - **`knowledge grep <pattern> [--doc <id>] [--path <前缀>] [-i] [--limit N]`** — 全语料正则术语定位（带行号）；非法正则自动降级为字面子串匹配。
 - **`knowledge read <section_id|document_id> [--offset N] [--limit N]`** — 读取章节（或整篇文档）原始正文，支持行分页与 12000 字符截断保护。
