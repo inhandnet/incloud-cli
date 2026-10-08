@@ -49,12 +49,7 @@ func NewCmdRead(f *factory.Factory) *cobra.Command {
 				return fmt.Errorf("--cursor must not be negative")
 			}
 
-			client, err := f.APIClient()
-			if err != nil {
-				return err
-			}
-
-			body, err := client.Post(agenticBase+"/read", readRequest{ChunkID: args[0], Cursor: cursor})
+			body, err := post(f, "/read", readRequest{ChunkID: args[0], Cursor: cursor})
 			if err != nil {
 				return err
 			}

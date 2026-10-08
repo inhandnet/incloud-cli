@@ -118,7 +118,7 @@ func TestSearch_RequestAndTable(t *testing.T) {
 	if err != nil {
 		t.Fatalf("knowledge search: %v", err)
 	}
-	if cap.Method != "POST" || cap.Path != "/api/v1/knowledge/agentic/search" {
+	if cap.Method != "POST" || cap.Path != "/api/v1/knowledge/v2/search" {
 		t.Errorf("got %s %s", cap.Method, cap.Path)
 	}
 	body := string(cap.Body)
@@ -172,7 +172,7 @@ func TestBrowse_Products(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if cap.Path != "/api/v1/knowledge/agentic/browse" || string(cap.Body) != "{}" {
+	if cap.Path != "/api/v1/knowledge/v2/browse" || string(cap.Body) != "{}" {
 		t.Errorf("got %s body %s", cap.Path, cap.Body)
 	}
 	if !strings.Contains(stdoutOf(f).String(), "ER605") {
@@ -239,7 +239,7 @@ func TestRead_RequestTableAndCursorHint(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if cap.Path != "/api/v1/knowledge/agentic/read" || string(cap.Body) != `{"chunk_id":"c-1"}` {
+	if cap.Path != "/api/v1/knowledge/v2/read" || string(cap.Body) != `{"chunk_id":"c-1"}` {
 		t.Errorf("got %s body %s", cap.Path, cap.Body)
 	}
 	out := stdoutOf(f).String()
@@ -263,5 +263,21 @@ func TestRead_CursorSentAndLineFlagsGone(t *testing.T) {
 	_, _, err = run(t, "{}", nil, "read", "c-1", "--mode", "range")
 	if err == nil || !strings.Contains(err.Error(), "unknown flag") {
 		t.Errorf("want unknown flag for --mode, got %v", err)
+	}
+}
+
+func TestKnowledge_OldServerGivesUpgradeHint(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		fmt.Fprint(w, `{"detail":"Not Found"}`)
+	}))
+	defer srv.Close()
+	f, _ := newTestFactory(t, srv.URL)
+	root := newKnowledgeRoot(f)
+	root.SetArgs([]string{"knowledge", "search", "vpn"})
+	err := root.Execute()
+	if err == nil || !strings.Contains(err.Error(), "older than this CLI") {
+		t.Fatalf("want upgrade hint, got %v", err)
 	}
 }

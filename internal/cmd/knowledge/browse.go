@@ -81,12 +81,7 @@ Feed chunk IDs into ` + "`knowledge read`" + `.`,
 				return fmt.Errorf("--cursor is only valid with a document path")
 			}
 
-			client, err := f.APIClient()
-			if err != nil {
-				return err
-			}
-
-			body, err := client.Post(agenticBase+"/browse", req)
+			body, err := post(f, "/browse", req)
 			if err != nil {
 				return err
 			}

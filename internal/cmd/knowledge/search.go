@@ -56,12 +56,7 @@ func NewCmdSearch(f *factory.Factory) *cobra.Command {
   incloud knowledge search "IPSec VPN" --limit 3 -o json`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			client, err := f.APIClient()
-			if err != nil {
-				return err
-			}
-
-			body, err := client.Post(agenticBase+"/search", searchRequest{
+			body, err := post(f, "/search", searchRequest{
 				Query: args[0],
 				Model: model,
 				Limit: limit,
