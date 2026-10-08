@@ -10,15 +10,15 @@
 
 ## Breaking Changes
 
-- **`knowledge search` now hits the agentic search endpoint** — results are addressable section candidates: each item carries `document_id` / `section_id` / `heading_path` / `score` and a short `snippet` instead of a full-text fragment (`content`). Fetch the body with the new `knowledge read`. The `--rewrite` flag is removed; a new `--path` flag filters by corpus path prefix, and `--limit` defaults to 10 (1–50).
+- **`knowledge` is backed by the documents library (documents-mcp)** — the local corpus is gone. `knowledge search` returns sections with `chunk_id` / `path` / `doc_title` / `heading_path` / `product_ids` / `score` / `snippet`; matching is lexical, so include the product or model name. `--path` is removed, `--model` is added to the query, and `--limit` defaults to 5 (1–10). Status is `success` / `empty` / `failed` (with `message`).
+- **`knowledge grep` is removed**, and `knowledge read` no longer has line modes (`--mode`, `--line-start`, `--line-end`, `--around`, `--before`, `--after`, `--limit`).
 
 ## New Commands
 
 - **`device history list <device-id> [--status open|all] [--after] [--before]`** — the AI assistant's diagnosis records for a device (symptom, root cause, remediation, whether the user confirmed the result), newest first. Lists only records awaiting confirmation by default.
 - **`device history get <record-id>...`** — full content and current status of diagnosis records. Accepts the full id or the 8-character short id shown in the assistant (e.g. `e95bba0b`).
-- **`knowledge browse [<path>] [--section <id>]`** — browse the corpus like a filesystem: no path lists all documents, a path prefix filters the catalog, a unique match opens that document's section outline (with section IDs ready for `knowledge read`).
-- **`knowledge grep <pattern> [--doc <id>] [--path <prefix>] [-i] [--limit N]`** — regex term search across the corpus with line numbers; invalid regex degrades to a literal substring match.
-- **`knowledge read <section_id|document_id> [--offset N] [--limit N]`** — raw text of a section (or a whole document) with line pagination and a 12000-character truncation guard.
+- **`knowledge browse [<document path>] [--product <id>] [--cursor N]`** — no arguments lists all products; `--product` shows a product's documents and overview sections; a document path lists its section outline (chunk IDs ready for `knowledge read`), paged with `--cursor`.
+- **`knowledge read <chunk_id> [--cursor N]`** — full text of a section with its source (`doc_title`, `heading_path`, `url`), chunked at 12000 characters.
 
 # v0.11.0 (2026-08-18)
 

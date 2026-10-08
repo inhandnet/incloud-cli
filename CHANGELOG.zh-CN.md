@@ -2,15 +2,15 @@
 
 ## 破坏性变更
 
-- **`knowledge search` 改打 agentic 检索端点** — 结果变为可寻址的章节候选：每条携带 `document_id` / `section_id` / `heading_path` / `score` 与短 `snippet`，不再返回全文片段（`content`）。正文请用新命令 `knowledge read` 获取。移除 `--rewrite` 标志；新增 `--path` 按语料路径前缀过滤；`--limit` 默认改为 10（1–50）。
+- **`knowledge` 改由文档库（documents-mcp）提供数据**，本地语料下线。`knowledge search` 返回章节，字段为 `chunk_id` / `path` / `doc_title` / `heading_path` / `product_ids` / `score` / `snippet`；检索按关键词匹配，查询里要带产品名或型号。移除 `--path`，`--model` 拼入查询，`--limit` 默认 5（1–10）。状态为 `success` / `empty` / `failed`（附 `message`）。
+- **移除 `knowledge grep`**；`knowledge read` 不再有按行读取（`--mode`、`--line-start`、`--line-end`、`--around`、`--before`、`--after`、`--limit`）。
 
 ## 新增命令
 
 - **`device history list <device-id> [--status open|all] [--after] [--before]`** — 小星云对设备的诊断记录（症状、根因、处置、用户是否已确认结果），按时间倒序；默认只列待确认的。
 - **`device history get <record-id>...`** — 诊断记录的完整内容和当前状态；支持完整编号，也支持小星云里显示的 8 位短编号（如 `e95bba0b`）。
-- **`knowledge browse [<path>] [--section <id>]`** — 像文件系统一样浏览知识库：无 path 列出全部文档，path 前缀过滤目录，唯一命中展开该文档章节目录（section ID 可直接喂给 `knowledge read`）。
-- **`knowledge grep <pattern> [--doc <id>] [--path <前缀>] [-i] [--limit N]`** — 全语料正则术语定位（带行号）；非法正则自动降级为字面子串匹配。
-- **`knowledge read <section_id|document_id> [--offset N] [--limit N]`** — 读取章节（或整篇文档）原始正文，支持行分页与 12000 字符截断保护。
+- **`knowledge browse [<文档路径>] [--product <ID>] [--cursor N]`** — 无参列出全部产品；`--product` 看产品的文档与概览章节；给文档路径列出章节目录（chunk ID 可直接给 `knowledge read`），用 `--cursor` 翻页。
+- **`knowledge read <chunk_id> [--cursor N]`** — 读取章节全文及来源（`doc_title`、`heading_path`、`url`），按 12000 字符分段。
 
 # v0.11.0 (2026-08-18)
 
