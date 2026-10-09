@@ -17,13 +17,12 @@ type browseRequest struct {
 }
 
 type browseResponse struct {
-	Products   []browseProduct  `json:"products"`
-	Product    string           `json:"product"`
-	Documents  []browseDocument `json:"documents"`
-	Path       string           `json:"path"`
-	DocTitle   string           `json:"doc_title"`
-	Sections   []browseSection  `json:"sections"`
-	NextCursor *int             `json:"next_cursor"`
+	Products   []browseProduct `json:"products"`
+	Product    string          `json:"product"`
+	Path       string          `json:"path"`
+	DocTitle   string          `json:"doc_title"`
+	Sections   []browseSection `json:"sections"`
+	NextCursor *int            `json:"next_cursor"`
 }
 
 type browseProduct struct {
@@ -32,15 +31,10 @@ type browseProduct struct {
 	Kind        string `json:"kind"`
 }
 
-type browseDocument struct {
-	Path         string `json:"path"`
-	DocTitle     string `json:"doc_title"`
-	DocumentType string `json:"document_type"`
-}
-
 type browseSection struct {
 	ChunkID     string `json:"chunk_id"`
 	HeadingPath string `json:"heading_path"`
+	Path        string `json:"path"`
 }
 
 func NewCmdBrowse(f *factory.Factory) *cobra.Command {
@@ -55,14 +49,14 @@ func NewCmdBrowse(f *factory.Factory) *cobra.Command {
 		Long: `Browse the documentation library:
 
   no arguments      -> all products (product IDs)
-  --product <id>    -> product overview: its documents and overview sections
+  --product <id>    -> product overview: document counts and overview sections
   <document path>   -> section outline of that document, paged with --cursor
 
 Feed chunk IDs into ` + "`knowledge read`" + `.`,
 		Example: `  # Which products have documentation
   incloud knowledge browse
 
-  # Documents of one product
+  # Overview of one product
   incloud knowledge browse --product DeviceLive
 
   # Section outline of a document, then the next page
@@ -107,11 +101,8 @@ Feed chunk IDs into ` + "`knowledge read`" + `.`,
 				}
 			case resp.Product != "":
 				fmt.Fprintln(out, c.Bold(resp.Product))
-				for _, d := range resp.Documents {
-					fmt.Fprintf(out, "  %s %s\n", d.DocTitle, c.Gray(fmt.Sprintf("[%s] %s", d.DocumentType, d.Path)))
-				}
 				for _, s := range resp.Sections {
-					fmt.Fprintf(out, "  %s %s\n", s.HeadingPath, c.Gray("["+s.ChunkID+"]"))
+					fmt.Fprintf(out, "  %s %s\n", s.HeadingPath, c.Gray(fmt.Sprintf("%s [%s]", s.Path, s.ChunkID)))
 				}
 			case resp.Path != "":
 				fmt.Fprintln(out, c.Bold(resp.DocTitle))

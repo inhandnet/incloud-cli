@@ -184,7 +184,7 @@ func TestBrowse_Products(t *testing.T) {
 
 func TestBrowse_ProductOverview(t *testing.T) {
 	var cap captured
-	resp := `{"product":"DeviceLive","documents":[{"path":"docs/zh/DeviceLive/Manuals/用户手册/DeviceLive用户手册.md","doc_title":"DeviceLive用户手册","document_type":"manual"}],"sections":[{"chunk_id":"c-9","heading_path":"1. 产品概述"}]}`
+	resp := `{"product":"DeviceLive","document_coverage":[{"language":"zh","category":"manual","document_count":1}],"sections":[{"chunk_id":"c-9","heading_path":"1. 产品概述","path":"docs/zh/DeviceLive/Manuals/用户手册/DeviceLive用户手册.md"}]}`
 	f, _, err := run(t, resp, &cap, "browse", "--product", "DeviceLive", "-o", "table")
 	if err != nil {
 		t.Fatal(err)
@@ -193,7 +193,7 @@ func TestBrowse_ProductOverview(t *testing.T) {
 		t.Errorf("request body %s", cap.Body)
 	}
 	out := stdoutOf(f).String()
-	for _, want := range []string{"DeviceLive用户手册", "[manual]", "1. 产品概述", "[c-9]"} {
+	for _, want := range []string{"1. 产品概述", "docs/zh/DeviceLive/Manuals/用户手册/DeviceLive用户手册.md", "[c-9]"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("output missing %q: %q", want, out)
 		}
