@@ -114,7 +114,7 @@ func TestKnowledge_HasNoGrep(t *testing.T) {
 
 func TestSearch_RequestAndTable(t *testing.T) {
 	var cap captured
-	f, _, err := run(t, searchHit, &cap, "search", "IPSec VPN", "--model", "ER805", "--limit", "3", "-o", "table")
+	f, _, err := run(t, searchHit, &cap, "search", "ER805 IPSec VPN", "--limit", "3", "-o", "table")
 	if err != nil {
 		t.Fatalf("knowledge search: %v", err)
 	}
@@ -122,7 +122,7 @@ func TestSearch_RequestAndTable(t *testing.T) {
 		t.Errorf("got %s %s", cap.Method, cap.Path)
 	}
 	body := string(cap.Body)
-	for _, want := range []string{`"query":"IPSec VPN"`, `"model":"ER805"`, `"limit":3`} {
+	for _, want := range []string{`"query":"ER805 IPSec VPN"`, `"limit":3`} {
 		if !strings.Contains(body, want) {
 			t.Errorf("request body %s missing %s", body, want)
 		}
@@ -138,10 +138,12 @@ func TestSearch_RequestAndTable(t *testing.T) {
 	}
 }
 
-func TestSearch_PathFlagRemoved(t *testing.T) {
-	_, _, err := run(t, searchHit, nil, "search", "x", "--path", "device_")
-	if err == nil || !strings.Contains(err.Error(), "unknown flag") {
-		t.Fatalf("want unknown flag error, got %v", err)
+func TestSearch_PathAndModelFlagsRemoved(t *testing.T) {
+	for _, flag := range []string{"--path", "--model"} {
+		_, _, err := run(t, searchHit, nil, "search", "x", flag, "y")
+		if err == nil || !strings.Contains(err.Error(), "unknown flag") {
+			t.Fatalf("%s: want unknown flag error, got %v", flag, err)
+		}
 	}
 }
 

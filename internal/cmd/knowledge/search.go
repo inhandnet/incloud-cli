@@ -14,7 +14,6 @@ import (
 
 type searchRequest struct {
 	Query string `json:"query"`
-	Model string `json:"model,omitempty"`
 	Limit int    `json:"limit,omitempty"`
 }
 
@@ -37,10 +36,7 @@ type searchResult struct {
 var collapseWS = regexp.MustCompile(`\s+`)
 
 func NewCmdSearch(f *factory.Factory) *cobra.Command {
-	var (
-		model string
-		limit int
-	)
+	var limit int
 
 	cmd := &cobra.Command{
 		Use:   "search <query>",
@@ -49,8 +45,8 @@ func NewCmdSearch(f *factory.Factory) *cobra.Command {
 		Example: `  # Search with product name in the query
   incloud knowledge search "DeviceLive 添加设备"
 
-  # Prefix the query with a model
-  incloud knowledge search "恢复出厂设置" --model ER805
+  # Model name in the query narrows results
+  incloud knowledge search "ER805 恢复出厂设置"
 
   # Limit results and output as JSON (full fields incl. chunk IDs)
   incloud knowledge search "IPSec VPN" --limit 3 -o json`,
@@ -58,7 +54,6 @@ func NewCmdSearch(f *factory.Factory) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			body, err := post(f, "/search", searchRequest{
 				Query: args[0],
-				Model: model,
 				Limit: limit,
 			})
 			if err != nil {
@@ -106,7 +101,6 @@ func NewCmdSearch(f *factory.Factory) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&model, "model", "", "Product ID or model to add to the query (e.g. ER805, DeviceLive)")
 	cmd.Flags().IntVar(&limit, "limit", 5, "Max number of results (1-10)")
 
 	return cmd

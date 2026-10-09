@@ -10,7 +10,7 @@
 
 ## Breaking Changes
 
-- **`knowledge` is backed by the documents library (documents-mcp)** via `/api/v1/knowledge/{search,browse,read}`; it needs a copilot backend that serves these endpoints and says so on a 404. The local corpus is gone. `knowledge search` returns sections with `chunk_id` / `path` / `doc_title` / `heading_path` / `product_ids` / `score` / `snippet`; matching is lexical, so include the product or model name. `--path` is removed, `--model` is added to the query, and `--limit` defaults to 5 (1–10). Status is `success` / `empty` / `failed` (with `message`).
+- **`knowledge` is backed by the documents library (documents-mcp)** via `/api/v1/knowledge/{search,browse,read}`; it needs a copilot backend that serves these endpoints and says so on a 404. The local corpus is gone. `knowledge search` returns sections with `chunk_id` / `path` / `doc_title` / `heading_path` / `product_ids` / `score` / `snippet`; matching is lexical, so include the product or model name. `--path` and `--model` are removed (put the model in the query), and `--limit` defaults to 5 (1–10). Status is `success` / `empty` / `failed` (with `message`).
 - **`knowledge grep` is removed**, and `knowledge read` no longer has line modes (`--mode`, `--line-start`, `--line-end`, `--around`, `--before`, `--after`, `--limit`).
 
 ## New Commands
