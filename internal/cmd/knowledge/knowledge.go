@@ -12,10 +12,10 @@ import (
 )
 
 // knowledgeBase is the copilot knowledge REST prefix backing this command group.
-const knowledgeBase = "/api/v1/knowledge/v2"
+const knowledgeBase = "/api/v1/knowledge"
 
 // post sends a knowledge request; a 404 on the endpoint itself means the
-// server predates the v2 API, which deserves a clearer message than the raw body.
+// server predates the documents-backed knowledge API, which deserves a clearer message than the raw body.
 func post(f *factory.Factory, endpoint string, body any) ([]byte, error) {
 	client, err := f.APIClient()
 	if err != nil {
@@ -24,7 +24,7 @@ func post(f *factory.Factory, endpoint string, body any) ([]byte, error) {
 	resp, err := client.Post(knowledgeBase+endpoint, body)
 	var httpErr *api.HTTPError
 	if errors.As(err, &httpErr) && httpErr.StatusCode == http.StatusNotFound {
-		return nil, fmt.Errorf("HTTP 404: the server does not provide %s%s (knowledge v2 API); the copilot backend is older than this CLI", knowledgeBase, endpoint)
+		return nil, fmt.Errorf("HTTP 404: the server does not provide %s%s (documents-backed knowledge API); the copilot backend is older than this CLI", knowledgeBase, endpoint)
 	}
 	return resp, err
 }

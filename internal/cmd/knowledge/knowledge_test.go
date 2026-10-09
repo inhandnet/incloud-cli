@@ -118,7 +118,7 @@ func TestSearch_RequestAndTable(t *testing.T) {
 	if err != nil {
 		t.Fatalf("knowledge search: %v", err)
 	}
-	if cap.Method != "POST" || cap.Path != "/api/v1/knowledge/v2/search" {
+	if cap.Method != "POST" || cap.Path != "/api/v1/knowledge/search" {
 		t.Errorf("got %s %s", cap.Method, cap.Path)
 	}
 	body := string(cap.Body)
@@ -172,7 +172,7 @@ func TestBrowse_Products(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if cap.Path != "/api/v1/knowledge/v2/browse" || string(cap.Body) != "{}" {
+	if cap.Path != "/api/v1/knowledge/browse" || string(cap.Body) != "{}" {
 		t.Errorf("got %s body %s", cap.Path, cap.Body)
 	}
 	if !strings.Contains(stdoutOf(f).String(), "ER605") {
@@ -239,7 +239,7 @@ func TestRead_RequestTableAndCursorHint(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if cap.Path != "/api/v1/knowledge/v2/read" || string(cap.Body) != `{"chunk_id":"c-1"}` {
+	if cap.Path != "/api/v1/knowledge/read" || string(cap.Body) != `{"chunk_id":"c-1"}` {
 		t.Errorf("got %s body %s", cap.Path, cap.Body)
 	}
 	out := stdoutOf(f).String()
