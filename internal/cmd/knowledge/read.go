@@ -17,6 +17,7 @@ type readRequest struct {
 }
 
 type readResponse struct {
+	Status     string     `json:"status"`
 	Text       string     `json:"text"`
 	Source     readSource `json:"source"`
 	Truncated  bool       `json:"truncated"`
@@ -62,6 +63,11 @@ func NewCmdRead(f *factory.Factory) *cobra.Command {
 			var resp readResponse
 			if err := json.Unmarshal(body, &resp); err != nil {
 				return fmt.Errorf("parsing read response: %w", err)
+			}
+
+			if resp.Status == "empty" {
+				fmt.Fprintln(f.IO.ErrOut, "Section not found; chunk IDs change when the documentation is updated, search again.")
+				return nil
 			}
 
 			out := f.IO.Out

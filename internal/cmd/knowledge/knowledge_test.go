@@ -283,3 +283,28 @@ func TestKnowledge_OldServerGivesUpgradeHint(t *testing.T) {
 		t.Fatalf("want upgrade hint, got %v", err)
 	}
 }
+
+func TestBrowseAndRead_EmptyResultIsNotAnError(t *testing.T) {
+	cases := []struct {
+		resp string
+		args []string
+		hint string
+	}{
+		{`{"status":"empty","product":"NOPE","sections":[]}`, []string{"browse", "--product", "NOPE", "-o", "table"}, "Nothing found."},
+		{`{"status":"empty","path":"nope.md","sections":[]}`, []string{"browse", "nope.md", "-o", "table"}, "Nothing found."},
+		{`{"status":"empty","text":"","truncated":false}`, []string{"read", "stale", "-o", "table"}, "search again"},
+	}
+	for _, tc := range cases {
+		f, errBuf, err := run(t, tc.resp, nil, tc.args...)
+		if err != nil {
+			t.Fatalf("%v: want no error, got %v", tc.args, err)
+		}
+		if !strings.Contains(errBuf.String(), tc.hint) || stdoutOf(f).Len() != 0 {
+			t.Errorf("%v: stderr=%q stdout=%q", tc.args, errBuf.String(), stdoutOf(f).String())
+		}
+	}
+	f, _, err := run(t, `{"status":"empty","text":"","truncated":false}`, nil, "read", "stale", "-o", "json")
+	if err != nil || !strings.Contains(stdoutOf(f).String(), `"status":"empty"`) {
+		t.Errorf("json passthrough: err=%v out=%q", err, stdoutOf(f).String())
+	}
+}
