@@ -88,7 +88,6 @@ const searchHit = `{
     "doc_title": "ER805用户手册_V1.0",
     "heading_path": "ER805用户手册 > 4 网络 > 4.2 IPSec VPN",
     "product_ids": ["ER805"],
-    "score": 2.5,
     "snippet": "IKE（UDP 500）与 ESP 需要在防火墙中放行。"
   }]
 }`
@@ -170,21 +169,26 @@ func TestSearch_JSONPassthrough(t *testing.T) {
 
 func TestBrowse_Products(t *testing.T) {
 	var cap captured
-	f, _, err := run(t, `{"products":[{"product_id":"ER605","display_name":"ER605","kind":"model"}]}`, &cap, "browse", "-o", "table")
+	resp := `{"status":"success","products":[{"product_id":"ER605","display_name":"ER605"},{"product_id":"EAGLE-ENERGY-MANAGEMENT","display_name":"白鹰能源管家"}]}`
+	f, _, err := run(t, resp, &cap, "browse", "-o", "table")
 	if err != nil {
 		t.Fatal(err)
 	}
 	if cap.Path != "/api/v1/knowledge/browse" || string(cap.Body) != "{}" {
 		t.Errorf("got %s body %s", cap.Path, cap.Body)
 	}
-	if !strings.Contains(stdoutOf(f).String(), "ER605") {
-		t.Errorf("missing product: %q", stdoutOf(f).String())
+	out := stdoutOf(f).String()
+	if !strings.Contains(out, "ER605\n") || strings.Contains(out, "(ER605)") {
+		t.Errorf("display name equal to id should not repeat: %q", out)
+	}
+	if !strings.Contains(out, "EAGLE-ENERGY-MANAGEMENT (白鹰能源管家)") {
+		t.Errorf("missing distinct display name: %q", out)
 	}
 }
 
 func TestBrowse_ProductOverview(t *testing.T) {
 	var cap captured
-	resp := `{"product":"DeviceLive","document_coverage":[{"language":"zh","category":"manual","document_count":1}],"sections":[{"chunk_id":"c-9","heading_path":"1. 产品概述","path":"docs/zh/DeviceLive/Manuals/用户手册/DeviceLive用户手册.md"}]}`
+	resp := `{"status":"success","product":"DeviceLive","sections":[{"chunk_id":"c-9","heading_path":"1. 产品概述","path":"docs/zh/DeviceLive/Manuals/用户手册/DeviceLive用户手册.md"}]}`
 	f, _, err := run(t, resp, &cap, "browse", "--product", "DeviceLive", "-o", "table")
 	if err != nil {
 		t.Fatal(err)
@@ -200,28 +204,26 @@ func TestBrowse_ProductOverview(t *testing.T) {
 	}
 }
 
-func TestBrowse_DocumentOutlineWithCursor(t *testing.T) {
+func TestBrowse_DocumentOutline(t *testing.T) {
 	var cap captured
-	resp := `{"path":"p.md","doc_title":"ER805用户手册_V1.0","sections":[{"chunk_id":"c-1","heading_path":"1 概述"}],"next_cursor":20}`
-	f, errBuf, err := run(t, resp, &cap, "browse", "p.md", "--cursor", "10", "-o", "table")
+	resp := `{"status":"success","sections":[{"chunk_id":"c-1","heading_path":"ER805用户手册 > 5 维护"},{"chunk_id":"c-2","heading_path":"ER805用户手册 > 5 维护 > 5.1 恢复出厂设置"}]}`
+	f, _, err := run(t, resp, &cap, "browse", "p.md", "-o", "table")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if string(cap.Body) != `{"path":"p.md","cursor":10}` {
+	if string(cap.Body) != `{"path":"p.md"}` {
 		t.Errorf("request body %s", cap.Body)
 	}
-	if !strings.Contains(stdoutOf(f).String(), "1 概述 [c-1]") {
-		t.Errorf("outline missing: %q", stdoutOf(f).String())
-	}
-	if !strings.Contains(errBuf.String(), "--cursor 20") {
-		t.Errorf("missing next-page hint: %q", errBuf.String())
+	want := "ER805用户手册 > 5 维护 [c-1]\nER805用户手册 > 5 维护 > 5.1 恢复出厂设置 [c-2]\n"
+	if stdoutOf(f).String() != want {
+		t.Errorf("outline = %q, want %q", stdoutOf(f).String(), want)
 	}
 }
 
-func TestBrowse_InvalidCombinationsFailBeforeRequest(t *testing.T) {
+func TestBrowse_InvalidUsageFailsBeforeRequest(t *testing.T) {
 	for _, args := range [][]string{
 		{"browse", "p.md", "--product", "ER805"},
-		{"browse", "--cursor", "10"},
+		{"browse", "p.md", "--cursor", "10"},
 	} {
 		var cap captured
 		_, _, err := run(t, "{}", &cap, args...)
@@ -236,7 +238,7 @@ func TestBrowse_InvalidCombinationsFailBeforeRequest(t *testing.T) {
 
 func TestRead_RequestTableAndCursorHint(t *testing.T) {
 	var cap captured
-	resp := `{"text":"正文","source":{"chunk_id":"c-1","path":"p.md","doc_title":"ER805用户手册_V1.0","heading_path":"5 维护 > 5.1 恢复出厂设置","url":"https://example.com/p.md"},"truncated":true,"next_cursor":12000}`
+	resp := `{"text":"正文","source":{"path":"p.md","doc_title":"ER805用户手册_V1.0","heading_path":"5 维护 > 5.1 恢复出厂设置","url":"https://example.com/p.md"},"truncated":true,"next_cursor":12000}`
 	f, errBuf, err := run(t, resp, &cap, "read", "c-1", "-o", "table")
 	if err != nil {
 		t.Fatal(err)
@@ -255,7 +257,7 @@ func TestRead_RequestTableAndCursorHint(t *testing.T) {
 
 func TestRead_CursorSentAndLineFlagsGone(t *testing.T) {
 	var cap captured
-	_, _, err := run(t, `{"text":"","source":{"chunk_id":"c-1","doc_title":"d","heading_path":"h","url":null}}`, &cap, "read", "c-1", "--cursor", "12000", "-o", "json")
+	_, _, err := run(t, `{"text":"","source":{"doc_title":"d","heading_path":"h","url":null}}`, &cap, "read", "c-1", "--cursor", "12000", "-o", "json")
 	if err != nil {
 		t.Fatal(err)
 	}

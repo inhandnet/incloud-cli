@@ -10,14 +10,14 @@
 
 ## Breaking Changes
 
-- **`knowledge` is backed by the documents library (documents-mcp)** via `/api/v1/knowledge/{search,browse,read}`; it needs a copilot backend that serves these endpoints and says so on a 404. The local corpus is gone. `knowledge search` returns sections with `chunk_id` / `path` / `doc_title` / `heading_path` / `product_ids` / `score` / `snippet`; matching is lexical, so include the product or model name. `--path` and `--model` are removed (put the model in the query), and `--limit` defaults to 5 (1–10). `search`, `browse` and `read` all report `status` `success` / `empty` / `failed` (with `message`) in the response body; not-found and upstream failures exit 0.
+- **`knowledge` is backed by the documents library (documents-mcp)** via `/api/v1/knowledge/{search,browse,read}`; it needs a copilot backend that serves these endpoints and says so on a 404. The local corpus is gone. `knowledge search` returns sections with `chunk_id` / `path` / `doc_title` / `heading_path` / `product_ids` / `snippet`; matching is lexical, so include the product or model name. `--path` and `--model` are removed (put the model in the query), and `--limit` defaults to 5 (1–10). `search`, `browse` and `read` all report `status` `success` / `empty` / `failed` (with `message`) in the response body; not-found and upstream failures exit 0.
 - **`knowledge grep` is removed**, and `knowledge read` no longer has line modes (`--mode`, `--line-start`, `--line-end`, `--around`, `--before`, `--after`, `--limit`).
 
 ## New Commands
 
 - **`device history list <device-id> [--status open|all] [--after] [--before]`** — the AI assistant's diagnosis records for a device (symptom, root cause, remediation, whether the user confirmed the result), newest first. Lists only records awaiting confirmation by default.
 - **`device history get <record-id>...`** — full content and current status of diagnosis records. Accepts the full id or the 8-character short id shown in the assistant (e.g. `e95bba0b`).
-- **`knowledge browse [<document path>] [--product <id>] [--cursor N]`** — no arguments lists all products; `--product` shows a product's document counts and overview sections; a document path lists its section outline (chunk IDs ready for `knowledge read`), paged with `--cursor`.
+- **`knowledge browse [<document path>] [--product <id>]`** — no arguments lists all products; `--product` shows a product's overview sections; a document path returns its full section outline (`chunk_id` / `heading_path`, chunk IDs ready for `knowledge read`).
 - **`knowledge read <chunk_id> [--cursor N]`** — full text of a section with its source (`doc_title`, `heading_path`, `url`), chunked at 12000 characters.
 
 # v0.11.0 (2026-08-18)

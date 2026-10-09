@@ -26,7 +26,6 @@ type readResponse struct {
 }
 
 type readSource struct {
-	ChunkID     string `json:"chunk_id"`
 	Path        string `json:"path"`
 	DocTitle    string `json:"doc_title"`
 	HeadingPath string `json:"heading_path"`

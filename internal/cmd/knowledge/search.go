@@ -29,7 +29,6 @@ type searchResult struct {
 	DocTitle    string   `json:"doc_title"`
 	HeadingPath string   `json:"heading_path"`
 	ProductIDs  []string `json:"product_ids"`
-	Score       float64  `json:"score"`
 	Snippet     string   `json:"snippet"`
 }
 
