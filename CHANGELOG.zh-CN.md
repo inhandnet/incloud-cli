@@ -2,14 +2,14 @@
 
 ## 破坏性变更
 
-- **`knowledge` 改由文档库（documents-mcp）提供数据**，走 `/api/v1/knowledge/{search,browse,read}`，需要提供这组接口的 copilot 后端（后端过旧时 404 会明确提示），本地语料下线。`knowledge search` 返回章节，字段为 `chunk_id` / `path` / `doc_title` / `heading_path` / `product_ids` / `score` / `snippet`；检索按关键词匹配，查询里要带产品名或型号。移除 `--path` 与 `--model`（型号直接写进查询），`--limit` 默认 5（1–10）。`search`、`browse`、`read` 都在返回体里给 `status`：`success` / `empty` / `failed`（附 `message`）；查不到或上游故障时退出码仍为 0。
+- **`knowledge` 改由文档库（documents-mcp）提供数据**，走 `/api/v1/knowledge/{search,browse,read}`，需要提供这组接口的 copilot 后端（后端过旧时 404 会明确提示），本地语料下线。`knowledge search` 返回章节，字段为 `chunk_id` / `path` / `doc_title` / `heading_path` / `product_ids` / `snippet`；检索按关键词匹配，查询里要带产品名或型号。移除 `--path` 与 `--model`（型号直接写进查询），`--limit` 默认 5（1–10）。`search`、`browse`、`read` 都在返回体里给 `status`：`success` / `empty` / `failed`（附 `message`）；查不到或上游故障时退出码仍为 0。
 - **移除 `knowledge grep`**；`knowledge read` 不再有按行读取（`--mode`、`--line-start`、`--line-end`、`--around`、`--before`、`--after`、`--limit`）。
 
 ## 新增命令
 
 - **`device history list <device-id> [--status open|all] [--after] [--before]`** — 小星云对设备的诊断记录（症状、根因、处置、用户是否已确认结果），按时间倒序；默认只列待确认的。
 - **`device history get <record-id>...`** — 诊断记录的完整内容和当前状态；支持完整编号，也支持小星云里显示的 8 位短编号（如 `e95bba0b`）。
-- **`knowledge browse [<文档路径>] [--product <ID>] [--cursor N]`** — 无参列出全部产品；`--product` 看产品的各类文档数量与概览章节；给文档路径列出章节目录（chunk ID 可直接给 `knowledge read`），用 `--cursor` 翻页。
+- **`knowledge browse [<文档路径>] [--product <ID>]`** — 无参列出全部产品；`--product` 看产品的概览章节；给文档路径一次返回完整章节目录（`chunk_id` / `title` / `level`，chunk ID 可直接给 `knowledge read`）。
 - **`knowledge read <chunk_id> [--cursor N]`** — 读取章节全文及来源（`doc_title`、`heading_path`、`url`），按 12000 字符分段。
 
 # v0.11.0 (2026-08-18)

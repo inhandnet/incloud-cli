@@ -3,6 +3,7 @@ package knowledge
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -13,37 +14,33 @@ import (
 type browseRequest struct {
 	Product string `json:"product,omitempty"`
 	Path    string `json:"path,omitempty"`
-	Cursor  int    `json:"cursor,omitempty"`
 }
 
 type browseResponse struct {
-	Status     string          `json:"status"`
-	Message    string          `json:"message"`
-	Products   []browseProduct `json:"products"`
-	Product    string          `json:"product"`
-	Path       string          `json:"path"`
-	DocTitle   string          `json:"doc_title"`
-	Sections   []browseSection `json:"sections"`
-	NextCursor *int            `json:"next_cursor"`
+	Status   string          `json:"status"`
+	Message  string          `json:"message"`
+	Products []browseProduct `json:"products"`
+	Product  string          `json:"product"`
+	Sections []browseSection `json:"sections"`
 }
 
 type browseProduct struct {
 	ProductID   string `json:"product_id"`
 	DisplayName string `json:"display_name"`
-	Kind        string `json:"kind"`
 }
 
+// browseSection covers both shapes: product overview sections carry path and
+// heading_path, document outline sections carry title and level.
 type browseSection struct {
 	ChunkID     string `json:"chunk_id"`
-	HeadingPath string `json:"heading_path"`
 	Path        string `json:"path"`
+	HeadingPath string `json:"heading_path"`
+	Title       string `json:"title"`
+	Level       int    `json:"level"`
 }
 
 func NewCmdBrowse(f *factory.Factory) *cobra.Command {
-	var (
-		product string
-		cursor  int
-	)
+	var product string
 
 	cmd := &cobra.Command{
 		Use:   "browse [<document path>]",
@@ -51,8 +48,8 @@ func NewCmdBrowse(f *factory.Factory) *cobra.Command {
 		Long: `Browse the documentation library:
 
   no arguments      -> all products (product IDs)
-  --product <id>    -> product overview: document counts and overview sections
-  <document path>   -> section outline of that document, paged with --cursor
+  --product <id>    -> product overview sections
+  <document path>   -> full section outline of that document
 
 Feed chunk IDs into ` + "`knowledge read`" + `.`,
 		Example: `  # Which products have documentation
@@ -61,20 +58,16 @@ Feed chunk IDs into ` + "`knowledge read`" + `.`,
   # Overview of one product
   incloud knowledge browse --product DeviceLive
 
-  # Section outline of a document, then the next page
-  incloud knowledge browse "docs/zh/ER805/Manuals/用户手册/ER805用户手册_V1.0.md"
-  incloud knowledge browse "docs/zh/ER805/Manuals/用户手册/ER805用户手册_V1.0.md" --cursor 10`,
+  # Full section outline of a document
+  incloud knowledge browse "docs/zh/ER805/Manuals/用户手册/ER805用户手册_V1.0.md"`,
 		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			req := browseRequest{Product: product, Cursor: cursor}
+			req := browseRequest{Product: product}
 			if len(args) == 1 {
 				req.Path = args[0]
 			}
 			if req.Path != "" && req.Product != "" {
 				return fmt.Errorf("give either a document path or --product, not both")
-			}
-			if req.Path == "" && cmd.Flags().Changed("cursor") {
-				return fmt.Errorf("--cursor is only valid with a document path")
 			}
 
 			body, err := post(f, "/browse", req)
@@ -101,32 +94,30 @@ Feed chunk IDs into ` + "`knowledge read`" + `.`,
 				fmt.Fprintf(errOut, "Browse failed: %s\n", resp.Message)
 			case resp.Status == "empty":
 				fmt.Fprintln(errOut, "Nothing found.")
-			case len(resp.Products) > 0:
-				for _, p := range resp.Products {
-					fmt.Fprintf(out, "%s %s\n", c.Bold(p.ProductID), c.Gray(fmt.Sprintf("(%s, %s)", p.DisplayName, p.Kind)))
+			case req.Path != "":
+				for _, s := range resp.Sections {
+					indent := strings.Repeat("  ", max(s.Level-1, 0))
+					fmt.Fprintf(out, "%s%s %s\n", indent, s.Title, c.Gray("["+s.ChunkID+"]"))
 				}
-			case resp.Product != "":
+			case req.Product != "":
 				fmt.Fprintln(out, c.Bold(resp.Product))
 				for _, s := range resp.Sections {
 					fmt.Fprintf(out, "  %s %s\n", s.HeadingPath, c.Gray(fmt.Sprintf("%s [%s]", s.Path, s.ChunkID)))
 				}
-			case resp.Path != "":
-				fmt.Fprintln(out, c.Bold(resp.DocTitle))
-				for _, s := range resp.Sections {
-					fmt.Fprintf(out, "  %s %s\n", s.HeadingPath, c.Gray("["+s.ChunkID+"]"))
-				}
-				if resp.NextCursor != nil {
-					fmt.Fprintf(errOut, "More sections; continue with --cursor %d.\n", *resp.NextCursor)
-				}
 			default:
-				fmt.Fprintln(errOut, "Nothing found.")
+				for _, p := range resp.Products {
+					line := c.Bold(p.ProductID)
+					if p.DisplayName != "" && p.DisplayName != p.ProductID {
+						line += " " + c.Gray("("+p.DisplayName+")")
+					}
+					fmt.Fprintln(out, line)
+				}
 			}
 			return nil
 		},
 	}
 
 	cmd.Flags().StringVar(&product, "product", "", "Show the overview of a product (e.g. DeviceLive, ER805)")
-	cmd.Flags().IntVar(&cursor, "cursor", 0, "Continue a document outline from a previous response's next_cursor")
 
 	return cmd
 }
