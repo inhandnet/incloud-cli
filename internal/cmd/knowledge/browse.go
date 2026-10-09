@@ -18,6 +18,7 @@ type browseRequest struct {
 
 type browseResponse struct {
 	Status     string          `json:"status"`
+	Message    string          `json:"message"`
 	Products   []browseProduct `json:"products"`
 	Product    string          `json:"product"`
 	Path       string          `json:"path"`
@@ -96,6 +97,8 @@ Feed chunk IDs into ` + "`knowledge read`" + `.`,
 			c := iostreams.NewColorizer(f.IO.TermOutput())
 
 			switch {
+			case resp.Status == "failed":
+				fmt.Fprintf(errOut, "Browse failed: %s\n", resp.Message)
 			case resp.Status == "empty":
 				fmt.Fprintln(errOut, "Nothing found.")
 			case len(resp.Products) > 0:

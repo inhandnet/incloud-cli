@@ -308,3 +308,16 @@ func TestBrowseAndRead_EmptyResultIsNotAnError(t *testing.T) {
 		t.Errorf("json passthrough: err=%v out=%q", err, stdoutOf(f).String())
 	}
 }
+
+func TestBrowseAndRead_FailedStatusIsNotAnError(t *testing.T) {
+	failed := `{"status":"failed","message":"documents-mcp 请求过于频繁（429）"}`
+	for _, args := range [][]string{{"browse", "-o", "table"}, {"read", "c-1", "-o", "table"}} {
+		f, errBuf, err := run(t, failed, nil, args...)
+		if err != nil {
+			t.Fatalf("%v: want no error, got %v", args, err)
+		}
+		if !strings.Contains(errBuf.String(), "failed: documents-mcp 请求过于频繁（429）") || stdoutOf(f).Len() != 0 {
+			t.Errorf("%v: stderr=%q stdout=%q", args, errBuf.String(), stdoutOf(f).String())
+		}
+	}
+}
