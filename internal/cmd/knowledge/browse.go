@@ -3,7 +3,6 @@ package knowledge
 import (
 	"encoding/json"
 	"fmt"
-	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -12,75 +11,73 @@ import (
 )
 
 type browseRequest struct {
-	Path      string  `json:"path,omitempty"`
-	SectionID *string `json:"section_id,omitempty"`
+	Product string `json:"product,omitempty"`
+	Path    string `json:"path,omitempty"`
+	Cursor  int    `json:"cursor,omitempty"`
 }
 
 type browseResponse struct {
-	DocumentID string           `json:"document_id"`
-	Title      string           `json:"title"`
-	Nodes      []browseNode     `json:"nodes"`
-	Documents  []browseDocument `json:"documents"`
+	Status     string          `json:"status"`
+	Message    string          `json:"message"`
+	Products   []browseProduct `json:"products"`
+	Product    string          `json:"product"`
+	Path       string          `json:"path"`
+	DocTitle   string          `json:"doc_title"`
+	Sections   []browseSection `json:"sections"`
+	NextCursor *int            `json:"next_cursor"`
 }
 
-type browseNode struct {
-	SectionID  string `json:"section_id"`
-	Title      string `json:"title"`
-	Level      int    `json:"level"`
-	CharCount  int    `json:"char_count"`
-	ChildCount int    `json:"child_count"`
+type browseProduct struct {
+	ProductID   string `json:"product_id"`
+	DisplayName string `json:"display_name"`
+	Kind        string `json:"kind"`
 }
 
-type browseDocument struct {
-	DocumentID   string `json:"document_id"`
-	Title        string `json:"title"`
-	Source       string `json:"source"`
-	S3Key        string `json:"s3_key"`
-	DocumentType string `json:"document_type"`
-	Model        string `json:"model"`
-	Region       string `json:"region"`
-	SectionCount int    `json:"section_count"`
-	CharCount    int    `json:"char_count"`
+type browseSection struct {
+	ChunkID     string `json:"chunk_id"`
+	HeadingPath string `json:"heading_path"`
+	Path        string `json:"path"`
 }
 
 func NewCmdBrowse(f *factory.Factory) *cobra.Command {
-	var section string
+	var (
+		product string
+		cursor  int
+	)
 
 	cmd := &cobra.Command{
-		Use:   "browse [<path>]",
-		Short: "Browse the knowledge base like a filesystem",
-		Long: `Browse the knowledge base by corpus path, like ls on a virtual filesystem:
+		Use:   "browse [<document path>]",
+		Short: "Browse products and document outlines",
+		Long: `Browse the documentation library:
 
-  no path        -> catalog of all documents in the corpus
-  path prefix    -> catalog filtered to matching documents (s3_key or filename prefix)
-  unique match   -> section outline of that document (--section to open a subtree)
+  no arguments      -> all products (product IDs)
+  --product <id>    -> product overview: document counts and overview sections
+  <document path>   -> section outline of that document, paged with --cursor
 
-Feed section IDs into ` + "`knowledge read`" + `.`,
-		Example: `  # What documents are in the corpus
+Feed chunk IDs into ` + "`knowledge read`" + `.`,
+		Example: `  # Which products have documentation
   incloud knowledge browse
 
-  # Narrow by prefix (model filters work via filename, e.g. device_er805*)
-  incloud knowledge browse device_
+  # Overview of one product
+  incloud knowledge browse --product DeviceLive
 
-  # Open one document's outline, then a subtree
-  incloud knowledge browse device_er805_用户手册
-  incloud knowledge browse device_er805_用户手册 --section 9c1d...`,
+  # Section outline of a document, then the next page
+  incloud knowledge browse "docs/zh/ER805/Manuals/用户手册/ER805用户手册_V1.0.md"
+  incloud knowledge browse "docs/zh/ER805/Manuals/用户手册/ER805用户手册_V1.0.md" --cursor 10`,
 		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			client, err := f.APIClient()
-			if err != nil {
-				return err
-			}
-
-			req := browseRequest{}
+			req := browseRequest{Product: product, Cursor: cursor}
 			if len(args) == 1 {
 				req.Path = args[0]
 			}
-			if section != "" {
-				req.SectionID = &section
+			if req.Path != "" && req.Product != "" {
+				return fmt.Errorf("give either a document path or --product, not both")
+			}
+			if req.Path == "" && cmd.Flags().Changed("cursor") {
+				return fmt.Errorf("--cursor is only valid with a document path")
 			}
 
-			body, err := client.Post(agenticBase+"/browse", req)
+			body, err := post(f, "/browse", req)
 			if err != nil {
 				return err
 			}
@@ -100,39 +97,36 @@ Feed section IDs into ` + "`knowledge read`" + `.`,
 			c := iostreams.NewColorizer(f.IO.TermOutput())
 
 			switch {
-			case len(resp.Documents) > 0:
-				for i := range resp.Documents {
-					if i > 0 {
-						fmt.Fprintln(out)
-					}
-					d := &resp.Documents[i]
-					meta := fmt.Sprintf("%s · %d sections · %d chars",
-						d.Source, d.SectionCount, d.CharCount)
-					if d.Model != "" && d.Model != "default" {
-						meta = fmt.Sprintf("[%s] %s", strings.ToUpper(d.Model), meta)
-					}
-					fmt.Fprintln(out, c.Bold(d.Title))
-					fmt.Fprintln(out, c.Gray(fmt.Sprintf("%s [%s]", meta, d.DocumentID)))
+			case resp.Status == "failed":
+				fmt.Fprintf(errOut, "Browse failed: %s\n", resp.Message)
+			case resp.Status == "empty":
+				fmt.Fprintln(errOut, "Nothing found.")
+			case len(resp.Products) > 0:
+				for _, p := range resp.Products {
+					fmt.Fprintf(out, "%s %s\n", c.Bold(p.ProductID), c.Gray(fmt.Sprintf("(%s, %s)", p.DisplayName, p.Kind)))
 				}
-			case resp.Title != "":
-				fmt.Fprintln(out, c.Bold(resp.Title))
-				for _, n := range resp.Nodes {
-					indent := strings.Repeat("  ", max(n.Level-1, 0))
-					fmt.Fprintf(out, "%s%s %s\n",
-						indent,
-						n.Title,
-						c.Gray(fmt.Sprintf("(%d chars, %d children) [%s]",
-							n.CharCount, n.ChildCount, n.SectionID)),
-					)
+			case resp.Product != "":
+				fmt.Fprintln(out, c.Bold(resp.Product))
+				for _, s := range resp.Sections {
+					fmt.Fprintf(out, "  %s %s\n", s.HeadingPath, c.Gray(fmt.Sprintf("%s [%s]", s.Path, s.ChunkID)))
+				}
+			case resp.Path != "":
+				fmt.Fprintln(out, c.Bold(resp.DocTitle))
+				for _, s := range resp.Sections {
+					fmt.Fprintf(out, "  %s %s\n", s.HeadingPath, c.Gray("["+s.ChunkID+"]"))
+				}
+				if resp.NextCursor != nil {
+					fmt.Fprintf(errOut, "More sections; continue with --cursor %d.\n", *resp.NextCursor)
 				}
 			default:
-				fmt.Fprintln(errOut, "Nothing found at this path (or knowledge base not ready).")
+				fmt.Fprintln(errOut, "Nothing found.")
 			}
 			return nil
 		},
 	}
 
-	cmd.Flags().StringVar(&section, "section", "", "Open the subtree rooted at this section ID (unique path match only)")
+	cmd.Flags().StringVar(&product, "product", "", "Show the overview of a product (e.g. DeviceLive, ER805)")
+	cmd.Flags().IntVar(&cursor, "cursor", 0, "Continue a document outline from a previous response's next_cursor")
 
 	return cmd
 }

@@ -81,623 +81,243 @@ func captureServer(t *testing.T, cap *captured, resp string) *httptest.Server {
 
 const searchHit = `{
   "status": "success",
+  "message": null,
   "results": [{
-    "source": "device_er805_用户手册.md",
-    "document_id": "doc-1",
-    "section_id": "sec-1",
-    "heading_path": "ER805 用户手册 > 4 网络 > 4.2 IPSec VPN",
-    "document_type": "device",
-    "model": "er805",
-    "from_fallback": false,
+    "chunk_id": "c-1",
+    "path": "docs/zh/ER805/Manuals/用户手册/ER805用户手册_V1.0.md",
+    "doc_title": "ER805用户手册_V1.0",
+    "heading_path": "ER805用户手册 > 4 网络 > 4.2 IPSec VPN",
+    "product_ids": ["ER805"],
     "score": 2.5,
     "snippet": "IKE（UDP 500）与 ESP 需要在防火墙中放行。"
   }]
 }`
 
-func TestSearch_PostsToAgenticEndpoint(t *testing.T) {
-	var cap captured
-	srv := captureServer(t, &cap, searchHit)
-	defer srv.Close()
-
-	f, _ := newTestFactory(t, srv.URL)
+func run(t *testing.T, srvResp string, cap *captured, args ...string) (*factory.Factory, *bytes.Buffer, error) {
+	t.Helper()
+	srv := captureServer(t, cap, srvResp)
+	t.Cleanup(srv.Close)
+	f, errBuf := newTestFactory(t, srv.URL)
 	root := newKnowledgeRoot(f)
-	root.SetArgs([]string{"knowledge", "search", "IPSec VPN", "--model", "er805", "--path", "device_", "--limit", "5", "-o", "table"})
-	if err := root.Execute(); err != nil {
-		t.Fatalf("knowledge search: %v", err)
-	}
-
-	if cap.Method != "POST" || cap.Path != "/api/v1/knowledge/agentic/search" {
-		t.Errorf("got %s %s, want POST /api/v1/knowledge/agentic/search", cap.Method, cap.Path)
-	}
-	if !strings.Contains(string(cap.Body), `"query":"IPSec VPN"`) ||
-		!strings.Contains(string(cap.Body), `"model":"er805"`) ||
-		!strings.Contains(string(cap.Body), `"path":"device_"`) ||
-		!strings.Contains(string(cap.Body), `"limit":5`) {
-		t.Errorf("request body %s missing expected fields", cap.Body)
-	}
-	if strings.Contains(string(cap.Body), "rewrite") {
-		t.Errorf("request body %s should not contain rewrite", cap.Body)
-	}
-
-	out := stdoutOf(f).String()
-	if !strings.Contains(out, "ER805 用户手册 > 4 网络 > 4.2 IPSec VPN") {
-		t.Errorf("table output missing heading_path: %q", out)
-	}
-	if !strings.Contains(out, "[ER805] device_er805_用户手册.md") {
-		t.Errorf("table output missing model/source meta: %q", out)
-	}
-	if !strings.Contains(out, "IKE（UDP 500）") {
-		t.Errorf("table output missing snippet: %q", out)
-	}
+	root.SetArgs(append([]string{"knowledge"}, args...))
+	return f, errBuf, root.Execute()
 }
 
-func TestSearch_StatusHandling(t *testing.T) {
-	tests := []struct {
-		name       string
-		resp       string
-		wantStderr string
-		wantStdout string
-	}{
-		{
-			name:       "empty",
-			resp:       `{"status": "empty", "results": []}`,
-			wantStderr: "No results found.",
-		},
-		{
-			name:       "kb_not_ready",
-			resp:       `{"status": "kb_not_ready", "results": []}`,
-			wantStderr: "Knowledge base is not ready.",
-		},
-		{
-			name:       "failed",
-			resp:       `{"status": "failed", "results": []}`,
-			wantStderr: "Search failed on the server.",
-		},
-		{
-			name: "model_not_found fallback",
-			resp: `{"status": "model_not_found", "results": [{
-				"source": "platform_用户手册.md", "document_id": "d", "section_id": "s",
-				"heading_path": "平台 > 告警", "document_type": "platform", "model": "default",
-				"from_fallback": true, "score": 1.0, "snippet": "webhook 告警"
-			}]}`,
-			wantStderr: "fallback results",
-			wantStdout: "(fallback)",
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			srv := captureServer(t, nil, tt.resp)
-			defer srv.Close()
-
-			f, errBuf := newTestFactory(t, srv.URL)
-			root := newKnowledgeRoot(f)
-			root.SetArgs([]string{"knowledge", "search", "q", "-o", "table"})
-			if err := root.Execute(); err != nil {
-				t.Fatalf("knowledge search: %v", err)
-			}
-			if tt.wantStderr != "" && !strings.Contains(errBuf.String(), tt.wantStderr) {
-				t.Errorf("stderr %q missing %q", errBuf.String(), tt.wantStderr)
-			}
-			if tt.wantStdout != "" && !strings.Contains(stdoutOf(f).String(), tt.wantStdout) {
-				t.Errorf("stdout %q missing %q", stdoutOf(f).String(), tt.wantStdout)
-			}
-		})
-	}
-}
-
-func TestSearch_RewriteFlagRemoved(t *testing.T) {
-	srv := captureServer(t, nil, searchHit)
-	defer srv.Close()
-
-	f, _ := newTestFactory(t, srv.URL)
-	root := newKnowledgeRoot(f)
-	root.SetArgs([]string{"knowledge", "search", "q", "--rewrite"})
-	err := root.Execute()
-	if err == nil || !strings.Contains(err.Error(), "unknown flag") {
-		t.Errorf("expected unknown-flag error for --rewrite, got %v", err)
-	}
-}
-
-func TestSearch_JSONPassthrough(t *testing.T) {
-	srv := captureServer(t, nil, searchHit)
-	defer srv.Close()
-
-	f, _ := newTestFactory(t, srv.URL)
-	root := newKnowledgeRoot(f)
-	root.SetArgs([]string{"knowledge", "search", "IPSec VPN", "-o", "json"})
-	if err := root.Execute(); err != nil {
-		t.Fatalf("knowledge search: %v", err)
-	}
-
-	out := stdoutOf(f).String()
-	for _, want := range []string{`"status"`, `"document_id":"doc-1"`, `"section_id":"sec-1"`, `"snippet"`} {
-		if !strings.Contains(out, want) {
-			t.Errorf("json output missing %s: %q", want, out)
+func TestKnowledge_HasNoGrep(t *testing.T) {
+	f, _ := newTestFactory(t, "http://127.0.0.1")
+	for _, c := range NewCmdKnowledge(f).Commands() {
+		if c.Name() == "grep" {
+			t.Fatal("grep subcommand should be removed")
 		}
 	}
 }
 
-const browseTree = `{
-  "document_id": "doc-1",
-  "title": "ER805 用户手册",
-  "nodes": [
-    {"section_id": "sec-1", "title": "4 网络", "level": 1, "char_count": 800, "child_count": 2},
-    {"section_id": "sec-2", "title": "4.2 IPSec VPN", "level": 2, "char_count": 300, "child_count": 0}
-  ],
-  "documents": []
-}`
-
-const browseCatalog = `{
-  "document_id": "",
-  "title": "",
-  "nodes": [],
-  "documents": [
-    {"document_id": "doc-1", "title": "ER805 用户手册", "source": "device_er805_用户手册.md",
-     "s3_key": "cn/device_er805_用户手册.md", "document_type": "device", "model": "er805",
-     "region": "cn", "section_count": 12, "char_count": 13000},
-    {"document_id": "doc-2", "title": "小星云管家用户手册", "source": "platform_小星云管家用户手册.md",
-     "s3_key": "cn/platform_小星云管家用户手册.md", "document_type": "platform", "model": "default",
-     "region": "cn", "section_count": 5, "char_count": 4000}
-  ]
-}`
-
-func TestBrowse_TreeOnUniquePathMatch(t *testing.T) {
+func TestSearch_RequestAndTable(t *testing.T) {
 	var cap captured
-	srv := captureServer(t, &cap, browseTree)
-	defer srv.Close()
-
-	f, _ := newTestFactory(t, srv.URL)
-	root := newKnowledgeRoot(f)
-	root.SetArgs([]string{"knowledge", "browse", "device_er805_用户手册", "--section", "sec-1", "-o", "table"})
-	if err := root.Execute(); err != nil {
-		t.Fatalf("knowledge browse: %v", err)
+	f, _, err := run(t, searchHit, &cap, "search", "ER805 IPSec VPN", "--limit", "3", "-o", "table")
+	if err != nil {
+		t.Fatalf("knowledge search: %v", err)
 	}
-
-	if cap.Path != "/api/v1/knowledge/agentic/browse" {
-		t.Errorf("got path %s", cap.Path)
+	if cap.Method != "POST" || cap.Path != "/api/v1/knowledge/search" {
+		t.Errorf("got %s %s", cap.Method, cap.Path)
 	}
-	if !strings.Contains(string(cap.Body), `"path":"device_er805_用户手册"`) ||
-		!strings.Contains(string(cap.Body), `"section_id":"sec-1"`) {
-		t.Errorf("request body %s missing path/section_id", cap.Body)
+	body := string(cap.Body)
+	for _, want := range []string{`"query":"ER805 IPSec VPN"`, `"limit":3`} {
+		if !strings.Contains(body, want) {
+			t.Errorf("request body %s missing %s", body, want)
+		}
 	}
-
+	if strings.Contains(body, `"path"`) {
+		t.Errorf("request body %s should not carry path", body)
+	}
 	out := stdoutOf(f).String()
-	if !strings.Contains(out, "ER805 用户手册") {
-		t.Errorf("output missing title: %q", out)
-	}
-	if !strings.Contains(out, "4 网络") || !strings.Contains(out, "4.2 IPSec VPN") {
-		t.Errorf("output missing nodes: %q", out)
-	}
-	if !strings.Contains(out, "[sec-2]") {
-		t.Errorf("output missing section id for follow-up read: %q", out)
-	}
-	indented := strings.Index(out, "4.2 IPSec VPN") - strings.Index(out, "4 网络")
-	if indented <= 0 {
-		t.Errorf("child node should be indented after parent: %q", out)
+	for _, want := range []string{"ER805用户手册 > 4 网络 > 4.2 IPSec VPN", "[ER805] docs/zh/ER805", "[c-1]", "IKE（UDP 500）"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("table output missing %q: %q", want, out)
+		}
 	}
 }
 
-func TestBrowse_RootAndPrefixCatalog(t *testing.T) {
-	var cap captured
-	srv := captureServer(t, &cap, browseCatalog)
-	defer srv.Close()
-
-	f, _ := newTestFactory(t, srv.URL)
-	root := newKnowledgeRoot(f)
-	root.SetArgs([]string{"knowledge", "browse", "-o", "table"})
-	if err := root.Execute(); err != nil {
-		t.Fatalf("knowledge browse: %v", err)
-	}
-
-	// 无位置参数：path 省略（语料根目录）
-	if strings.Contains(string(cap.Body), "path") {
-		t.Errorf("request body %s should omit path at corpus root", cap.Body)
-	}
-
-	out := stdoutOf(f).String()
-	if !strings.Contains(out, "ER805 用户手册") || !strings.Contains(out, "小星云管家用户手册") {
-		t.Errorf("catalog output missing document titles: %q", out)
-	}
-	if !strings.Contains(out, "[ER805] device_er805_用户手册.md · 12 sections · 13000 chars [doc-1]") {
-		t.Errorf("catalog output missing meta line: %q", out)
-	}
-	if strings.Contains(out, "[DEFAULT]") {
-		t.Errorf("default model should not get a [MODEL] prefix: %q", out)
-	}
-
-	root.SetArgs([]string{"knowledge", "browse", "device_", "-o", "table"})
-	if err := root.Execute(); err != nil {
-		t.Fatalf("knowledge browse prefix: %v", err)
-	}
-	if !strings.Contains(string(cap.Body), `"path":"device_"`) {
-		t.Errorf("request body %s should carry path prefix", cap.Body)
+func TestSearch_PathAndModelFlagsRemoved(t *testing.T) {
+	for _, flag := range []string{"--path", "--model"} {
+		_, _, err := run(t, searchHit, nil, "search", "x", flag, "y")
+		if err == nil || !strings.Contains(err.Error(), "unknown flag") {
+			t.Fatalf("%s: want unknown flag error, got %v", flag, err)
+		}
 	}
 }
 
-func TestBrowse_NothingFound(t *testing.T) {
-	srv := captureServer(t, nil, `{"document_id": "", "title": "", "nodes": [], "documents": []}`)
-	defer srv.Close()
-
-	f, errBuf := newTestFactory(t, srv.URL)
-	root := newKnowledgeRoot(f)
-	root.SetArgs([]string{"knowledge", "browse", "nope", "-o", "table"})
-	if err := root.Execute(); err != nil {
-		t.Fatalf("knowledge browse: %v", err)
+func TestSearch_FailedAndEmpty(t *testing.T) {
+	_, errBuf, err := run(t, `{"status":"failed","message":"documents-mcp 请求过于频繁（429）","results":[]}`, nil, "search", "x", "-o", "table")
+	if err != nil || !strings.Contains(errBuf.String(), "Search failed: documents-mcp 请求过于频繁（429）") {
+		t.Errorf("failed status: err=%v stderr=%q", err, errBuf.String())
 	}
-	if !strings.Contains(errBuf.String(), "Nothing found") {
-		t.Errorf("stderr %q missing not-found hint", errBuf.String())
+	_, errBuf, err = run(t, `{"status":"empty","results":[]}`, nil, "search", "x", "-o", "table")
+	if err != nil || !strings.Contains(errBuf.String(), "No results found.") {
+		t.Errorf("empty status: err=%v stderr=%q", err, errBuf.String())
 	}
 }
 
-func TestGrep_MatchesAndRequestShape(t *testing.T) {
-	var cap captured
-	srv := captureServer(t, &cap, `{
-  "pattern": "IKE", "match_count": 2, "truncated": true,
-  "matches": [
-    {"document_id": "d", "section_id": "s1", "heading_path": "A > B", "line": 42, "text": "IKE UDP 500"},
-    {"document_id": "d", "section_id": "s2", "heading_path": "A > C", "line": 7, "text": "ike rekey"}
-  ]
-}`)
-	defer srv.Close()
-
-	f, errBuf := newTestFactory(t, srv.URL)
-	root := newKnowledgeRoot(f)
-	root.SetArgs([]string{"knowledge", "grep", "IKE", "--doc", "d", "--path", "device_", "--limit", "2", "-o", "table"})
-	if err := root.Execute(); err != nil {
-		t.Fatalf("knowledge grep: %v", err)
+func TestSearch_JSONPassthrough(t *testing.T) {
+	f, _, err := run(t, searchHit, nil, "search", "x", "-o", "json")
+	if err != nil {
+		t.Fatal(err)
 	}
-
-	if cap.Path != "/api/v1/knowledge/agentic/grep" {
-		t.Errorf("got path %s", cap.Path)
-	}
-	// CLI 默认大小写敏感：ignore_case 显式为 false（不依赖服务端默认 true）
-	if !strings.Contains(string(cap.Body), `"ignore_case":false`) {
-		t.Errorf("request body %s should pin ignore_case=false", cap.Body)
-	}
-	if !strings.Contains(string(cap.Body), `"document_id":"d"`) {
-		t.Errorf("request body %s missing document_id", cap.Body)
-	}
-	// 默认不开 -F/-C：请求体省略两字段（走服务端默认）
-	if strings.Contains(string(cap.Body), "fixed") || strings.Contains(string(cap.Body), "context") {
-		t.Errorf("request body %s should omit fixed/context by default", cap.Body)
-	}
-
-	out := stdoutOf(f).String()
-	if !strings.Contains(out, "A > B : 42 : IKE UDP 500") {
-		t.Errorf("output missing grep-style match line: %q", out)
-	}
-	if !strings.Contains(errBuf.String(), "truncated") {
-		t.Errorf("stderr %q missing truncated hint", errBuf.String())
+	if !strings.Contains(stdoutOf(f).String(), `"chunk_id":"c-1"`) {
+		t.Errorf("json output missing chunk_id: %s", stdoutOf(f).String())
 	}
 }
 
-func TestGrep_FixedAndContextRequest(t *testing.T) {
+func TestBrowse_Products(t *testing.T) {
 	var cap captured
-	srv := captureServer(t, &cap, `{
-  "pattern": "5.1", "match_count": 1, "truncated": false,
-  "matches": [
-    {"document_id": "d", "section_id": "s1", "heading_path": "A > B", "line": 42, "text": "version 5.1 released",
-     "context_before": [{"line": 41, "text": "before line"}],
-     "context_after": [{"line": 43, "text": "after line"}]}
-  ]
-}`)
-	defer srv.Close()
-
-	f, _ := newTestFactory(t, srv.URL)
-	root := newKnowledgeRoot(f)
-	root.SetArgs([]string{"knowledge", "grep", "5.1", "-F", "-C", "1", "-o", "table"})
-	if err := root.Execute(); err != nil {
-		t.Fatalf("knowledge grep: %v", err)
+	f, _, err := run(t, `{"products":[{"product_id":"ER605","display_name":"ER605","kind":"model"}]}`, &cap, "browse", "-o", "table")
+	if err != nil {
+		t.Fatal(err)
 	}
-
-	if !strings.Contains(string(cap.Body), `"fixed":true`) ||
-		!strings.Contains(string(cap.Body), `"context":1`) {
-		t.Errorf("request body %s missing fixed/context", cap.Body)
+	if cap.Path != "/api/v1/knowledge/browse" || string(cap.Body) != "{}" {
+		t.Errorf("got %s body %s", cap.Path, cap.Body)
 	}
+	if !strings.Contains(stdoutOf(f).String(), "ER605") {
+		t.Errorf("missing product: %q", stdoutOf(f).String())
+	}
+}
 
+func TestBrowse_ProductOverview(t *testing.T) {
+	var cap captured
+	resp := `{"product":"DeviceLive","document_coverage":[{"language":"zh","category":"manual","document_count":1}],"sections":[{"chunk_id":"c-9","heading_path":"1. 产品概述","path":"docs/zh/DeviceLive/Manuals/用户手册/DeviceLive用户手册.md"}]}`
+	f, _, err := run(t, resp, &cap, "browse", "--product", "DeviceLive", "-o", "table")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(cap.Body) != `{"product":"DeviceLive"}` {
+		t.Errorf("request body %s", cap.Body)
+	}
 	out := stdoutOf(f).String()
-	// 命中行 + 上下文行（同格式渲染）
-	for _, want := range []string{
-		"A > B : 42 : version 5.1 released",
-		"A > B : 41 : before line",
-		"A > B : 43 : after line",
-	} {
+	for _, want := range []string{"1. 产品概述", "docs/zh/DeviceLive/Manuals/用户手册/DeviceLive用户手册.md", "[c-9]"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("output missing %q: %q", want, out)
 		}
 	}
 }
 
-func TestGrep_ContextMergesOverlappingGroups(t *testing.T) {
-	srv := captureServer(t, nil, `{
-  "pattern": "hit", "match_count": 3, "truncated": false,
-  "matches": [
-    {"document_id": "d", "section_id": "s1", "heading_path": "A > B", "line": 42, "text": "match 42",
-     "context_before": [{"line": 41, "text": "context 41"}],
-     "context_after": [{"line": 43, "text": "context version 43"}]},
-    {"document_id": "d", "section_id": "s1", "heading_path": "A > B", "line": 43, "text": "match 43",
-     "context_before": [{"line": 42, "text": "context version 42"}],
-     "context_after": [{"line": 44, "text": "context 44"}]},
-    {"document_id": "d", "section_id": "s1", "heading_path": "A > B", "line": 50, "text": "match 50",
-     "context_before": [{"line": 49, "text": "context 49"}],
-     "context_after": [{"line": 51, "text": "context 51"}]}
-  ]
-}`)
-	defer srv.Close()
-
-	f, _ := newTestFactory(t, srv.URL)
-	root := newKnowledgeRoot(f)
-	root.SetArgs([]string{"knowledge", "grep", "hit", "-C", "1", "-o", "table"})
-	if err := root.Execute(); err != nil {
-		t.Fatalf("knowledge grep: %v", err)
+func TestBrowse_DocumentOutlineWithCursor(t *testing.T) {
+	var cap captured
+	resp := `{"path":"p.md","doc_title":"ER805用户手册_V1.0","sections":[{"chunk_id":"c-1","heading_path":"1 概述"}],"next_cursor":20}`
+	f, errBuf, err := run(t, resp, &cap, "browse", "p.md", "--cursor", "10", "-o", "table")
+	if err != nil {
+		t.Fatal(err)
 	}
+	if string(cap.Body) != `{"path":"p.md","cursor":10}` {
+		t.Errorf("request body %s", cap.Body)
+	}
+	if !strings.Contains(stdoutOf(f).String(), "1 概述 [c-1]") {
+		t.Errorf("outline missing: %q", stdoutOf(f).String())
+	}
+	if !strings.Contains(errBuf.String(), "--cursor 20") {
+		t.Errorf("missing next-page hint: %q", errBuf.String())
+	}
+}
 
-	out := stdoutOf(f).String()
-	for _, want := range []string{"context 41", "match 42", "match 43", "context 44", "context 49", "match 50", "context 51"} {
-		if strings.Count(out, want) != 1 {
-			t.Errorf("output should contain %q exactly once: %q", want, out)
+func TestBrowse_InvalidCombinationsFailBeforeRequest(t *testing.T) {
+	for _, args := range [][]string{
+		{"browse", "p.md", "--product", "ER805"},
+		{"browse", "--cursor", "10"},
+	} {
+		var cap captured
+		_, _, err := run(t, "{}", &cap, args...)
+		if err == nil {
+			t.Errorf("%v: want error", args)
+		}
+		if cap.Method != "" {
+			t.Errorf("%v: request should not be sent", args)
 		}
 	}
-	for _, duplicateContext := range []string{"context version 42", "context version 43"} {
-		if strings.Contains(out, duplicateContext) {
-			t.Errorf("match line should replace duplicate context %q: %q", duplicateContext, out)
-		}
+}
+
+func TestRead_RequestTableAndCursorHint(t *testing.T) {
+	var cap captured
+	resp := `{"text":"正文","source":{"chunk_id":"c-1","path":"p.md","doc_title":"ER805用户手册_V1.0","heading_path":"5 维护 > 5.1 恢复出厂设置","url":"https://example.com/p.md"},"truncated":true,"next_cursor":12000}`
+	f, errBuf, err := run(t, resp, &cap, "read", "c-1", "-o", "table")
+	if err != nil {
+		t.Fatal(err)
 	}
-	if got := strings.Count(out, "--\n"); got != 1 {
-		t.Errorf("expected one separator between disjoint groups, got %d: %q", got, out)
+	if cap.Path != "/api/v1/knowledge/read" || string(cap.Body) != `{"chunk_id":"c-1"}` {
+		t.Errorf("got %s body %s", cap.Path, cap.Body)
+	}
+	out := stdoutOf(f).String()
+	if !strings.Contains(out, "正文") || !strings.Contains(out, "[source: ER805用户手册_V1.0 > 5 维护 > 5.1 恢复出厂设置] https://example.com/p.md") {
+		t.Errorf("table output: %q", out)
+	}
+	if !strings.Contains(errBuf.String(), "--cursor 12000") {
+		t.Errorf("missing cursor hint: %q", errBuf.String())
 	}
 }
 
-func TestGrep_IgnoreCaseFlagAndNoMatches(t *testing.T) {
+func TestRead_CursorSentAndLineFlagsGone(t *testing.T) {
 	var cap captured
-	srv := captureServer(t, &cap, `{"pattern": "x", "match_count": 0, "matches": [], "truncated": false}`)
-	defer srv.Close()
-
-	f, errBuf := newTestFactory(t, srv.URL)
-	root := newKnowledgeRoot(f)
-	root.SetArgs([]string{"knowledge", "grep", "x", "-i", "-o", "table"})
-	if err := root.Execute(); err != nil {
-		t.Fatalf("knowledge grep: %v", err)
+	_, _, err := run(t, `{"text":"","source":{"chunk_id":"c-1","doc_title":"d","heading_path":"h","url":null}}`, &cap, "read", "c-1", "--cursor", "12000", "-o", "json")
+	if err != nil {
+		t.Fatal(err)
 	}
-
-	if !strings.Contains(string(cap.Body), `"ignore_case":true`) {
-		t.Errorf("request body %s should carry ignore_case=true with -i", cap.Body)
+	if string(cap.Body) != `{"chunk_id":"c-1","cursor":12000}` {
+		t.Errorf("request body %s", cap.Body)
 	}
-	if !strings.Contains(errBuf.String(), "No matches found.") {
-		t.Errorf("stderr %q missing no-matches hint", errBuf.String())
+	_, _, err = run(t, "{}", nil, "read", "c-1", "--mode", "range")
+	if err == nil || !strings.Contains(err.Error(), "unknown flag") {
+		t.Errorf("want unknown flag for --mode, got %v", err)
 	}
 }
 
-const readBody = `{
-  "text": "IKE（UDP 500）与 ESP（协议号 50）需要在防火墙中放行。",
-  "source": {
-    "document_id": "doc-1", "section_id": "sec-1", "s3_key": "cn/device_er805.md",
-    "title": "ER805 用户手册", "heading_path": "ER805 用户手册 > 4 网络 > 4.2 IPSec VPN"
-  },
-  "truncated": false,
-  "total_lines": 210,
-  "next_cursor": null
-}`
-
-func TestRead_DualIDAndRange(t *testing.T) {
-	var cap captured
-	srv := captureServer(t, &cap, readBody)
+func TestKnowledge_OldServerGivesUpgradeHint(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		fmt.Fprint(w, `{"detail":"Not Found"}`)
+	}))
 	defer srv.Close()
-
 	f, _ := newTestFactory(t, srv.URL)
 	root := newKnowledgeRoot(f)
-	root.SetArgs([]string{"knowledge", "read", "sec-1", "--mode", "range", "--line-start", "10", "--line-end", "50", "-o", "table"})
-	if err := root.Execute(); err != nil {
-		t.Fatalf("knowledge read: %v", err)
-	}
-
-	if cap.Path != "/api/v1/knowledge/agentic/read" {
-		t.Errorf("got path %s", cap.Path)
-	}
-	// 双字段消歧：同一个位置参数同时作为 section_id 与 document_id 发送
-	if !strings.Contains(string(cap.Body), `"section_id":"sec-1"`) ||
-		!strings.Contains(string(cap.Body), `"document_id":"sec-1"`) {
-		t.Errorf("request body %s should carry the arg as both ids", cap.Body)
-	}
-	if !strings.Contains(string(cap.Body), `"mode":"range"`) ||
-		!strings.Contains(string(cap.Body), `"line_start":10`) ||
-		!strings.Contains(string(cap.Body), `"line_end":50`) {
-		t.Errorf("request body %s missing range params", cap.Body)
-	}
-	// offset 已删除：不得再发送
-	if strings.Contains(string(cap.Body), "offset") {
-		t.Errorf("request body %s should not carry offset (removed)", cap.Body)
-	}
-
-	out := stdoutOf(f).String()
-	if !strings.Contains(out, "IKE（UDP 500）") {
-		t.Errorf("output missing text: %q", out)
-	}
-	if !strings.Contains(out, "[source: ER805 用户手册 > ER805 用户手册 > 4 网络 > 4.2 IPSec VPN]") {
-		t.Errorf("output missing source meta: %q", out)
-	}
-	if !strings.Contains(out, "210 lines total") {
-		t.Errorf("output missing total_lines meta: %q", out)
+	root.SetArgs([]string{"knowledge", "search", "vpn"})
+	err := root.Execute()
+	if err == nil || !strings.Contains(err.Error(), "older than this CLI") {
+		t.Fatalf("want upgrade hint, got %v", err)
 	}
 }
 
-func TestRead_LineModeFlags(t *testing.T) {
-	tests := []struct {
-		name string
+func TestBrowseAndRead_EmptyResultIsNotAnError(t *testing.T) {
+	cases := []struct {
+		resp string
 		args []string
-		want []string
+		hint string
 	}{
-		{
-			name: "around with before/after",
-			args: []string{"--mode", "around", "--around", "186", "--before", "30", "--after", "50"},
-			want: []string{`"mode":"around"`, `"around_line":186`, `"before":30`, `"after":50`},
-		},
-		{
-			name: "around preserves explicit zero context",
-			args: []string{"--mode", "around", "--around", "1", "--before", "0", "--after", "0"},
-			want: []string{`"mode":"around"`, `"around_line":1`, `"before":0`, `"after":0`},
-		},
-		{
-			name: "head with limit",
-			args: []string{"--mode", "head", "--limit", "100"},
-			want: []string{`"mode":"head"`, `"limit":100`},
-		},
-		{
-			name: "tail with limit",
-			args: []string{"--mode", "tail", "--limit", "20"},
-			want: []string{`"mode":"tail"`, `"limit":20`},
-		},
-		{
-			name: "line_start only",
-			args: []string{"--mode", "range", "--line-start", "28"},
-			want: []string{`"mode":"range"`, `"line_start":28`},
-		},
+		{`{"status":"empty","product":"NOPE","sections":[]}`, []string{"browse", "--product", "NOPE", "-o", "table"}, "Nothing found."},
+		{`{"status":"empty","path":"nope.md","sections":[]}`, []string{"browse", "nope.md", "-o", "table"}, "Nothing found."},
+		{`{"status":"empty","text":"","truncated":false}`, []string{"read", "stale", "-o", "table"}, "search again"},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			var cap captured
-			srv := captureServer(t, &cap, readBody)
-			defer srv.Close()
-
-			f, _ := newTestFactory(t, srv.URL)
-			root := newKnowledgeRoot(f)
-			args := append([]string{"knowledge", "read", "sec-1", "-o", "table"}, tt.args...)
-			root.SetArgs(args)
-			if err := root.Execute(); err != nil {
-				t.Fatalf("knowledge read: %v", err)
-			}
-			for _, w := range tt.want {
-				if !strings.Contains(string(cap.Body), w) {
-					t.Errorf("request body %s missing %s", cap.Body, w)
-				}
-			}
-		})
-	}
-}
-
-func TestRead_CursorRequest(t *testing.T) {
-	var cap captured
-	srv := captureServer(t, &cap, readBody)
-	defer srv.Close()
-
-	f, _ := newTestFactory(t, srv.URL)
-	root := newKnowledgeRoot(f)
-	root.SetArgs([]string{"knowledge", "read", "sec-1", "--cursor", "cursor-token", "-o", "table"})
-	if err := root.Execute(); err != nil {
-		t.Fatalf("knowledge read: %v", err)
-	}
-
-	body := string(cap.Body)
-	if !strings.Contains(body, `"cursor":"cursor-token"`) {
-		t.Fatalf("request body %s missing cursor", cap.Body)
-	}
-	for _, omitted := range []string{"mode", "line_start", "line_end", "around_line", "before", "after", "limit"} {
-		if strings.Contains(body, omitted) {
-			t.Errorf("cursor request body %s should omit %s", cap.Body, omitted)
+	for _, tc := range cases {
+		f, errBuf, err := run(t, tc.resp, nil, tc.args...)
+		if err != nil {
+			t.Fatalf("%v: want no error, got %v", tc.args, err)
+		}
+		if !strings.Contains(errBuf.String(), tc.hint) || stdoutOf(f).Len() != 0 {
+			t.Errorf("%v: stderr=%q stdout=%q", tc.args, errBuf.String(), stdoutOf(f).String())
 		}
 	}
-}
-
-func TestRead_InvalidFlagCombinationsFailBeforeRequest(t *testing.T) {
-	tests := []struct {
-		name    string
-		args    []string
-		wantErr string
-	}{
-		{name: "invalid mode", args: []string{"--mode", "invalid"}, wantErr: "invalid --mode"},
-		{name: "full rejects range flag", args: []string{"--line-start", "1"}, wantErr: "not valid with --mode full"},
-		{name: "range requires bound", args: []string{"--mode", "range"}, wantErr: "requires --line-start or --line-end"},
-		{name: "range rejects negative bound", args: []string{"--mode", "range", "--line-start", "-5"}, wantErr: "--line-start must be at least 1"},
-		{name: "range rejects reversed bounds", args: []string{"--mode", "range", "--line-start", "10", "--line-end", "5"}, wantErr: "cannot be greater"},
-		{name: "around requires center", args: []string{"--mode", "around"}, wantErr: "requires --around"},
-		{name: "around rejects negative context", args: []string{"--mode", "around", "--around", "10", "--before", "-5"}, wantErr: "--before must be between"},
-		{name: "head requires limit", args: []string{"--mode", "head"}, wantErr: "requires --limit"},
-		{name: "head rejects range flag", args: []string{"--mode", "head", "--limit", "5", "--line-start", "1"}, wantErr: "not valid with --mode head"},
-		{name: "limit has upper bound", args: []string{"--mode", "tail", "--limit", "2001"}, wantErr: "--limit must be between"},
-		{name: "cursor rejects mode", args: []string{"--cursor", "c", "--mode", "full"}, wantErr: "--mode is not valid with --cursor"},
-		{name: "cursor rejects line flag", args: []string{"--cursor", "c", "--line-start", "1"}, wantErr: "--line-start is not valid with --cursor"},
-		{name: "cursor rejects empty value", args: []string{"--cursor", ""}, wantErr: "--cursor cannot be empty"},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			var cap captured
-			srv := captureServer(t, &cap, readBody)
-			defer srv.Close()
-
-			f, _ := newTestFactory(t, srv.URL)
-			root := newKnowledgeRoot(f)
-			root.SetArgs(append([]string{"knowledge", "read", "sec-1"}, tt.args...))
-			err := root.Execute()
-			if err == nil || !strings.Contains(err.Error(), tt.wantErr) {
-				t.Fatalf("got error %v, want substring %q", err, tt.wantErr)
-			}
-			if cap.Method != "" {
-				t.Fatalf("invalid flags should fail before request, got %s %s", cap.Method, cap.Path)
-			}
-		})
+	f, _, err := run(t, `{"status":"empty","text":"","truncated":false}`, nil, "read", "stale", "-o", "json")
+	if err != nil || !strings.Contains(stdoutOf(f).String(), `"status":"empty"`) {
+		t.Errorf("json passthrough: err=%v out=%q", err, stdoutOf(f).String())
 	}
 }
 
-func TestRead_DefaultBodyOmitsLineParams(t *testing.T) {
-	var cap captured
-	srv := captureServer(t, &cap, readBody)
-	defer srv.Close()
-
-	f, _ := newTestFactory(t, srv.URL)
-	root := newKnowledgeRoot(f)
-	root.SetArgs([]string{"knowledge", "read", "sec-1", "-o", "table"})
-	if err := root.Execute(); err != nil {
-		t.Fatalf("knowledge read: %v", err)
-	}
-
-	for _, omitted := range []string{"mode", "line_start", "line_end", "around_line", "before", "after", "limit", "offset", "cursor"} {
-		if strings.Contains(string(cap.Body), omitted) {
-			t.Errorf("request body %s should omit %s by default", cap.Body, omitted)
+func TestBrowseAndRead_FailedStatusIsNotAnError(t *testing.T) {
+	failed := `{"status":"failed","message":"documents-mcp 请求过于频繁（429）"}`
+	for _, args := range [][]string{{"browse", "-o", "table"}, {"read", "c-1", "-o", "table"}} {
+		f, errBuf, err := run(t, failed, nil, args...)
+		if err != nil {
+			t.Fatalf("%v: want no error, got %v", args, err)
 		}
-	}
-}
-
-func TestRead_TotalLinesJSONPassthrough(t *testing.T) {
-	srv := captureServer(t, nil, readBody)
-	defer srv.Close()
-
-	f, _ := newTestFactory(t, srv.URL)
-	root := newKnowledgeRoot(f)
-	root.SetArgs([]string{"knowledge", "read", "sec-1", "-o", "json"})
-	if err := root.Execute(); err != nil {
-		t.Fatalf("knowledge read: %v", err)
-	}
-
-	out := stdoutOf(f).String()
-	if !strings.Contains(out, `"total_lines":210`) {
-		t.Errorf("json output missing total_lines: %q", out)
-	}
-}
-
-func TestRead_NotFoundAndTruncatedHint(t *testing.T) {
-	srv := captureServer(t, nil, `{"text": "", "source": null, "truncated": false, "total_lines": 0}`)
-	defer srv.Close()
-
-	f, errBuf := newTestFactory(t, srv.URL)
-	root := newKnowledgeRoot(f)
-	root.SetArgs([]string{"knowledge", "read", "nope", "-o", "table"})
-	if err := root.Execute(); err != nil {
-		t.Fatalf("knowledge read: %v", err)
-	}
-	if !strings.Contains(errBuf.String(), "not found") {
-		t.Errorf("stderr %q missing not-found hint", errBuf.String())
-	}
-
-	srv2 := captureServer(t, nil, `{"text": "…", "source": {"document_id": "d", "section_id": "", "s3_key": "k", "title": "T", "heading_path": "H"}, "truncated": true, "total_lines": 900, "next_cursor": "cursor-token"}`)
-	defer srv2.Close()
-	f2, errBuf2 := newTestFactory(t, srv2.URL)
-	root2 := newKnowledgeRoot(f2)
-	root2.SetArgs([]string{"knowledge", "read", "d", "-o", "table"})
-	if err := root2.Execute(); err != nil {
-		t.Fatalf("knowledge read: %v", err)
-	}
-	if !strings.Contains(errBuf2.String(), "--cursor 'cursor-token'") {
-		t.Errorf("stderr %q missing truncation hint", errBuf2.String())
+		if !strings.Contains(errBuf.String(), "failed: documents-mcp 请求过于频繁（429）") || stdoutOf(f).Len() != 0 {
+			t.Errorf("%v: stderr=%q stdout=%q", args, errBuf.String(), stdoutOf(f).String())
+		}
 	}
 }
