@@ -17,7 +17,7 @@
 
 - **`device history list <device-id> [--status open|all] [--after] [--before]`** — the AI assistant's diagnosis records for a device (symptom, root cause, remediation, whether the user confirmed the result), newest first. Lists only records awaiting confirmation by default.
 - **`device history get <record-id>...`** — full content and current status of diagnosis records. Accepts the full id or the 8-character short id shown in the assistant (e.g. `e95bba0b`).
-- **`knowledge browse [<document path>] [--product <id>]`** — no arguments lists all products; `--product` shows a product's overview sections; a document path returns its full section outline (`chunk_id` / `title` / `level`, chunk IDs ready for `knowledge read`).
+- **`knowledge browse [<document path>] [--product <id>]`** — no arguments lists all products; `--product` shows a product's overview sections; a document path returns its full section outline (`chunk_id` / `heading_path`, chunk IDs ready for `knowledge read`).
 - **`knowledge read <chunk_id> [--cursor N]`** — full text of a section with its source (`doc_title`, `heading_path`, `url`), chunked at 12000 characters.
 
 # v0.11.0 (2026-08-18)

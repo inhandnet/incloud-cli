@@ -204,9 +204,9 @@ func TestBrowse_ProductOverview(t *testing.T) {
 	}
 }
 
-func TestBrowse_DocumentOutlineIsFullAndIndented(t *testing.T) {
+func TestBrowse_DocumentOutline(t *testing.T) {
 	var cap captured
-	resp := `{"status":"success","sections":[{"chunk_id":"c-1","title":"ER805用户手册","level":1},{"chunk_id":"c-2","title":"5 维护","level":2},{"chunk_id":"c-3","title":"5.1 恢复出厂设置","level":3}]}`
+	resp := `{"status":"success","sections":[{"chunk_id":"c-1","heading_path":"ER805用户手册 > 5 维护"},{"chunk_id":"c-2","heading_path":"ER805用户手册 > 5 维护 > 5.1 恢复出厂设置"}]}`
 	f, _, err := run(t, resp, &cap, "browse", "p.md", "-o", "table")
 	if err != nil {
 		t.Fatal(err)
@@ -214,7 +214,7 @@ func TestBrowse_DocumentOutlineIsFullAndIndented(t *testing.T) {
 	if string(cap.Body) != `{"path":"p.md"}` {
 		t.Errorf("request body %s", cap.Body)
 	}
-	want := "ER805用户手册 [c-1]\n  5 维护 [c-2]\n    5.1 恢复出厂设置 [c-3]\n"
+	want := "ER805用户手册 > 5 维护 [c-1]\nER805用户手册 > 5 维护 > 5.1 恢复出厂设置 [c-2]\n"
 	if stdoutOf(f).String() != want {
 		t.Errorf("outline = %q, want %q", stdoutOf(f).String(), want)
 	}

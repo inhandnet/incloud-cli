@@ -9,7 +9,7 @@
 
 - **`device history list <device-id> [--status open|all] [--after] [--before]`** — 小星云对设备的诊断记录（症状、根因、处置、用户是否已确认结果），按时间倒序；默认只列待确认的。
 - **`device history get <record-id>...`** — 诊断记录的完整内容和当前状态；支持完整编号，也支持小星云里显示的 8 位短编号（如 `e95bba0b`）。
-- **`knowledge browse [<文档路径>] [--product <ID>]`** — 无参列出全部产品；`--product` 看产品的概览章节；给文档路径返回完整章节目录（`chunk_id` / `title` / `level`，chunk ID 可直接给 `knowledge read`）。
+- **`knowledge browse [<文档路径>] [--product <ID>]`** — 无参列出全部产品；`--product` 看产品的概览章节；给文档路径返回完整章节目录（`chunk_id` / `heading_path`，chunk ID 可直接给 `knowledge read`）。
 - **`knowledge read <chunk_id> [--cursor N]`** — 读取章节全文及来源（`doc_title`、`heading_path`、`url`），按 12000 字符分段。
 
 # v0.11.0 (2026-08-18)

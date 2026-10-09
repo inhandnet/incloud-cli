@@ -3,7 +3,6 @@ package knowledge
 import (
 	"encoding/json"
 	"fmt"
-	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -29,14 +28,10 @@ type browseProduct struct {
 	DisplayName string `json:"display_name"`
 }
 
-// browseSection covers both shapes: product overview sections carry path and
-// heading_path, document outline sections carry title and level.
 type browseSection struct {
 	ChunkID     string `json:"chunk_id"`
 	Path        string `json:"path"`
 	HeadingPath string `json:"heading_path"`
-	Title       string `json:"title"`
-	Level       int    `json:"level"`
 }
 
 func NewCmdBrowse(f *factory.Factory) *cobra.Command {
@@ -96,8 +91,7 @@ Feed chunk IDs into ` + "`knowledge read`" + `.`,
 				fmt.Fprintln(errOut, "Nothing found.")
 			case req.Path != "":
 				for _, s := range resp.Sections {
-					indent := strings.Repeat("  ", max(s.Level-1, 0))
-					fmt.Fprintf(out, "%s%s %s\n", indent, s.Title, c.Gray("["+s.ChunkID+"]"))
+					fmt.Fprintf(out, "%s %s\n", s.HeadingPath, c.Gray("["+s.ChunkID+"]"))
 				}
 			case req.Product != "":
 				fmt.Fprintln(out, c.Bold(resp.Product))
