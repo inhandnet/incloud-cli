@@ -67,11 +67,7 @@ Press Ctrl+C to stop.`,
   ssh root@localhost -p 2222`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg, err := f.Config()
-			if err != nil {
-				return err
-			}
-			actx, err := cfg.ActiveContext()
+			actx, err := f.ActiveContext()
 			if err != nil {
 				return err
 			}

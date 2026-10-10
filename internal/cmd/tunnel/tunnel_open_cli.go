@@ -39,11 +39,7 @@ Use 'incloud tunnel close <tunnel-id>' to close the tunnel when done.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			deviceID := args[0]
 
-			cfg, err := f.Config()
-			if err != nil {
-				return err
-			}
-			actx, err := cfg.ActiveContext()
+			actx, err := f.ActiveContext()
 			if err != nil {
 				return err
 			}

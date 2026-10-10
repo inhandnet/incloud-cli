@@ -14,9 +14,8 @@ import (
 func TestTokenTransport_StripsAuthOnCrossOriginRedirect(t *testing.T) {
 	// Simulate: API at star.example.com redirects to s3.amazonaws.com
 	transport := &TokenTransport{
-		Token:    "secret-token",
-		APIHost:  "https://star.example.com",
-		AuthHost: "https://portal.example.com",
+		Token:   "secret-token",
+		APIHost: "https://star.example.com",
 		Base: roundTripFunc(func(req *http.Request) (*http.Response, error) {
 			if req.URL.Host == "star.example.com" {
 				// Expect auth header on same-host request
@@ -101,11 +100,10 @@ func TestTokenTransport_RetriesWithOriginalBodyAfterTokenRefresh(t *testing.T) {
 	defer func() { http.DefaultClient = previousDefaultClient }()
 
 	transport := &TokenTransport{
-		Token:        "expired-token",
-		RefreshToken: "refresh-token",
-		APIHost:      server.URL,
-		AuthHost:     server.URL,
-		Base:         server.Client().Transport,
+		Token:   "expired-token",
+		APIHost: server.URL,
+		Refresh: refreshVia(server.URL),
+		Base:    server.Client().Transport,
 	}
 	req, err := http.NewRequest(http.MethodPost, server.URL+"/api/v1/devices", bytes.NewBufferString(requestBody))
 	if err != nil {
@@ -137,9 +135,8 @@ func TestTokenTransport_RetriesRequestWithoutBodyAfterTokenRefresh(t *testing.T)
 	authServer := newTokenRefreshServer(t)
 	attempts := 0
 	transport := &TokenTransport{
-		Token:        "expired-token",
-		RefreshToken: "refresh-token",
-		AuthHost:     authServer.URL,
+		Token:   "expired-token",
+		Refresh: refreshVia(authServer.URL),
 		Base: roundTripFunc(func(req *http.Request) (*http.Response, error) {
 			attempts++
 			if req.Body != nil && req.Body != http.NoBody {
@@ -176,9 +173,8 @@ func TestTokenTransport_DoesNotRetryNonReplayableBodyAfterTokenRefresh(t *testin
 	authServer := newTokenRefreshServer(t)
 	attempts := 0
 	transport := &TokenTransport{
-		Token:        "expired-token",
-		RefreshToken: "refresh-token",
-		AuthHost:     authServer.URL,
+		Token:   "expired-token",
+		Refresh: refreshVia(authServer.URL),
 		Base: roundTripFunc(func(req *http.Request) (*http.Response, error) {
 			attempts++
 			_, _ = io.Copy(io.Discard, req.Body)
@@ -216,9 +212,8 @@ func TestTokenTransport_ReturnsInitialUnauthorizedResponseWhenRefreshFails(t *te
 
 	attempts := 0
 	transport := &TokenTransport{
-		Token:        "expired-token",
-		RefreshToken: "refresh-token",
-		AuthHost:     authServer.URL,
+		Token:   "expired-token",
+		Refresh: refreshVia(authServer.URL),
 		Base: roundTripFunc(func(req *http.Request) (*http.Response, error) {
 			attempts++
 			return response(http.StatusUnauthorized), nil
@@ -254,9 +249,8 @@ func TestTokenTransport_DoesNotRefreshOnNonUnauthorizedResponse(t *testing.T) {
 
 	attempts := 0
 	transport := &TokenTransport{
-		Token:        "current-token",
-		RefreshToken: "refresh-token",
-		AuthHost:     authServer.URL,
+		Token:   "current-token",
+		Refresh: refreshVia(authServer.URL),
 		Base: roundTripFunc(func(req *http.Request) (*http.Response, error) {
 			attempts++
 			return response(http.StatusForbidden), nil
@@ -321,6 +315,73 @@ func newTokenRefreshServer(t *testing.T) *httptest.Server {
 		server.Close()
 	})
 	return server
+}
+
+// refreshVia returns a TokenTransport.Refresh that exchanges a fixed refresh token at authHost.
+func refreshVia(authHost string) func(context.Context, string) (string, error) {
+	return func(ctx context.Context, _ string) (string, error) {
+		token, err := RefreshToken(ctx, authHost, "refresh-token")
+		if err != nil {
+			return "", err
+		}
+		return token.AccessToken, nil
+	}
+}
+
+func TestTokenTransport_RefreshReceivesRejectedToken(t *testing.T) {
+	var stale string
+	attempts := 0
+	transport := &TokenTransport{
+		Token: "expired-token",
+		Refresh: func(_ context.Context, staleToken string) (string, error) {
+			stale = staleToken
+			return "refreshed-token", nil
+		},
+		Base: roundTripFunc(func(req *http.Request) (*http.Response, error) {
+			attempts++
+			if attempts == 1 {
+				return response(http.StatusUnauthorized), nil
+			}
+			if req.Header.Get("Authorization") != "Bearer refreshed-token" {
+				t.Errorf("retry used Authorization %q", req.Header.Get("Authorization"))
+			}
+			return response(http.StatusOK), nil
+		}),
+	}
+	req, _ := http.NewRequest(http.MethodGet, "https://api.example.com/v1/devices", http.NoBody)
+
+	resp, err := transport.RoundTrip(req)
+	if err != nil {
+		t.Fatalf("RoundTrip() error = %v", err)
+	}
+	defer resp.Body.Close()
+	if stale != "expired-token" {
+		t.Errorf("Refresh staleToken = %q, want expired-token", stale)
+	}
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("RoundTrip() status = %d, want %d", resp.StatusCode, http.StatusOK)
+	}
+}
+
+func TestTokenTransport_NilRefreshReturnsUnauthorized(t *testing.T) {
+	attempts := 0
+	transport := &TokenTransport{
+		Token: "env-token",
+		Base: roundTripFunc(func(req *http.Request) (*http.Response, error) {
+			attempts++
+			return response(http.StatusUnauthorized), nil
+		}),
+	}
+	req, _ := http.NewRequest(http.MethodGet, "https://api.example.com/v1/devices", http.NoBody)
+
+	resp, err := transport.RoundTrip(req)
+	if err != nil {
+		t.Fatalf("RoundTrip() error = %v", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusUnauthorized || attempts != 1 {
+		t.Errorf("status = %d, attempts = %d, want 401 and 1", resp.StatusCode, attempts)
+	}
 }
 
 func response(statusCode int) *http.Response {

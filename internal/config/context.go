@@ -19,6 +19,12 @@ type Context struct {
 	SuperAdminAt time.Time `yaml:"super_admin_at,omitempty"`
 }
 
+// EnvCredentials reports whether credentials come from the INCLOUD_TOKEN env var.
+// In this mode the config file is never written and tokens are never refreshed.
+func EnvCredentials() bool {
+	return os.Getenv("INCLOUD_TOKEN") != ""
+}
+
 // EffectiveToken returns INCLOUD_TOKEN env var if set, else the stored token.
 func (c *Context) EffectiveToken() string {
 	if t := os.Getenv("INCLOUD_TOKEN"); t != "" {

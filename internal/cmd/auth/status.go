@@ -8,7 +8,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/inhandnet/incloud-cli/internal/api"
+	"github.com/inhandnet/incloud-cli/internal/config"
 	"github.com/inhandnet/incloud-cli/internal/factory"
 	"github.com/inhandnet/incloud-cli/internal/iostreams"
 )
@@ -18,6 +18,10 @@ func NewCmdStatus(f *factory.Factory) *cobra.Command {
 		Use:   "status",
 		Short: "Show authentication status",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if config.EnvCredentials() {
+				return printEnvStatus(f)
+			}
+
 			cfg, err := f.Config()
 			if err != nil {
 				return err
@@ -46,21 +50,7 @@ func NewCmdStatus(f *factory.Factory) *cobra.Command {
 
 			// Try auto-refresh if token expired but refresh token is available
 			if tokenExpired && ctx.RefreshToken != "" {
-				oauthClient, fetchErr := api.FetchOAuthClient(cmd.Context(), ctx.AuthURL())
-				if fetchErr != nil {
-					fmt.Fprintf(out, "Status:   %s\n", iostreams.Red("token expired, failed to fetch OAuth client — please login again"))
-					return nil
-				}
-				newToken, err := api.RefreshAccessToken(ctx.AuthURL(), oauthClient.ClientID, oauthClient.ClientSecret, ctx.RefreshToken)
-				if err == nil {
-					ctx.Token = newToken.AccessToken
-					if newToken.RefreshToken != "" {
-						ctx.RefreshToken = newToken.RefreshToken
-					}
-					if !newToken.Expiry.IsZero() {
-						ctx.ExpiresAt = newToken.Expiry
-					}
-					_ = f.SaveConfig()
+				if _, err := f.RefreshToken(cmd.Context(), name, ctx.AuthURL(), ctx.Token); err == nil {
 					tokenExpired = false
 					fmt.Fprintf(out, "Status:   %s\n", iostreams.Green("logged in (token refreshed)"))
 				} else {
@@ -79,41 +69,65 @@ func NewCmdStatus(f *factory.Factory) *cobra.Command {
 
 			// Fetch current user and org from API when logged in
 			if ctx.EffectiveToken() != "" && !tokenExpired {
-				client, err := f.APIClient()
-				if err == nil {
-					q := url.Values{}
-					q.Set("fields", "username,email")
-					q.Set("expand", "org")
-					body, err := client.Get("/api/v1/users/me", q)
-					if err == nil {
-						var resp struct {
-							Result struct {
-								Username string `json:"username"`
-								Email    string `json:"email"`
-								Org      struct {
-									Name string `json:"name"`
-									ID   string `json:"_id"`
-								} `json:"org"`
-							} `json:"result"`
-						}
-						if json.Unmarshal(body, &resp) == nil {
-							me := resp.Result
-							if me.Username != "" {
-								fmt.Fprintf(out, "Account:  %s", me.Username)
-								if me.Email != "" {
-									fmt.Fprintf(out, " (%s)", me.Email)
-								}
-								fmt.Fprintln(out)
-							}
-							if me.Org.Name != "" {
-								fmt.Fprintf(out, "Org:      %s (%s)\n", me.Org.Name, me.Org.ID)
-							}
-						}
-					}
-				}
+				printAccount(f)
 			}
 
 			return nil
 		},
+	}
+}
+
+// printEnvStatus reports credentials taken from INCLOUD_TOKEN without touching the config file.
+func printEnvStatus(f *factory.Factory) error {
+	ctx, err := f.ActiveContext()
+	if err != nil {
+		return err
+	}
+	out := f.IO.Out
+	fmt.Fprintf(out, "Context:  %s\n", iostreams.Bold("(env INCLOUD_TOKEN)"))
+	fmt.Fprintf(out, "API:      %s\n", ctx.APIURL())
+	fmt.Fprintf(out, "Auth:     %s\n", ctx.AuthURL())
+	fmt.Fprintf(out, "Status:   %s\n", iostreams.Green("using INCLOUD_TOKEN"))
+	printAccount(f)
+	return nil
+}
+
+// printAccount fetches the current user and org from the API and prints them.
+func printAccount(f *factory.Factory) {
+	out := f.IO.Out
+	client, err := f.APIClient()
+	if err != nil {
+		return
+	}
+	q := url.Values{}
+	q.Set("fields", "username,email")
+	q.Set("expand", "org")
+	body, err := client.Get("/api/v1/users/me", q)
+	if err != nil {
+		return
+	}
+	var resp struct {
+		Result struct {
+			Username string `json:"username"`
+			Email    string `json:"email"`
+			Org      struct {
+				Name string `json:"name"`
+				ID   string `json:"_id"`
+			} `json:"org"`
+		} `json:"result"`
+	}
+	if json.Unmarshal(body, &resp) != nil {
+		return
+	}
+	me := resp.Result
+	if me.Username != "" {
+		fmt.Fprintf(out, "Account:  %s", me.Username)
+		if me.Email != "" {
+			fmt.Fprintf(out, " (%s)", me.Email)
+		}
+		fmt.Fprintln(out)
+	}
+	if me.Org.Name != "" {
+		fmt.Fprintf(out, "Org:      %s (%s)\n", me.Org.Name, me.Org.ID)
 	}
 }

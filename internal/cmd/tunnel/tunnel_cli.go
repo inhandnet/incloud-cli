@@ -78,11 +78,7 @@ and prompt are stripped. stdout contains only the command output.`,
   incloud tunnel close <tunnel-id>`,
 		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg, err := f.Config()
-			if err != nil {
-				return err
-			}
-			actx, err := cfg.ActiveContext()
+			actx, err := f.ActiveContext()
 			if err != nil {
 				return err
 			}

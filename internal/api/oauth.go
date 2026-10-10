@@ -130,8 +130,17 @@ func WaitForCallback(port int, timeout time.Duration) (string, error) {
 	}
 }
 
+// RefreshToken fetches the platform's OAuth client and exchanges refreshToken for a new token.
+func RefreshToken(ctx context.Context, authHost, refreshToken string) (*oauth2.Token, error) {
+	client, err := FetchOAuthClient(ctx, authHost)
+	if err != nil {
+		return nil, err
+	}
+	return RefreshAccessToken(ctx, authHost, client.ClientID, client.ClientSecret, refreshToken)
+}
+
 // RefreshAccessToken uses the refresh_token to obtain a new access_token.
-func RefreshAccessToken(host, clientID, clientSecret, refreshToken string) (*oauth2.Token, error) {
+func RefreshAccessToken(ctx context.Context, host, clientID, clientSecret, refreshToken string) (*oauth2.Token, error) {
 	cfg := &oauth2.Config{
 		ClientID:     clientID,
 		ClientSecret: clientSecret,
@@ -141,6 +150,6 @@ func RefreshAccessToken(host, clientID, clientSecret, refreshToken string) (*oau
 		},
 	}
 	token := &oauth2.Token{RefreshToken: refreshToken}
-	ts := cfg.TokenSource(context.Background(), token)
+	ts := cfg.TokenSource(ctx, token)
 	return ts.Token()
 }
