@@ -19,19 +19,18 @@ func NewCmdSetContext(f *factory.Factory) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			name := args[0]
 
-			cfg, err := f.Config()
+			var exists bool
+			err := f.UpdateConfig(func(cfg *cfgpkg.Config) error {
+				ctx, ok := cfg.Contexts[name]
+				exists = ok
+				if !ok {
+					ctx = &cfgpkg.Context{}
+				}
+				ctx.Host = host
+				cfg.SetContext(name, ctx)
+				return nil
+			})
 			if err != nil {
-				return err
-			}
-
-			ctx, exists := cfg.Contexts[name]
-			if !exists {
-				ctx = &cfgpkg.Context{}
-			}
-			ctx.Host = host
-			cfg.SetContext(name, ctx)
-
-			if err := f.SaveConfig(); err != nil {
 				return err
 			}
 

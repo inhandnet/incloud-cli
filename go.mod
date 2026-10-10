@@ -4,6 +4,7 @@ go 1.25.0
 
 require (
 	github.com/go-resty/resty/v2 v2.17.2
+	github.com/gofrs/flock v0.12.1
 	github.com/jedib0t/go-pretty/v6 v6.7.8
 	github.com/mattn/go-isatty v0.0.20
 	github.com/muesli/termenv v0.16.0

@@ -112,7 +112,8 @@ func isSuperAdmin(f *factory.Factory) bool {
 	if err != nil {
 		return false
 	}
-	ctx, ok := cfg.Contexts[cfg.ActiveContextName()]
+	name := cfg.ActiveContextName()
+	ctx, ok := cfg.Contexts[name]
 	if !ok {
 		return false
 	}
@@ -129,9 +130,13 @@ func isSuperAdmin(f *factory.Factory) bool {
 	result := checkSuperAdmin(f)
 
 	// Persist to config
-	ctx.SuperAdmin = &result
-	ctx.SuperAdminAt = time.Now()
-	_ = f.SaveConfig()
+	_ = f.UpdateConfig(func(cfg *config.Config) error {
+		if stored, ok := cfg.Contexts[name]; ok {
+			stored.SuperAdmin = &result
+			stored.SuperAdminAt = time.Now()
+		}
+		return nil
+	})
 
 	return result
 }

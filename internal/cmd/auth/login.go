@@ -159,11 +159,6 @@ func runLogin(f *factory.Factory, opts *LoginOptions) error {
 	}
 
 	// 6. Save to config
-	cfg, err := f.Config()
-	if err != nil {
-		return err
-	}
-
 	ctx := &config.Context{
 		Host:         opts.Host,
 		Token:        token.AccessToken,
@@ -178,10 +173,12 @@ func runLogin(f *factory.Factory, opts *LoginOptions) error {
 		ctx.User = user
 	}
 
-	cfg.SetContext(opts.ContextName, ctx)
-	cfg.CurrentContext = opts.ContextName
-
-	if err := f.SaveConfig(); err != nil {
+	err = f.UpdateConfig(func(cfg *config.Config) error {
+		cfg.SetContext(opts.ContextName, ctx)
+		cfg.CurrentContext = opts.ContextName
+		return nil
+	})
+	if err != nil {
 		return fmt.Errorf("saving config: %w", err)
 	}
 

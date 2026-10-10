@@ -32,7 +32,7 @@ func newTestFactory(t *testing.T, host string) (*factory.Factory, *bytes.Buffer)
 			},
 		},
 	}
-	if err := config.Save(cfg, cfgPath); err != nil {
+	if _, err := config.Update(cfgPath, func(c *config.Config) error { *c = *cfg; return nil }); err != nil {
 		t.Fatal(err)
 	}
 

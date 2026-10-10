@@ -8,7 +8,6 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/inhandnet/incloud-cli/internal/api"
 	"github.com/inhandnet/incloud-cli/internal/config"
 	"github.com/inhandnet/incloud-cli/internal/factory"
 	"github.com/inhandnet/incloud-cli/internal/iostreams"
@@ -51,21 +50,7 @@ func NewCmdStatus(f *factory.Factory) *cobra.Command {
 
 			// Try auto-refresh if token expired but refresh token is available
 			if tokenExpired && ctx.RefreshToken != "" {
-				oauthClient, fetchErr := api.FetchOAuthClient(cmd.Context(), ctx.AuthURL())
-				if fetchErr != nil {
-					fmt.Fprintf(out, "Status:   %s\n", iostreams.Red("token expired, failed to fetch OAuth client — please login again"))
-					return nil
-				}
-				newToken, err := api.RefreshAccessToken(ctx.AuthURL(), oauthClient.ClientID, oauthClient.ClientSecret, ctx.RefreshToken)
-				if err == nil {
-					ctx.Token = newToken.AccessToken
-					if newToken.RefreshToken != "" {
-						ctx.RefreshToken = newToken.RefreshToken
-					}
-					if !newToken.Expiry.IsZero() {
-						ctx.ExpiresAt = newToken.Expiry
-					}
-					_ = f.SaveConfig()
+				if _, err := f.RefreshToken(cmd.Context(), name, ctx.AuthURL(), ctx.Token); err == nil {
 					tokenExpired = false
 					fmt.Fprintf(out, "Status:   %s\n", iostreams.Green("logged in (token refreshed)"))
 				} else {

@@ -1,6 +1,9 @@
 package factory
 
 import (
+	"context"
+	"errors"
+	"fmt"
 	"net/http"
 	"os"
 	"sync"
@@ -42,11 +45,59 @@ func (f *Factory) ReloadConfig() {
 	f.configErr = nil
 }
 
-func (f *Factory) SaveConfig() error {
-	if f.config == nil {
-		return nil
+// UpdateConfig applies fn to the latest config on disk under a file lock and saves it.
+// fn must only change the fields it owns. The in-memory config is replaced by the result.
+func (f *Factory) UpdateConfig(fn func(*config.Config) error) error {
+	cfg, err := config.Update(f.ConfigPath, fn)
+	if err != nil {
+		return err
 	}
-	return config.Save(f.config, f.ConfigPath)
+	f.configOnce.Do(func() {})
+	f.config, f.configErr = cfg, nil
+	return nil
+}
+
+// refreshTimeout bounds a token refresh, which holds the config lock while it runs.
+const refreshTimeout = 20 * time.Second
+
+// RefreshToken refreshes the token of context name under the config lock and returns the
+// updated context. If the token on disk is no longer staleToken, another process has
+// already refreshed it and that token is returned without refreshing again.
+func (f *Factory) RefreshToken(ctx context.Context, name, authHost, staleToken string) (*config.Context, error) {
+	ctx, cancel := context.WithTimeout(ctx, refreshTimeout)
+	defer cancel()
+
+	var refreshed config.Context
+	err := f.UpdateConfig(func(cfg *config.Config) error {
+		stored, ok := cfg.Contexts[name]
+		if !ok {
+			return fmt.Errorf("context %q not found", name)
+		}
+		if stored.Token != "" && stored.Token != staleToken {
+			refreshed = *stored
+			return nil
+		}
+		if stored.RefreshToken == "" {
+			return errors.New("no refresh token")
+		}
+		token, err := api.RefreshToken(ctx, authHost, stored.RefreshToken)
+		if err != nil {
+			return err
+		}
+		stored.Token = token.AccessToken
+		if token.RefreshToken != "" {
+			stored.RefreshToken = token.RefreshToken
+		}
+		if !token.Expiry.IsZero() {
+			stored.ExpiresAt = token.Expiry
+		}
+		refreshed = *stored
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &refreshed, nil
 }
 
 // APIClient returns a high-level REST client with base URL and auth configured.
@@ -103,34 +154,26 @@ func (f *Factory) debugConfig(ctx *config.Context) {
 
 func (f *Factory) newTransport(ctx *config.Context) *api.TokenTransport {
 	t := &api.TokenTransport{
-		Token:    ctx.EffectiveToken(),
-		APIHost:  ctx.APIURL(),
-		AuthHost: ctx.AuthURL(),
-		Sudo:     os.Getenv("INCLOUD_SUDO"),
-		Tenant:   os.Getenv("INCLOUD_TENANT"),
-		Base:     http.DefaultTransport,
+		Token:   ctx.EffectiveToken(),
+		APIHost: ctx.APIURL(),
+		Sudo:    os.Getenv("INCLOUD_SUDO"),
+		Tenant:  os.Getenv("INCLOUD_TENANT"),
+		Base:    http.DefaultTransport,
 	}
-	if config.EnvCredentials() {
+	if config.EnvCredentials() || ctx.RefreshToken == "" {
 		return t
 	}
-	t.RefreshToken = ctx.RefreshToken
-	t.OnRefresh = func(accessToken, refreshToken string, expiry time.Time) {
-		cfg, err := f.Config()
+	cfg, err := f.Config()
+	if err != nil {
+		return t
+	}
+	name, authHost := cfg.ActiveContextName(), ctx.AuthURL()
+	t.Refresh = func(rctx context.Context, staleToken string) (string, error) {
+		refreshed, err := f.RefreshToken(rctx, name, authHost, staleToken)
 		if err != nil {
-			return
+			return "", err
 		}
-		stored, ok := cfg.Contexts[cfg.ActiveContextName()]
-		if !ok {
-			return
-		}
-		stored.Token = accessToken
-		if refreshToken != "" {
-			stored.RefreshToken = refreshToken
-		}
-		if !expiry.IsZero() {
-			stored.ExpiresAt = expiry
-		}
-		_ = f.SaveConfig()
+		return refreshed.Token, nil
 	}
 	return t
 }

@@ -5,6 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/inhandnet/incloud-cli/internal/config"
 	"github.com/inhandnet/incloud-cli/internal/factory"
 	"github.com/inhandnet/incloud-cli/internal/iostreams"
 )
@@ -29,15 +30,16 @@ func NewCmdLogout(f *factory.Factory) *cobra.Command {
 				return fmt.Errorf("no context specified and no current context set")
 			}
 
-			ctx, ok := cfg.Contexts[name]
-			if !ok {
-				return fmt.Errorf("context %q not found", name)
-			}
-
-			ctx.Token = ""
-			ctx.RefreshToken = ""
-
-			if err := f.SaveConfig(); err != nil {
+			err = f.UpdateConfig(func(cfg *config.Config) error {
+				ctx, ok := cfg.Contexts[name]
+				if !ok {
+					return fmt.Errorf("context %q not found", name)
+				}
+				ctx.Token = ""
+				ctx.RefreshToken = ""
+				return nil
+			})
+			if err != nil {
 				return err
 			}
 

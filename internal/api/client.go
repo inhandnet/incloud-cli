@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -17,14 +18,14 @@ var userAgent = fmt.Sprintf("incloud-cli/%s (%s/%s)", build.Version, runtime.GOO
 // TokenTransport is an http.RoundTripper that injects Authorization header
 // and auto-refreshes tokens on 401 responses.
 type TokenTransport struct {
-	Token        string
-	RefreshToken string
-	APIHost      string
-	AuthHost     string
-	Sudo         string
-	Tenant       string
-	OnRefresh    func(accessToken, refreshToken string, expiry time.Time)
-	Base         http.RoundTripper
+	Token   string
+	APIHost string
+	Sudo    string
+	Tenant  string
+	// Refresh returns a new access token to replace staleToken after a 401.
+	// Nil disables refresh.
+	Refresh func(ctx context.Context, staleToken string) (string, error)
+	Base    http.RoundTripper
 }
 
 func (t *TokenTransport) RoundTrip(req *http.Request) (*http.Response, error) {
@@ -48,30 +49,17 @@ func (t *TokenTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	}
 
 	// Auto-refresh on 401
-	if resp.StatusCode == 401 && t.RefreshToken != "" {
+	if resp.StatusCode == 401 && t.Refresh != nil {
 		resp.Body.Close()
 		debug.Log("token expired, refreshing...")
 
-		oauthClient, fetchErr := FetchOAuthClient(req.Context(), t.AuthHost)
-		if fetchErr != nil {
-			debug.Log("failed to fetch OAuth client: %v", fetchErr)
-			return resp, nil // return original 401
-		}
-
-		newToken, refreshErr := RefreshAccessToken(t.AuthHost, oauthClient.ClientID, oauthClient.ClientSecret, t.RefreshToken)
+		newToken, refreshErr := t.Refresh(req.Context(), t.Token)
 		if refreshErr != nil {
 			debug.Log("token refresh failed: %v", refreshErr)
 			return resp, nil // return original 401
 		}
-
-		t.Token = newToken.AccessToken
-		if newToken.RefreshToken != "" {
-			t.RefreshToken = newToken.RefreshToken
-		}
-		if t.OnRefresh != nil {
-			t.OnRefresh(newToken.AccessToken, newToken.RefreshToken, newToken.Expiry)
-		}
-		debug.Log("token refreshed, new expiry: %s", newToken.Expiry.Format(time.RFC3339))
+		t.Token = newToken
+		debug.Log("token refreshed")
 
 		// Retry with a new request because the initial round trip consumed its body.
 		retryReq, retryErr := newRetryRequest(req)
