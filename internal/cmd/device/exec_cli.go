@@ -52,11 +52,7 @@ and prompt are stripped. stdout contains only the command output.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			deviceID := args[0]
 
-			cfg, err := f.Config()
-			if err != nil {
-				return err
-			}
-			actx, err := cfg.ActiveContext()
+			actx, err := f.ActiveContext()
 			if err != nil {
 				return err
 			}

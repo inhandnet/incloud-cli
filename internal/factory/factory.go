@@ -51,7 +51,7 @@ func (f *Factory) SaveConfig() error {
 
 // APIClient returns a high-level REST client with base URL and auth configured.
 func (f *Factory) APIClient() (*api.APIClient, error) {
-	actx, err := f.activeContext()
+	actx, err := f.ActiveContext()
 	if err != nil {
 		return nil, err
 	}
@@ -59,7 +59,12 @@ func (f *Factory) APIClient() (*api.APIClient, error) {
 	return api.NewAPIClient(actx.APIURL(), f.newTransport(actx)), nil
 }
 
-func (f *Factory) activeContext() (*config.Context, error) {
+// ActiveContext returns the context used for API calls. When both INCLOUD_HOST and
+// INCLOUD_TOKEN are set it is built from env vars alone, without reading the config file.
+func (f *Factory) ActiveContext() (*config.Context, error) {
+	if h := os.Getenv("INCLOUD_HOST"); h != "" && config.EnvCredentials() {
+		return &config.Context{Host: h}, nil
+	}
 	cfg, err := f.Config()
 	if err != nil {
 		return nil, err
@@ -72,12 +77,12 @@ func (f *Factory) debugConfig(ctx *config.Context) {
 		return
 	}
 
-	cfg, _ := f.Config()
-
 	// Context source
-	if envCtx := os.Getenv("INCLOUD_CONTEXT"); envCtx != "" {
+	if os.Getenv("INCLOUD_HOST") != "" && config.EnvCredentials() {
+		debug.Log("context: (from: env INCLOUD_HOST + INCLOUD_TOKEN)")
+	} else if envCtx := os.Getenv("INCLOUD_CONTEXT"); envCtx != "" {
 		debug.Log("context: %s (from: env INCLOUD_CONTEXT)", envCtx)
-	} else {
+	} else if cfg, err := f.Config(); err == nil {
 		debug.Log("context: %s (from: config)", cfg.CurrentContext)
 	}
 
@@ -97,23 +102,35 @@ func (f *Factory) debugConfig(ctx *config.Context) {
 }
 
 func (f *Factory) newTransport(ctx *config.Context) *api.TokenTransport {
-	return &api.TokenTransport{
-		Token:        ctx.EffectiveToken(),
-		RefreshToken: ctx.RefreshToken,
-		APIHost:      ctx.APIURL(),
-		AuthHost:     ctx.AuthURL(),
-		Sudo:         os.Getenv("INCLOUD_SUDO"),
-		Tenant:       os.Getenv("INCLOUD_TENANT"),
-		OnRefresh: func(accessToken, refreshToken string, expiry time.Time) {
-			ctx.Token = accessToken
-			if refreshToken != "" {
-				ctx.RefreshToken = refreshToken
-			}
-			if !expiry.IsZero() {
-				ctx.ExpiresAt = expiry
-			}
-			_ = f.SaveConfig()
-		},
-		Base: http.DefaultTransport,
+	t := &api.TokenTransport{
+		Token:    ctx.EffectiveToken(),
+		APIHost:  ctx.APIURL(),
+		AuthHost: ctx.AuthURL(),
+		Sudo:     os.Getenv("INCLOUD_SUDO"),
+		Tenant:   os.Getenv("INCLOUD_TENANT"),
+		Base:     http.DefaultTransport,
 	}
+	if config.EnvCredentials() {
+		return t
+	}
+	t.RefreshToken = ctx.RefreshToken
+	t.OnRefresh = func(accessToken, refreshToken string, expiry time.Time) {
+		cfg, err := f.Config()
+		if err != nil {
+			return
+		}
+		stored, ok := cfg.Contexts[cfg.ActiveContextName()]
+		if !ok {
+			return
+		}
+		stored.Token = accessToken
+		if refreshToken != "" {
+			stored.RefreshToken = refreshToken
+		}
+		if !expiry.IsZero() {
+			stored.ExpiresAt = expiry
+		}
+		_ = f.SaveConfig()
+	}
+	return t
 }

@@ -13,8 +13,8 @@ type Config struct {
 	Contexts       map[string]*Context `yaml:"contexts"`
 }
 
-// ActiveContext returns the context selected by INCLOUD_CONTEXT env var or current-context field.
-// If INCLOUD_HOST is set, it overrides the context's Host field.
+// ActiveContext returns a copy of the context selected by INCLOUD_CONTEXT env var
+// or current-context field. If INCLOUD_HOST is set, it overrides the copy's Host field.
 func (cfg *Config) ActiveContext() (*Context, error) {
 	name := os.Getenv("INCLOUD_CONTEXT")
 	if name == "" {
@@ -27,10 +27,11 @@ func (cfg *Config) ActiveContext() (*Context, error) {
 	if !ok {
 		return nil, fmt.Errorf("context %q not found in config", name)
 	}
+	c := *ctx
 	if h := os.Getenv("INCLOUD_HOST"); h != "" {
-		ctx.Host = h
+		c.Host = h
 	}
-	return ctx, nil
+	return &c, nil
 }
 
 // ActiveContextName returns the resolved context name.

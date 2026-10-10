@@ -146,3 +146,19 @@ func TestEnvContextOverride(t *testing.T) {
 		t.Errorf("expected ActiveContextName 'prod', got %q", cfg.ActiveContextName())
 	}
 }
+
+func TestEnvHostOverrideDoesNotMutateStoredContext(t *testing.T) {
+	t.Setenv("INCLOUD_HOST", "https://override.example.com")
+	cfg := &Config{
+		CurrentContext: "dev",
+		Contexts: map[string]*Context{
+			"dev": {Host: "https://dev.example.com"},
+		},
+	}
+	if _, err := cfg.ActiveContext(); err != nil {
+		t.Fatal(err)
+	}
+	if got := cfg.Contexts["dev"].Host; got != "https://dev.example.com" {
+		t.Errorf("stored context host = %q, want unchanged", got)
+	}
+}
