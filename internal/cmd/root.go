@@ -9,6 +9,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/inhandnet/incloud-cli/internal/build"
+	"github.com/inhandnet/incloud-cli/internal/config"
 	"github.com/inhandnet/incloud-cli/internal/debug"
 	"github.com/inhandnet/incloud-cli/internal/factory"
 )
@@ -81,28 +82,38 @@ func NewCmdRoot(f *factory.Factory) *cobra.Command {
 	return cmd
 }
 
-// SetupSuperAdminFlags unhides super-admin-only flags (e.g. --sudo)
-// when the current user is a super admin.
-// The result is cached to a file per context with a 1-hour TTL to avoid
+// SetupSuperAdminFlags unhides super-admin-only flags (e.g. --sudo) in help output
+// when the current user is a super admin. Hidden flags still parse, so the check
+// only runs when help is rendered.
+// The result is cached to the config file per context with a 1-hour TTL to avoid
 // repeated API calls across CLI invocations.
 func SetupSuperAdminFlags(rootCmd *cobra.Command, f *factory.Factory) {
-	if isSuperAdmin(f) {
-		if fl := rootCmd.PersistentFlags().Lookup("sudo"); fl != nil {
-			fl.Hidden = false
+	defaultHelp := rootCmd.HelpFunc()
+	rootCmd.SetHelpFunc(func(c *cobra.Command, args []string) {
+		if isSuperAdmin(f) {
+			if fl := rootCmd.PersistentFlags().Lookup("sudo"); fl != nil {
+				fl.Hidden = false
+			}
 		}
-	}
+		defaultHelp(c, args)
+	})
 }
 
 const superAdminCacheTTL = 1 * time.Hour
 
 // isSuperAdmin checks the config cache first, falls back to API, then persists.
+// With INCLOUD_TOKEN credentials it always asks the API and never writes the config file.
 func isSuperAdmin(f *factory.Factory) bool {
+	if config.EnvCredentials() {
+		return checkSuperAdmin(f)
+	}
+
 	cfg, err := f.Config()
 	if err != nil {
 		return false
 	}
-	ctx, err := cfg.ActiveContext()
-	if err != nil {
+	ctx, ok := cfg.Contexts[cfg.ActiveContextName()]
+	if !ok {
 		return false
 	}
 
