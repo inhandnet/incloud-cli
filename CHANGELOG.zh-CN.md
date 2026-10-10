@@ -1,5 +1,12 @@
 # Unreleased
 
+## 修复
+
+- **多个 CLI 进程并发时不再读到空配置、互相覆盖** (IM-3393) — 此前写配置会先清空 `config.yaml` 再原地写入，同时读取的进程可能读到空文件并报 `context "..." not found`；每次写入还会把进程启动时读到的整份配置写回，可能把其他进程刚换的 `refresh_token` 覆盖成旧值。现在写入先对 `config.yaml.lock` 加锁，重新读文件、只改自己的字段，再原子替换。token 刷新也在同一把锁内进行，发现其他进程刚刷新过就直接复用，不再重复消耗 refresh token。
+- **`INCLOUD_HOST` 不再被写进已保存的 context** (IM-3393) — 此前带 `INCLOUD_HOST` 运行命令，可能把当前 context 的 host 永久改掉。
+- **使用 `INCLOUD_TOKEN` 时不再读写配置文件** (IM-3393) — 设置 `INCLOUD_TOKEN` 后 CLI 不写 `config.yaml`，遇到 401 也不再用已保存 context 的 `refresh_token` 刷新（此前会换成已登录用户的身份重试并保存其 token）。同时设置 `INCLOUD_HOST` 与 `INCLOUD_TOKEN` 时完全不需要配置文件或 context；`auth status` 显示环境变量凭据。
+- **超管检查只在显示帮助时进行** (IM-3393) — 它只决定帮助里是否显示 `--sudo`，`--sudo` 本身始终可用。执行命令前不再调用 `/api/v1/users/me`，也不再写缓存。
+
 ## 破坏性变更
 
 - **`knowledge` 改由文档库（documents-mcp）提供数据**，走 `/api/v1/knowledge/{search,browse,read}`，需要提供这组接口的 copilot 后端（后端过旧时 404 会明确提示），本地语料下线。`knowledge search` 返回章节，字段为 `chunk_id` / `path` / `doc_title` / `heading_path` / `product_ids` / `snippet`；检索按关键词匹配，查询里要带产品名或型号。移除 `--path` 与 `--model`（型号直接写进查询），`--limit` 默认 5（1–10）。`search`、`browse`、`read` 都在返回体里给 `status`：`success` / `empty` / `failed`（附 `message`）；查不到或上游故障时退出码仍为 0。
