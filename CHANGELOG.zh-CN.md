@@ -7,15 +7,26 @@
 - **使用 `INCLOUD_TOKEN` 时不再读写配置文件** (IM-3393) — 设置 `INCLOUD_TOKEN` 后 CLI 不写 `config.yaml`，遇到 401 也不再用已保存 context 的 `refresh_token` 刷新（此前会换成已登录用户的身份重试并保存其 token）。同时设置 `INCLOUD_HOST` 与 `INCLOUD_TOKEN` 时完全不需要配置文件或 context；`auth status` 显示环境变量凭据。
 - **超管检查只在显示帮助时进行** (IM-3393) — 它只决定帮助里是否显示 `--sudo`，`--sudo` 本身始终可用。执行命令前不再调用 `/api/v1/users/me`，也不再写缓存。
 
+## 新增参数
+
+- **`alert rule create/update --timezone <IANA 时区名>`** (IM-3444) — `--day` / `--start-time` / `--end-time` 按该时区解释（如 `Asia/Shanghai`），与门户建的规则一致（门户提交浏览器时区）。不传则按服务器时区。非法时区名在本地直接报错，不发请求。
+
 ## 破坏性变更
+
+- **`alert rule update` 改为合并通知设置，不再整体替换** (IM-3444) — 此前每次 update 都只用本次传入的参数重建 `notify`，只改 `--type` 时会静默清掉规则的时区、通知时段、用户和 webhook，门户配置的外部收件人邮箱（CLI 没有对应参数）则每次都会被清掉。现在只修改本次传入的通知参数，其余原样保留；传空值表示清除该项（如 `--timezone ""`、`--user ""`）。update 不再强制要求 `--channel`。`--type` 仍为必填，仍整体替换规则的告警类型。依赖"不传参数即恢复默认"的脚本（如不传 `--day` 以恢复全周）需要显式传值。
 
 - **`knowledge` 改由文档库（documents-mcp）提供数据**，走 `/api/v1/knowledge/{search,browse,read}`，需要提供这组接口的 copilot 后端（后端过旧时 404 会明确提示），本地语料下线。`knowledge search` 返回章节，字段为 `chunk_id` / `path` / `doc_title` / `heading_path` / `product_ids` / `snippet`；检索按关键词匹配，查询里要带产品名或型号。移除 `--path` 与 `--model`（型号直接写进查询），`--limit` 默认 5（1–10）。`search`、`browse`、`read` 都在返回体里给 `status`：`success` / `empty` / `failed`（附 `message`）；查不到或上游故障时退出码仍为 0。
 - **移除 `knowledge grep`**；`knowledge read` 不再有按行读取（`--mode`、`--line-start`、`--line-end`、`--around`、`--before`、`--after`、`--limit`）。
 
 ## 新增命令
 
+- **`device ap list <设备ID> [--snapshot]`** (IM-3444) — 列出 AC 设备纳管的 AP 及上下联拓扑（`level` 为 0 的是 AC，`upperMac` 为上联设备）。默认实时查询 AC（最长约 30 秒）；`--snapshot` 读取最近一次成功获取的状态，AC 离线时也可用。表格按 level 排序并显示 `staCount`；`-o json` 保留每个 AP 完整的 `staList`。设备未授权、AC 离线、超时都会报错（非零退出码），不再输出空表。
 - **`knowledge browse [<文档路径>] [--product <ID>]`** — 无参列出全部产品；`--product` 看产品的概览章节；给文档路径返回完整章节目录（`chunk_id` / `heading_path`，chunk ID 可直接给 `knowledge read`）。
 - **`knowledge read <chunk_id> [--cursor N]`** — 读取章节全文及来源（`doc_title`、`heading_path`、`url`），按 12000 字符分段。
+
+## 新增告警类型
+
+- **`alert rule types` 收录 AC-AP 组网类型** (IM-3444) — `ap_offline`、`ap_config_sync_fail`、`ap_config_sync_ok`、`roam_fail`、`roam_success`（漫游耗时单位为秒，失败原因见告警的 `errorMsg`），以及 `posready_ineffective`（必须带 `retention`，单位秒）。至此与平台支持的全部类型一致。
 
 # v0.11.0 (2026-08-18)
 

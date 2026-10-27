@@ -54,6 +54,10 @@ var ruleTypeRegistry = []RuleTypeDef{
 		{Name: "retention", Type: "integer", Unit: "seconds", Description: "Duration in seconds before triggering (e.g. 600 = 10 minutes, range 60-1800)"},
 	}},
 
+	{Type: "posready_ineffective", Category: "general", Description: "POS-ready client stays ineffective", Params: []RuleParam{
+		{Name: "retention", Type: "integer", Unit: "seconds", Description: "Duration in seconds before triggering (e.g. 120 = 2 minutes, range 60-1800)"},
+	}},
+
 	// General — resource
 	{Type: "high_average_cpu_utilization", Category: "general", Description: "CPU usage stays above threshold", Params: []RuleParam{
 		{Name: "retention", Type: "integer", Unit: "seconds", Description: "Monitoring window in seconds (300/600/900/1800)"},
@@ -90,6 +94,13 @@ var ruleTypeRegistry = []RuleTypeDef{
 		{Name: "retention", Type: "integer", Unit: "seconds", Description: "Duration in seconds before triggering (60/300/900/1800)"},
 		{Name: "interface", Type: "string", Unit: "", Description: "Interface name (primary_link, wan1-wan4, cellular1-cellular4, wi-fi(sta))"},
 	}},
+
+	// AC-AP networking (reported by the AC device)
+	{Type: "ap_offline", Category: "network", Description: "AP managed by the AC goes offline"},
+	{Type: "ap_config_sync_fail", Category: "network", Description: "AC fails to push configuration to an AP (reason in the alert's errorMsg)"},
+	{Type: "ap_config_sync_ok", Category: "network", Description: "AC pushed configuration to an AP"},
+	{Type: "roam_fail", Category: "network", Description: "AC fails to send a roaming command to a client (duration in seconds; reason in the alert's errorMsg)"},
+	{Type: "roam_success", Category: "network", Description: "AC sent a roaming command to a client (duration in seconds)"},
 }
 
 // ruleTypeIndex provides O(1) lookup by type name (lowercase).
