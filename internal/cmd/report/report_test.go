@@ -52,7 +52,7 @@ func newRoot(f *factory.Factory) *cobra.Command {
 
 type captured struct {
 	method, path, query string
-	body               map[string]any
+	body                map[string]any
 }
 
 // recorder returns a server that records requests and answers with resp.
