@@ -10,17 +10,25 @@
 
 ## New Flags
 
+- **`alert rule create/update --timezone <IANA>`** (IM-3444) — `--day` / `--start-time` / `--end-time` are evaluated in this timezone (e.g. `Asia/Shanghai`), matching rules created in the portal, which submits the browser's timezone. Without it the server's timezone is used. Invalid names are rejected locally before the request is sent.
 - **`device config schema validate --whole-document`** — Validate the payload as a complete document instead of merging it over the device's current configuration. Restores the previous behaviour when `--device` is given.
 
 ## Breaking Changes
+
+- **`alert rule update` merges notification settings instead of replacing them** (IM-3444) — Previously every update rebuilt `notify` from the flags given, so an update that only changed `--type` silently dropped the rule's timezone, active time window, users and webhooks, and always dropped external email recipients configured in the portal (the CLI has no flag for them). Now only the notification flags you pass are changed and everything else is kept; pass a flag with an empty value to clear it (e.g. `--timezone ""`, `--user ""`). `--channel` is no longer required on update. `--type` is still required and still replaces the rule's alert types as a whole. Scripts that relied on omitted flags resetting a setting (e.g. leaving out `--day` to go back to all days) must now pass the value explicitly.
 
 - **`knowledge` is backed by the documents library (documents-mcp)** via `/api/v1/knowledge/{search,browse,read}`; it needs a copilot backend that serves these endpoints and says so on a 404. The local corpus is gone. `knowledge search` returns sections with `chunk_id` / `path` / `doc_title` / `heading_path` / `product_ids` / `snippet`; matching is lexical, so include the product or model name. `--path` and `--model` are removed (put the model in the query), and `--limit` defaults to 5 (1–10). `search`, `browse` and `read` all report `status` `success` / `empty` / `failed` (with `message`) in the response body; not-found and upstream failures exit 0.
 - **`knowledge grep` is removed**, and `knowledge read` no longer has line modes (`--mode`, `--line-start`, `--line-end`, `--around`, `--before`, `--after`, `--limit`).
 
 ## New Commands
 
+- **`device ap list <device-id> [--snapshot]`** (IM-3444) — List the APs managed by an AC device and their uplink topology (`level` 0 is the AC; `upperMac` is the parent). Queries the AC in real time (up to ~30s); `--snapshot` reads the last state successfully fetched, which also works while the AC is offline. Table output is sorted by level and shows `staCount`; `-o json` keeps each AP's full `staList`. Unlicensed devices, an offline AC and timeouts are reported as errors (non-zero exit) instead of an empty table.
 - **`knowledge browse [<document path>] [--product <id>]`** — no arguments lists all products; `--product` shows a product's overview sections; a document path returns its full section outline (`chunk_id` / `heading_path`, chunk IDs ready for `knowledge read`).
 - **`knowledge read <chunk_id> [--cursor N]`** — full text of a section with its source (`doc_title`, `heading_path`, `url`), chunked at 12000 characters.
+
+## New Alert Types
+
+- **`alert rule types` lists the AC-AP networking types** (IM-3444) — `ap_offline`, `ap_config_sync_fail`, `ap_config_sync_ok`, `roam_fail`, `roam_success` (roaming duration is in seconds; failure reasons are in the alert's `errorMsg`), plus `posready_ineffective` (requires `retention`, in seconds). The list now matches every type the platform supports.
 
 # v0.11.0 (2026-08-18)
 

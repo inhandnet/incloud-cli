@@ -35,7 +35,10 @@ The --type flag accepts three formats:
 Use 'incloud alert rule types' to see all supported types and their parameters.
 
 Supported notification channels:
-  SMS, APP, EMAIL, WEBHOOK, SUBSCRIPTION`,
+  SMS, APP, EMAIL, WEBHOOK, SUBSCRIPTION
+
+--day/--start-time/--end-time are evaluated in --timezone (an IANA name such as
+Asia/Shanghai). Without --timezone the server's timezone is used.`,
 		Example: `  # Create a rule for an org
   incloud alert rule create \
     --target-type org --target 507f1f77bcf86cd799439011 \
@@ -67,8 +70,19 @@ Supported notification channels:
     --type disconnected \
     --channel EMAIL \
     --day MONDAY --day TUESDAY --day WEDNESDAY --day THURSDAY --day FRIDAY \
-    --start-time 09:00 --end-time 18:00`,
+    --start-time 09:00 --end-time 18:00
+
+  # Evaluate the active time window in a specific timezone
+  incloud alert rule create \
+    --target-type org --target 507f1f77bcf86cd799439011 \
+    --type disconnected \
+    --channel EMAIL \
+    --start-time 09:00 --end-time 18:00 --timezone Asia/Shanghai`,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if err := opts.Notify.Validate(); err != nil {
+				return err
+			}
+
 			rules, err := ParseTypeFlags(opts.Types)
 			if err != nil {
 				return err

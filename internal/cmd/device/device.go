@@ -39,6 +39,7 @@ func NewCmdDevice(f *factory.Factory) *cobra.Command {
 	cmd.AddCommand(NewCmdGroup(f))
 	cmd.AddCommand(NewCmdConfig(f))
 	cmd.AddCommand(NewCmdClient(f))
+	cmd.AddCommand(NewCmdAP(f))
 	cmd.AddCommand(NewCmdAsset(f))
 	cmd.AddCommand(NewCmdApp(f))
 	cmd.AddCommand(NewCmdEdge(f))
