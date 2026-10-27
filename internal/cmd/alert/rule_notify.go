@@ -1,12 +1,11 @@
 package alert
 
 import (
-	"fmt"
 	"slices"
-	"time"
-	_ "time/tzdata" // embed IANA zone data so --timezone validation works on Windows
 
 	"github.com/spf13/cobra"
+
+	"github.com/inhandnet/incloud-cli/internal/cmdutil"
 )
 
 // NotifyOptions holds notification-related flags shared by rule create and update.
@@ -37,17 +36,7 @@ func (o *NotifyOptions) RegisterFlags(cmd *cobra.Command) {
 
 // Validate checks flag values locally before sending the request.
 func (o *NotifyOptions) Validate() error {
-	if o.Timezone == "" {
-		return nil
-	}
-	// time.LoadLocation accepts "Local", which is not an IANA name the server understands.
-	if o.Timezone == "Local" {
-		return fmt.Errorf("invalid --timezone %q: must be an IANA timezone name such as Asia/Shanghai", o.Timezone)
-	}
-	if _, err := time.LoadLocation(o.Timezone); err != nil {
-		return fmt.Errorf("invalid --timezone %q: must be an IANA timezone name such as Asia/Shanghai", o.Timezone)
-	}
-	return nil
+	return cmdutil.ValidateTimezone(o.Timezone)
 }
 
 // ToMap converts NotifyOptions to the API request body format.

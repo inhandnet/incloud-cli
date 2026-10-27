@@ -20,6 +20,7 @@
 
 ## 新增命令
 
+- **`report` 与 `report policy`** (IM-3446) — 管理报表策略与已生成的报表。`report policy create/update/list/get/delete` 支持定时策略（`--frequency daily|weekly|monthly`、`--at HH:MM`、`--day-of-week`、`--day-of-month`）和一次性报表（`--period`，或按天的 `--from`/`--to`，二者不能同时用）；`report policy templates` 列出可用的 `--template` 及哪些只支持 xlsx。`--timezone <IANA 时区名>` 决定调度时间、统计窗口和报表内时间按哪个时区计算，与门户一致（门户提交浏览器时区）；不传则按服务器时区。非法时区名在本地直接报错，`update` 不能清空时区。`update` 只修改本次传入的参数，调度需整体给出。`report list/get/download/recreate/delete` 管理已生成的报表；`download --output-file` 保存 PDF/XLSX 文件，不传则输出临时下载链接。
 - **`device ap list <设备ID> [--snapshot]`** (IM-3444) — 列出 AC 设备纳管的 AP 及上下联拓扑（`level` 为 0 的是 AC，`upperMac` 为上联设备）。默认实时查询 AC（最长约 30 秒）；`--snapshot` 读取最近一次成功获取的状态，AC 离线时也可用。表格按 level 排序并显示 `staCount`；`-o json` 保留每个 AP 完整的 `staList`。设备未授权、AC 离线、超时都会报错（非零退出码），不再输出空表。
 - **`knowledge browse [<文档路径>] [--product <ID>]`** — 无参列出全部产品；`--product` 看产品的概览章节；给文档路径返回完整章节目录（`chunk_id` / `heading_path`，chunk ID 可直接给 `knowledge read`）。
 - **`knowledge read <chunk_id> [--cursor N]`** — 读取章节全文及来源（`doc_title`、`heading_path`、`url`），按 12000 字符分段。

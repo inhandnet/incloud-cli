@@ -104,6 +104,16 @@ incloud alert rule create --name test --type disconnected,retention=600
 incloud alert rule types                             # List all alert types
 ```
 
+### Reports
+
+```bash
+incloud report policy templates                      # List report templates
+incloud report policy create --name daily --template TOTAL_DEVICES --period last_1_day --frequency daily --at 08:00 --timezone Asia/Shanghai
+incloud report policy update <id> --timezone America/New_York
+incloud report list                                  # List generated reports
+incloud report download <id> --output-file report.pdf
+```
+
 ### Firmware
 
 ```bash
