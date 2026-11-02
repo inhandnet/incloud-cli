@@ -33,7 +33,11 @@ appears next to the value (including on nested entries such as wan[]) when the
 value is not a measurement:
   "timeout"   the probe timed out; the numeric field is null.
 
-Table output uses different, shorter field names.`,
+Table output uses different, shorter field names.
+
+When the platform reports that the device (model/firmware) does not support
+interface status (compatibility "nezha_interface"), no interface data is
+returned; the output is {"supported": false, "message": ...} instead.`,
 		Example: `  # Show interfaces as JSON
   incloud device interface 507f1f77bcf86cd799439011
 
@@ -54,6 +58,11 @@ Table output uses different, shorter field names.`,
 				return err
 			}
 
+			output, _ := cmd.Flags().GetString("output")
+			if v := checkCompatibility(client, deviceID, "nezha_interface"); v != nil && !v.Support {
+				return writeUnsupported(f.IO, output, deviceID, "nezha_interface", v)
+			}
+
 			if opts.Refresh {
 				_, err := client.Post("/api/v1/devices/"+deviceID+"/interfaces/refresh", nil)
 				if err != nil {
@@ -66,7 +75,6 @@ Table output uses different, shorter field names.`,
 				return err
 			}
 
-			output, _ := cmd.Flags().GetString("output")
 			return iostreams.FormatOutput(body, f.IO, output,
 				iostreams.WithTransform(flattenInterfaces),
 				iostreams.WithDeclaredUnits(unitdecl.DeviceInterface),
