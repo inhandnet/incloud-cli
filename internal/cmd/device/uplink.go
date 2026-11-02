@@ -31,7 +31,11 @@ appears when the value is not a measurement:
   "timeout"   the probe timed out; the numeric field is null.
 The status fields are absent for normal measurements.
 
-Table output uses different, shorter field names.`,
+Table output uses different, shorter field names.
+
+When the platform reports that the device (model/firmware) does not support
+uplinks (compatibility "nezha_uplink"), no uplink data is returned; the output
+is {"supported": false, "message": ...} instead.`,
 		Example: `  # Show uplinks for a device
   incloud device uplink 507f1f77bcf86cd799439011
 
@@ -49,12 +53,16 @@ Table output uses different, shorter field names.`,
 				return err
 			}
 
+			output, _ := cmd.Flags().GetString("output")
+			if v := checkCompatibility(client, deviceID, "nezha_uplink"); v != nil && !v.Support {
+				return writeUnsupported(f.IO, output, deviceID, "nezha_uplink", v)
+			}
+
 			body, err := client.Get("/api/v1/devices/"+deviceID+"/uplinks", nil)
 			if err != nil {
 				return err
 			}
 
-			output, _ := cmd.Flags().GetString("output")
 			return iostreams.FormatOutput(body, f.IO, output,
 				iostreams.WithFormatters(uplinkFormatters),
 				iostreams.WithDeclaredUnits(unitdecl.DeviceUplink),
