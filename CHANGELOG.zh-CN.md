@@ -9,7 +9,6 @@
 - **非法 ID 在本地拦截** (IM-3248) — 设备、客户端、资产、分组相关命令在发请求前校验 ID 参数是否为 ObjectId。此前误传序列号或拼错时只会看到网关的 `404 page not found`，像是资源不存在；现在报错会指出传入的值、期望的格式和可直接复制的查 ID 命令。未做本地校验的命令，网关无路由的 404 会改写为指明请求路径的提示。
 - **设备输出的 GBK 转码为 UTF-8** — 中文固件设备以 GBK 回显（如 `tunnel telnet` 的解析报错），此前在终端和 copilot 沙箱里显示为乱码。
 - **结构化输出中的流量值可读且可加和** (IM-3173) — `device datausage`、`device client datausage-daily` / `datausage-hourly`、`overview traffic` 的 `-o json` / `-o yaml` 输出新增统一 IEC 单位的可读字段（最大到 EiB）。显示的合计等于显示的收、发值之和，不再出现差一个舍入位的情况。
-
 - **多个 CLI 进程并发时不再读到空配置、互相覆盖** (IM-3393) — 此前写配置会先清空 `config.yaml` 再原地写入，同时读取的进程可能读到空文件并报 `context "..." not found`；每次写入还会把进程启动时读到的整份配置写回，可能把其他进程刚换的 `refresh_token` 覆盖成旧值。现在写入先对 `config.yaml.lock` 加锁，重新读文件、只改自己的字段，再原子替换。token 刷新也在同一把锁内进行，发现其他进程刚刷新过就直接复用，不再重复消耗 refresh token。
 - **`INCLOUD_HOST` 不再被写进已保存的 context** (IM-3393) — 此前带 `INCLOUD_HOST` 运行命令，可能把当前 context 的 host 永久改掉。
 - **使用 `INCLOUD_TOKEN` 时不再读写配置文件** (IM-3393) — 设置 `INCLOUD_TOKEN` 后 CLI 不写 `config.yaml`，遇到 401 也不再用已保存 context 的 `refresh_token` 刷新（此前会换成已登录用户的身份重试并保存其 token）。同时设置 `INCLOUD_HOST` 与 `INCLOUD_TOKEN` 时完全不需要配置文件或 context；`auth status` 显示环境变量凭据。
@@ -23,7 +22,6 @@
 ## 破坏性变更
 
 - **`alert rule update` 改为合并通知设置，不再整体替换** (IM-3444) — 此前每次 update 都只用本次传入的参数重建 `notify`，只改 `--type` 时会静默清掉规则的时区、通知时段、用户和 webhook，门户配置的外部收件人邮箱（CLI 没有对应参数）则每次都会被清掉。现在只修改本次传入的通知参数，其余原样保留；传空值表示清除该项（如 `--timezone ""`、`--user ""`）。update 不再强制要求 `--channel`。`--type` 仍为必填，仍整体替换规则的告警类型。依赖"不传参数即恢复默认"的脚本（如不传 `--day` 以恢复全周）需要显式传值。
-
 - **`knowledge` 改由文档库（documents-mcp）提供数据**，走 `/api/v1/knowledge/{search,browse,read}`，需要提供这组接口的 copilot 后端（后端过旧时 404 会明确提示），本地语料下线。`knowledge search` 返回章节，字段为 `chunk_id` / `path` / `doc_title` / `heading_path` / `product_ids` / `snippet`；检索按关键词匹配，查询里要带产品名或型号。移除 `--path` 与 `--model`（型号直接写进查询），`--limit` 默认 5（1–10）。`search`、`browse`、`read` 都在返回体里给 `status`：`success` / `empty` / `failed`（附 `message`）；查不到或上游故障时退出码仍为 0。
 - **移除 `knowledge grep`**；`knowledge read` 不再有按行读取（`--mode`、`--line-start`、`--line-end`、`--around`、`--before`、`--after`、`--limit`）。
 
@@ -37,7 +35,6 @@
 ## 新增告警类型
 
 - **`device_login_locked`** (DL-431) — 设备因连续密码错误锁定本地登录（Web/SSH/Telnet/Console）。无参数，失败次数阈值和锁定时长由固件决定。
-
 - **`alert rule types` 收录 AC-AP 组网类型** (IM-3444) — `ap_offline`、`ap_config_sync_fail`、`ap_config_sync_ok`、`roam_fail`、`roam_success`（漫游耗时单位为秒，失败原因见告警的 `errorMsg`），以及 `posready_ineffective`（必须带 `retention`，单位秒）。至此与平台支持的全部类型一致。
 
 # v0.11.0 (2026-08-18)
