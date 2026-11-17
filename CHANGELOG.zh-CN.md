@@ -1,7 +1,14 @@
-# Unreleased
+# v0.13.0 (2026-11-17)
 
 ## 修复
 
+- **`device config schema validate --device` 改为按 `config update` 的写入方式校验** (IM-3188) — `config update` 把载荷作为 JSON merge patch 合并到设备当前配置上，而 `validate` 此前把载荷当完整文档单独校验。对在块级声明了 `required` 的配置项（FWA02-NAVA/V2.0.16 的 44 个配置项中有 8 个：`qos`、`ntp`、`admin_access`、`policy_route`、`mac_filter`、`domain_filter`、`link_quality`、`ippt`），增量载荷会被 `validate` 拒绝、却能被 `update` 接受，校验的和提交的不是一回事。现在带 `--device` 时先把载荷合并到当前配置再校验合并结果；存量配置本来就有的违规会报告但不再判载荷失败；读取当前配置失败直接报错，不再静默降级。`--product`/`--version` 仍按完整文档校验，块级 `required` 导致失败时会明确说明。
+- **设备不支持时 `device interface` 与 `device uplink` 不返回数据** (IM-3426) — 平台对兼容性（`nezha_interface` / `nezha_uplink`）判定不支持的型号和固件仍保留接口/上联记录，门户会隐藏这两个面板，CLI 却当作当前数据返回。现在两条命令先查兼容性；不支持时返回 `{"deviceId", "compatibility", "supported": false, "minVersion"?, "message"}`（表格输出只打印 message），退出码 0，且不下发 `--refresh`。提示文案与门户一致，有最低固件版本时会带上。兼容性查询本身失败或平台无结论时，照旧返回数据。
+- **`device datausage list` 恢复可用** (IM-3266) — 平台 `datausage/details` 只接受 POST（设备 ID 可能上百个），CLI 用 GET 会被 405 拒绝。过滤条件改放请求体，`--after` / `--before` 按日期提交；传入的日期时间截为日期，由平台按服务器时区展开成查询区间。
+- **token 刷新后重试的请求保留请求体** — 遇到 401 刷新 token 后重试时，HTTP/2 下请求体可能被发成空的。
+- **非法 ID 在本地拦截** (IM-3248) — 设备、客户端、资产、分组相关命令在发请求前校验 ID 参数是否为 ObjectId。此前误传序列号或拼错时只会看到网关的 `404 page not found`，像是资源不存在；现在报错会指出传入的值、期望的格式和可直接复制的查 ID 命令。未做本地校验的命令，网关无路由的 404 会改写为指明请求路径的提示。
+- **设备输出的 GBK 转码为 UTF-8** — 中文固件设备以 GBK 回显（如 `tunnel telnet` 的解析报错），此前在终端和 copilot 沙箱里显示为乱码。
+- **结构化输出中的流量值可读且可加和** (IM-3173) — `device datausage`、`device client datausage-daily` / `datausage-hourly`、`overview traffic` 的 `-o json` / `-o yaml` 输出新增统一 IEC 单位的可读字段（最大到 EiB）。显示的合计等于显示的收、发值之和，不再出现差一个舍入位的情况。
 - **多个 CLI 进程并发时不再读到空配置、互相覆盖** (IM-3393) — 此前写配置会先清空 `config.yaml` 再原地写入，同时读取的进程可能读到空文件并报 `context "..." not found`；每次写入还会把进程启动时读到的整份配置写回，可能把其他进程刚换的 `refresh_token` 覆盖成旧值。现在写入先对 `config.yaml.lock` 加锁，重新读文件、只改自己的字段，再原子替换。token 刷新也在同一把锁内进行，发现其他进程刚刷新过就直接复用，不再重复消耗 refresh token。
 - **`INCLOUD_HOST` 不再被写进已保存的 context** (IM-3393) — 此前带 `INCLOUD_HOST` 运行命令，可能把当前 context 的 host 永久改掉。
 - **使用 `INCLOUD_TOKEN` 时不再读写配置文件** (IM-3393) — 设置 `INCLOUD_TOKEN` 后 CLI 不写 `config.yaml`，遇到 401 也不再用已保存 context 的 `refresh_token` 刷新（此前会换成已登录用户的身份重试并保存其 token）。同时设置 `INCLOUD_HOST` 与 `INCLOUD_TOKEN` 时完全不需要配置文件或 context；`auth status` 显示环境变量凭据。
@@ -10,11 +17,11 @@
 ## 新增参数
 
 - **`alert rule create/update --timezone <IANA 时区名>`** (IM-3444) — `--day` / `--start-time` / `--end-time` 按该时区解释（如 `Asia/Shanghai`），与门户建的规则一致（门户提交浏览器时区）。不传则按服务器时区。非法时区名在本地直接报错，不发请求。
+- **`device config schema validate --whole-document`** — 把载荷当完整文档校验，不合并到设备当前配置；带 `--device` 时可用它恢复旧行为。
 
 ## 破坏性变更
 
 - **`alert rule update` 改为合并通知设置，不再整体替换** (IM-3444) — 此前每次 update 都只用本次传入的参数重建 `notify`，只改 `--type` 时会静默清掉规则的时区、通知时段、用户和 webhook，门户配置的外部收件人邮箱（CLI 没有对应参数）则每次都会被清掉。现在只修改本次传入的通知参数，其余原样保留；传空值表示清除该项（如 `--timezone ""`、`--user ""`）。update 不再强制要求 `--channel`。`--type` 仍为必填，仍整体替换规则的告警类型。依赖"不传参数即恢复默认"的脚本（如不传 `--day` 以恢复全周）需要显式传值。
-
 - **`knowledge` 改由文档库（documents-mcp）提供数据**，走 `/api/v1/knowledge/{search,browse,read}`，需要提供这组接口的 copilot 后端（后端过旧时 404 会明确提示），本地语料下线。`knowledge search` 返回章节，字段为 `chunk_id` / `path` / `doc_title` / `heading_path` / `product_ids` / `snippet`；检索按关键词匹配，查询里要带产品名或型号。移除 `--path` 与 `--model`（型号直接写进查询），`--limit` 默认 5（1–10）。`search`、`browse`、`read` 都在返回体里给 `status`：`success` / `empty` / `failed`（附 `message`）；查不到或上游故障时退出码仍为 0。
 - **移除 `knowledge grep`**；`knowledge read` 不再有按行读取（`--mode`、`--line-start`、`--line-end`、`--around`、`--before`、`--after`、`--limit`）。
 
@@ -27,6 +34,7 @@
 
 ## 新增告警类型
 
+- **`device_login_locked`** (DL-431) — 设备因连续密码错误锁定本地登录（Web/SSH/Telnet/Console）。无参数，失败次数阈值和锁定时长由固件决定。
 - **`alert rule types` 收录 AC-AP 组网类型** (IM-3444) — `ap_offline`、`ap_config_sync_fail`、`ap_config_sync_ok`、`roam_fail`、`roam_success`（漫游耗时单位为秒，失败原因见告警的 `errorMsg`），以及 `posready_ineffective`（必须带 `retention`，单位秒）。至此与平台支持的全部类型一致。
 
 # v0.11.0 (2026-08-18)
