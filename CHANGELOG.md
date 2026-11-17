@@ -1,6 +1,12 @@
-# Unreleased
+# v0.13.0 (2026-11-17)
 
 ## Bug Fixes
+
+- **`device datausage list` works again** (IM-3266) — The platform's `datausage/details` endpoint only accepts POST (the device ID list can run to hundreds), so the CLI's GET was rejected with 405. Filters now go in the request body, and `--after` / `--before` are sent as dates; a datetime is truncated to its date, which the platform expands using the server's timezone.
+- **Requests retried after a token refresh keep their body** — A request that hit 401 and was retried after refreshing the token could be resent with an empty body over HTTP/2.
+- **Malformed IDs are rejected locally** (IM-3248) — Device, client, asset and group commands check that ID arguments are ObjectIds before sending the request. Passing a serial number or a typo used to surface the gateway's bare `404 page not found`, which looks like a missing resource; the error now names the value, the expected format and a command to look up the ID. Where an ID is not validated locally, the gateway's no-route 404 is rewritten into a message naming the request path.
+- **GBK device output is transcoded to UTF-8** — Chinese-firmware devices answer in GBK (e.g. parse errors from `tunnel telnet`), which turned into mojibake in terminals and in the copilot sandbox.
+- **Traffic values in structured output are readable and add up** (IM-3173) — `-o json` / `-o yaml` output of `device datausage`, `device client datausage-daily` / `datausage-hourly` and `overview traffic` gains human-readable fields in a single IEC unit (scaled up to EiB). Displayed totals are the sum of the displayed RX/TX values, so rows no longer disagree by a rounding step.
 
 - **`device config schema validate --device` now validates the way `config update` writes** (IM-3188) — `config update` applies its payload as a JSON merge patch over the device's current configuration, but `validate` checked the payload as a standalone document. For the 8 of 44 config keys whose schema declares `required` at the block level (`qos`, `ntp`, `admin_access`, `policy_route`, `mac_filter`, `domain_filter`, `link_quality`, `ippt` on FWA02-NAVA/V2.0.16), an incremental payload was rejected by `validate` and then accepted by `update` — so callers were validating one payload and submitting another. With `--device`, the payload is now merged over the current configuration and the merged result is validated. Violations the stored configuration already had are reported but no longer fail the payload, and a failure to read the current configuration is an error rather than a silent downgrade. `--product`/`--version` keeps whole-document validation and now says so when a block-level `required` is what failed.
 - **Concurrent CLI processes no longer corrupt or clobber the config file** (IM-3393) — Writes used to truncate `config.yaml` and rewrite it in place, so a process reading at the same moment could see an empty file and fail with `context "..." not found`. Each write also saved the whole config as it was when the process started, so one process could put back a `refresh_token` another had just replaced. Writes now take a lock on `config.yaml.lock`, re-read the file, change only their own fields and replace the file atomically. A token refresh runs under the same lock and reuses a token another process has just refreshed instead of spending the refresh token again.
@@ -29,6 +35,8 @@
 - **`knowledge read <chunk_id> [--cursor N]`** — full text of a section with its source (`doc_title`, `heading_path`, `url`), chunked at 12000 characters.
 
 ## New Alert Types
+
+- **`device_login_locked`** (DL-431) — The device locked local login (web/SSH/Telnet/console) after consecutive failed attempts. No parameters; the threshold and lock duration are set by firmware.
 
 - **`alert rule types` lists the AC-AP networking types** (IM-3444) — `ap_offline`, `ap_config_sync_fail`, `ap_config_sync_ok`, `roam_fail`, `roam_success` (roaming duration is in seconds; failure reasons are in the alert's `errorMsg`), plus `posready_ineffective` (requires `retention`, in seconds). The list now matches every type the platform supports.
 
