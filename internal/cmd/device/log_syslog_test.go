@@ -2,7 +2,6 @@ package device
 
 import (
 	"bytes"
-	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -34,12 +33,6 @@ func runLogSyslog(t *testing.T, resp string, args ...string) syslogRun {
 	f.IO.Out = out
 
 	root := &cobra.Command{Use: "root", SilenceUsage: true, SilenceErrors: true}
-	root.PersistentFlags().StringP("output", "o", "", "Output format")
-	root.PersistentPreRun = func(cmd *cobra.Command, _ []string) {
-		if output := cmd.Flags().Lookup("output"); output.Changed {
-			output.Annotations = map[string][]string{"explicit": {"true"}}
-		}
-	}
 	root.AddCommand(NewCmdDevice(f))
 	root.SetArgs(append([]string{
 		"device", "log", "syslog", "507f1f77bcf86cd799439011",
@@ -64,10 +57,13 @@ func TestLogSyslogTruncatedHintOnStderr(t *testing.T) {
 	if got := strings.Count(r.stdout, "\n"); got != 2 {
 		t.Errorf("stdout should hold the 2 log lines, got %d: %q", got, r.stdout)
 	}
-	for _, want := range []string{"Showing lines 1-2 of 5", `last line at "Nov 19 10:48:02"`, "--page 2"} {
+	for _, want := range []string{"Showing 2 of 5 matching syslog lines", `last line at "Nov 19 10:48:02"`, "--after/--before", "--keywords", "--limit"} {
 		if !strings.Contains(r.stderr, want) {
 			t.Errorf("stderr missing %q: %q", want, r.stderr)
 		}
+	}
+	if got := strings.Count(r.stderr, "\n"); got != 1 {
+		t.Errorf("expected one stderr line, got %d: %q", got, r.stderr)
 	}
 	if r.query.Get("index") != "0" || r.query.Get("limit") != "2" {
 		t.Errorf("query index=%q limit=%q, want 0 and 2", r.query.Get("index"), r.query.Get("limit"))
@@ -89,72 +85,17 @@ func TestLogSyslogNoHintWhenEmpty(t *testing.T) {
 	}
 }
 
-func TestLogSyslogPage(t *testing.T) {
-	r := runLogSyslog(t, syslogTwoLines, "--limit", "2", "--page", "2")
-
-	if r.query.Get("index") != "1" {
-		t.Errorf("--page 2 should send index=1, got %q", r.query.Get("index"))
-	}
-	for _, want := range []string{"Showing lines 3-4 of 5", "--page 3"} {
-		if !strings.Contains(r.stderr, want) {
-			t.Errorf("stderr missing %q: %q", want, r.stderr)
-		}
-	}
-}
-
-func TestLogSyslogLastPageNoHint(t *testing.T) {
-	resp := `{"total":5,"result":["<30> Nov 19 11:00:00 last\n"]}`
-	r := runLogSyslog(t, resp, "--limit", "2", "--page", "3")
-	if r.stderr != "" {
-		t.Errorf("last page should not print a hint, got %q", r.stderr)
-	}
-}
-
 func TestLogSyslogHintWithoutTimestamp(t *testing.T) {
 	resp := `{"total":3,"result":["no header here\n"]}`
 	r := runLogSyslog(t, resp, "--limit", "1")
-	if !strings.Contains(r.stderr, "Showing lines 1-1 of 3.") || strings.Contains(r.stderr, "last line at") {
+	if !strings.Contains(r.stderr, "Showing 1 of 3 matching syslog lines.") || strings.Contains(r.stderr, "last line at") {
 		t.Errorf("unexpected stderr: %q", r.stderr)
 	}
 }
 
-func TestLogSyslogJSON(t *testing.T) {
-	r := runLogSyslog(t, syslogTwoLines, "--limit", "2", "-o", "json")
-
-	var got syslogResponse
-	if err := json.Unmarshal([]byte(r.stdout), &got); err != nil {
-		t.Fatalf("stdout is not JSON (%v): %q", err, r.stdout)
-	}
-	if got.Total != 5 || len(got.Result) != 2 {
-		t.Errorf("got total=%d lines=%d, want 5 and 2", got.Total, len(got.Result))
-	}
-	if !strings.Contains(r.stderr, "Showing lines 1-2 of 5") {
-		t.Errorf("stderr should still carry the note: %q", r.stderr)
-	}
-}
-
-func TestLogSyslogJSONEmptyResultIsArray(t *testing.T) {
-	r := runLogSyslog(t, `{"total":0}`, "-o", "json")
-	if !strings.Contains(r.stdout, `"result": []`) {
-		t.Errorf("empty result should encode as [], got %q", r.stdout)
-	}
-}
-
-func TestLogSyslogRejectsBadPage(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		t.Error("request should not be sent")
-	}))
-	defer srv.Close()
-
-	f, _ := newTestFactory(t, srv.URL)
-	root := &cobra.Command{Use: "root", SilenceUsage: true, SilenceErrors: true}
-	root.PersistentFlags().StringP("output", "o", "", "Output format")
-	root.AddCommand(NewCmdDevice(f))
-	root.SetArgs([]string{
-		"device", "log", "syslog", "507f1f77bcf86cd799439011",
-		"--after", "2026-11-19T00:00:00Z", "--before", "2026-11-20T00:00:00Z", "--page", "0",
-	})
-	if err := root.Execute(); err == nil || !strings.Contains(err.Error(), "--page") {
-		t.Errorf("expected --page validation error, got %v", err)
+func TestLogSyslogHintWhenNoLinesReturnedButTotalPositive(t *testing.T) {
+	r := runLogSyslog(t, `{"total":3,"result":[]}`)
+	if r.stdout != "" || !strings.Contains(r.stderr, "Showing 0 of 3 matching syslog lines.") {
+		t.Errorf("got stdout=%q stderr=%q, want empty stdout and a hint", r.stdout, r.stderr)
 	}
 }

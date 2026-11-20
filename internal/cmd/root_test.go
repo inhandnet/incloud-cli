@@ -46,7 +46,7 @@ func TestSyslogRedirectDefaultsToText(t *testing.T) {
 	if got := out.String(); got != line {
 		t.Errorf("redirected stdout = %q, want %q", got, line)
 	}
-	if got := errOut.String(); !strings.Contains(got, "Showing lines 1-1 of 2") || !strings.Contains(got, "--page 2") {
+	if got := errOut.String(); !strings.Contains(got, "Showing 1 of 2 matching syslog lines") {
 		t.Errorf("missing truncation hint on stderr: %q", got)
 	}
 }
