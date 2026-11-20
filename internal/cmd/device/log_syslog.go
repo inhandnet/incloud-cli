@@ -3,7 +3,9 @@ package device
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/url"
+	"regexp"
 	"strconv"
 	"time"
 
@@ -37,7 +39,11 @@ func NewCmdLogSyslog(f *factory.Factory) *cobra.Command {
 
 By default, queries syslog already uploaded to the platform (requires --after and --before).
 With --fetch, actively requests the device to upload its current syslog; --after defaults to
-start of today (UTC) and --before defaults to now if not specified.`,
+start of today (UTC) and --before defaults to now if not specified.
+
+Each call returns at most --limit lines, oldest first. When more lines match,
+a note on stderr gives the number of lines returned and the total.
+Syslog writes plain text to stdout, including when piped or redirected.`,
 		Example: `  # Query stored syslog for a time range
   incloud device log syslog 60af...id --after 2024-01-01T00:00:00Z --before 2024-01-01T01:00:00Z
 
@@ -114,10 +120,12 @@ start of today (UTC) and --before defaults to now if not specified.`,
 			if err := json.Unmarshal(body, &sr); err != nil {
 				return fmt.Errorf("parsing response: %w", err)
 			}
+
 			for _, line := range sr.Result {
 				fmt.Fprint(f.IO.Out, line)
 			}
 
+			printSyslogTruncation(f.IO.ErrOut, sr)
 			return nil
 		},
 	}
@@ -130,4 +138,22 @@ start of today (UTC) and --before defaults to now if not specified.`,
 	cmd.Flags().IntVar(&opts.Timeout, "timeout", 40, "Timeout in seconds for device to upload syslog (only with --fetch)")
 
 	return cmd
+}
+
+// syslogTimestamp matches the RFC 3164 header the device writes, e.g. "<30> Nov 19 10:48:02".
+var syslogTimestamp = regexp.MustCompile(`^<\d+>\s*([A-Z][a-z]{2}\s+\d{1,2}\s+\d{2}:\d{2}:\d{2})`)
+
+func printSyslogTruncation(w io.Writer, sr syslogResponse) {
+	returned := len(sr.Result)
+	if returned >= sr.Total {
+		return
+	}
+
+	where := ""
+	if returned > 0 {
+		if m := syslogTimestamp.FindStringSubmatch(sr.Result[returned-1]); m != nil {
+			where = fmt.Sprintf(" (last line at %q)", m[1])
+		}
+	}
+	fmt.Fprintf(w, "Showing %d of %d matching syslog lines%s. Narrow --after/--before, add --keywords, or raise --limit.\n", returned, sr.Total, where)
 }
