@@ -44,7 +44,8 @@ start of today (UTC) and --before defaults to now if not specified.
 
 Each call returns at most --limit lines, oldest first. When more lines match,
 a note on stderr gives the returned range, the total, and how to get the rest.
--o json prints {"total": N, "result": [...]}.`,
+Syslog writes plain text by default, including when piped or redirected.
+Explicit -o json prints {"total": N, "result": [...]}.`,
 		Example: `  # Query stored syslog for a time range
   incloud device log syslog 60af...id --after 2024-01-01T00:00:00Z --before 2024-01-01T01:00:00Z
 
@@ -131,8 +132,7 @@ a note on stderr gives the returned range, the total, and how to get the rest.
 				return fmt.Errorf("parsing response: %w", err)
 			}
 
-			output, _ := cmd.Flags().GetString("output")
-			if output == "json" {
+			if output := cmd.Flags().Lookup("output"); output != nil && output.Annotations["explicit"] != nil && output.Value.String() == "json" {
 				if sr.Result == nil {
 					sr.Result = []string{}
 				}

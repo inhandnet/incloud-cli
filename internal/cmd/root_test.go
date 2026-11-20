@@ -11,9 +11,45 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/inhandnet/incloud-cli/internal/cmd/device"
 	"github.com/inhandnet/incloud-cli/internal/factory"
 	"github.com/inhandnet/incloud-cli/internal/iostreams"
 )
+
+func TestSyslogRedirectDefaultsToText(t *testing.T) {
+	const deviceID = "507f1f77bcf86cd799439011"
+	const line = "<30> Nov 19 10:48:02 conf_proc[1043]: done\n"
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/v1/devices/"+deviceID+"/logs/download/syslog" {
+			http.NotFound(w, r)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"total":2,"result":["<30> Nov 19 10:48:02 conf_proc[1043]: done\n"]}`))
+	}))
+	defer srv.Close()
+	t.Setenv("INCLOUD_HOST", srv.URL)
+	t.Setenv("INCLOUD_TOKEN", "env-token")
+
+	var out, errOut bytes.Buffer
+	f := &factory.Factory{
+		IO:         &iostreams.IOStreams{Out: &out, ErrOut: &errOut},
+		ConfigPath: filepath.Join(t.TempDir(), "config.yaml"),
+	}
+	root := NewCmdRoot(f)
+	root.AddCommand(device.NewCmdDevice(f))
+	root.SetArgs([]string{"device", "log", "syslog", deviceID,
+		"--after", "2026-11-19T00:00:00Z", "--before", "2026-11-20T00:00:00Z", "--limit", "1"})
+	if err := root.Execute(); err != nil {
+		t.Fatalf("Execute() error = %v", err)
+	}
+	if got := out.String(); got != line {
+		t.Errorf("redirected stdout = %q, want %q", got, line)
+	}
+	if got := errOut.String(); !strings.Contains(got, "Showing lines 1-1 of 2") || !strings.Contains(got, "--page 2") {
+		t.Errorf("missing truncation hint on stderr: %q", got)
+	}
+}
 
 func newSuperAdminRoot(t *testing.T) (*cobra.Command, *bytes.Buffer, *atomic.Int32) {
 	t.Helper()

@@ -35,6 +35,11 @@ func runLogSyslog(t *testing.T, resp string, args ...string) syslogRun {
 
 	root := &cobra.Command{Use: "root", SilenceUsage: true, SilenceErrors: true}
 	root.PersistentFlags().StringP("output", "o", "", "Output format")
+	root.PersistentPreRun = func(cmd *cobra.Command, _ []string) {
+		if output := cmd.Flags().Lookup("output"); output.Changed {
+			output.Annotations = map[string][]string{"explicit": {"true"}}
+		}
+	}
 	root.AddCommand(NewCmdDevice(f))
 	root.SetArgs(append([]string{
 		"device", "log", "syslog", "507f1f77bcf86cd799439011",
