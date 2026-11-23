@@ -20,6 +20,7 @@ func newCmdDeviceListAll(f *factory.Factory) *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "list-all",
+		Args:  cobra.NoArgs,
 		Short: "List all connector devices across networks",
 		Example: `  # List all connector devices
   incloud connector device list-all

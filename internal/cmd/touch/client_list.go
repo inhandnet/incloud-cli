@@ -20,6 +20,7 @@ func newCmdClientList(f *factory.Factory) *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:     "list",
+		Args:    cmdutil.NoArgsWithHint(cmdutil.DeviceFilterHint("incloud touch client list", "device-id", "incloud device list -q %s")),
 		Short:   "List touch clients",
 		Long:    "List remote access clients with optional filtering by device, status, or name.",
 		Aliases: []string{"ls"},

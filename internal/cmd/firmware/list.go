@@ -22,6 +22,7 @@ func NewCmdList(f *factory.Factory) *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:     "list",
+		Args:    cobra.NoArgs,
 		Short:   "List firmwares",
 		Long:    "List firmwares on the InCloud platform with optional filtering and pagination.",
 		Aliases: []string{"ls"},

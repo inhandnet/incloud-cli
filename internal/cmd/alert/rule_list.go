@@ -19,6 +19,7 @@ func NewCmdRuleList(f *factory.Factory) *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:     "list",
+		Args:    cobra.NoArgs,
 		Short:   "List alert rules",
 		Long:    "List alert rules with pagination.",
 		Aliases: []string{"ls"},

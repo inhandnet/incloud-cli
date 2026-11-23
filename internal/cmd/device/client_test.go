@@ -649,3 +649,33 @@ func TestClientSetPosReady_HTTPError(t *testing.T) {
 		t.Errorf("expected 400 in error, got: %v", err)
 	}
 }
+
+func TestClientList_RejectsPositionalArg(t *testing.T) {
+	tests := []struct {
+		name string
+		arg  string
+		want string
+	}{
+		{"device id", "6ae45d678f9f0271936eac39", "--device 6ae45d678f9f0271936eac39"},
+		{"serial number", "RN6242412R9TP1Q", "incloud device list -q RN6242412R9TP1Q"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				t.Errorf("unexpected request: %s", r.URL)
+			}))
+			defer server.Close()
+
+			f, _ := newTestFactory(t, server.URL)
+			cmd := newClientRoot(f)
+			cmd.SetArgs([]string{"client", "list", tt.arg})
+			err := cmd.Execute()
+			if err == nil {
+				t.Fatal("expected error for positional argument")
+			}
+			if !strings.Contains(err.Error(), tt.want) {
+				t.Errorf("error %q does not contain %q", err, tt.want)
+			}
+		})
+	}
+}

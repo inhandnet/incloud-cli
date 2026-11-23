@@ -63,6 +63,7 @@ func NewCmdJobList(f *factory.Factory) *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:     "list",
+		Args:    cobra.NoArgs,
 		Short:   "List OTA firmware upgrade jobs",
 		Long:    "List OTA firmware upgrade jobs with optional filtering and pagination.",
 		Aliases: []string{"ls"},

@@ -20,6 +20,7 @@ func NewCmdList(f *factory.Factory) *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:     "list",
+		Args:    cobra.NoArgs,
 		Short:   "List webhooks",
 		Long:    "List message webhooks with pagination and optional provider filter.",
 		Aliases: []string{"ls"},

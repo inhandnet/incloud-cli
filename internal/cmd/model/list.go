@@ -20,6 +20,7 @@ func newCmdList(f *factory.Factory) *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:     "list",
+		Args:    cobra.NoArgs,
 		Short:   "List AI models",
 		Long:    "List AI models in the current tenant.",
 		Aliases: []string{"ls"},

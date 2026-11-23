@@ -12,6 +12,7 @@ import (
 func NewCmdListContexts(f *factory.Factory) *cobra.Command {
 	return &cobra.Command{
 		Use:     "list-contexts",
+		Args:    cobra.NoArgs,
 		Aliases: []string{"ls"},
 		Short:   "List all contexts",
 		RunE: func(cmd *cobra.Command, args []string) error {

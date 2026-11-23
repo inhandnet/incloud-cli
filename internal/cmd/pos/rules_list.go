@@ -18,6 +18,7 @@ func newCmdRulesList(f *factory.Factory) *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:     "list",
+		Args:    cobra.NoArgs,
 		Aliases: []string{"ls"},
 		Short:   "List devices with POS custom rules",
 		Long:    "List devices that have POS custom rules configured, across all your devices.",

@@ -25,6 +25,7 @@ func NewCmdList(f *factory.Factory) *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:     "list",
+		Args:    cobra.NoArgs,
 		Aliases: []string{"ls"},
 		Short:   "List organizations",
 		Long:    "List organizations on the InCloud platform with optional filtering and pagination.",
