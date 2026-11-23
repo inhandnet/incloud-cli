@@ -21,6 +21,7 @@ func NewCmdTypeList(f *factory.Factory) *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:     "list",
+		Args:    cobra.NoArgs,
 		Short:   "List license types",
 		Long:    "List available license types with optional filtering by product and status.",
 		Aliases: []string{"ls"},

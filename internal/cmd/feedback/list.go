@@ -24,6 +24,7 @@ func NewCmdFeedbackList(f *factory.Factory) *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:     "list",
+		Args:    cobra.NoArgs,
 		Short:   "List feedback entries",
 		Long:    "List feedback entries with optional filtering and pagination. Use this command to review submitted feedback and check which entries have attachments.",
 		Aliases: []string{"ls"},

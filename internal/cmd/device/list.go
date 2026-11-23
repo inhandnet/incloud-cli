@@ -32,6 +32,7 @@ func NewCmdList(f *factory.Factory) *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "list",
+		Args:  cobra.NoArgs,
 		Short: "List devices",
 		Long: `List devices on the InCloud platform with optional filtering, searching, and pagination.
 

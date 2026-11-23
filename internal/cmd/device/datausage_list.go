@@ -33,6 +33,7 @@ func newCmdDatausageList(f *factory.Factory) *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "list",
+		Args:  cobra.NoArgs,
 		Short: "List data usage per device",
 		Long:  "List aggregated data usage for all devices, broken down by interface type (sim, esim, wan, etc.).",
 		Example: `  # List all devices' data usage

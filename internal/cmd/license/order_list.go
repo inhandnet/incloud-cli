@@ -23,6 +23,7 @@ func NewCmdOrderList(f *factory.Factory) *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:     "list",
+		Args:    cobra.NoArgs,
 		Short:   "List orders",
 		Long:    "List license orders with optional filtering by status, type, and date range.",
 		Aliases: []string{"ls"},

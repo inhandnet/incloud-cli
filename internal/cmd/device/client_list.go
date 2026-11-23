@@ -26,6 +26,7 @@ func newCmdClientList(f *factory.Factory) *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:     "list",
+		Args:    cmdutil.NoArgsWithHint(cmdutil.DeviceFilterHint("incloud device client list", "device", "incloud device list -q %s")),
 		Short:   "List connected clients",
 		Long:    "List all clients (Wi-Fi/LAN devices) connected to your routers.",
 		Aliases: []string{"ls"},

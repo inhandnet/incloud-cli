@@ -24,6 +24,7 @@ func newCmdAssetList(f *factory.Factory) *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:     "list",
+		Args:    cobra.NoArgs,
 		Short:   "List network assets",
 		Long:    "List all network assets in the current organization.",
 		Aliases: []string{"ls"},

@@ -39,6 +39,7 @@ func newCmdSchemaList(f *factory.Factory) *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "list",
+		Args:  cobra.NoArgs,
 		Short: "List configuration schemas",
 		Long: `List configuration schema documents for a device's product/firmware.
 Shows schema name, JSON keys, and a brief description for each config section.

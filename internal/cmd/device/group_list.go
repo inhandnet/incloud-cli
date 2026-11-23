@@ -29,6 +29,7 @@ func newCmdGroupList(f *factory.Factory) *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:     "list",
+		Args:    cobra.NoArgs,
 		Short:   "List device groups",
 		Aliases: []string{"ls"},
 		Example: `  # List device groups

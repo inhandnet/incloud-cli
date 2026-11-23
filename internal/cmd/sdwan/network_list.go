@@ -20,6 +20,7 @@ func newCmdNetworkList(f *factory.Factory) *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:     "list",
+		Args:    cobra.NoArgs,
 		Aliases: []string{"ls"},
 		Short:   "List SD-WAN networks",
 		Example: `  # List all networks
