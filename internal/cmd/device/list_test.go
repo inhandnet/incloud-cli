@@ -118,6 +118,11 @@ func TestDeviceList_NewFlags(t *testing.T) {
 			wantKeys: []string{"iccid=89860000000000000000"},
 		},
 		{
+			name:     "imei filter",
+			args:     []string{"device", "list", "--imei", "865449070021566", "-o", "json"},
+			wantKeys: []string{"imei=865449070021566"},
+		},
+		{
 			name:     "mac filter",
 			args:     []string{"device", "list", "--mac", "00:11:22:33:44:55", "-o", "json"},
 			wantKeys: []string{"mac=00%3A11%3A22%3A33%3A44%3A55"},

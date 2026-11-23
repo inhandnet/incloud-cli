@@ -22,6 +22,7 @@ type ListOptions struct {
 	IP           string
 	Label        []string
 	ICCID        string
+	IMEI         string
 	MAC          string
 }
 
@@ -36,8 +37,8 @@ func NewCmdList(f *factory.Factory) *cobra.Command {
 		Short: "List devices",
 		Long: `List devices on the InCloud platform with optional filtering, searching, and pagination.
 
-Substring filters (-q, --name, --serial-number, --mac, --iccid) are
-case-insensitive, so letter case never changes the result.`,
+Substring filters (-q, --name, --serial-number, --mac, --iccid,
+--imei) are case-insensitive, so letter case never changes the result.`,
 		Aliases: []string{"ls"},
 		Example: `  # Search by name or serial number
   incloud device list -q "router"
@@ -98,6 +99,9 @@ case-insensitive, so letter case never changes the result.`,
 			if opts.ICCID != "" {
 				q.Set("iccid", opts.ICCID)
 			}
+			if opts.IMEI != "" {
+				q.Set("imei", opts.IMEI)
+			}
 			if opts.MAC != "" {
 				q.Set("mac", opts.MAC)
 			}
@@ -126,6 +130,7 @@ case-insensitive, so letter case never changes the result.`,
 	cmd.Flags().StringVar(&opts.IP, "ip", "", "Filter by IP address")
 	cmd.Flags().StringArrayVar(&opts.Label, "label", nil, "Filter by label key=value (can be repeated)")
 	cmd.Flags().StringVar(&opts.ICCID, "iccid", "", "Filter by ICCID reported in device state (substring match; devices that never reported are excluded)")
+	cmd.Flags().StringVar(&opts.IMEI, "imei", "", "Filter by IMEI reported in device state (substring match; devices that never reported are excluded)")
 	cmd.Flags().StringVar(&opts.MAC, "mac", "", "Filter by MAC address reported in device state, colon-separated (substring match; devices that never reported are excluded)")
 	opts.RegisterExpand(cmd, "org", "license", "licenseType")
 
