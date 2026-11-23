@@ -2,7 +2,6 @@ package device
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -24,7 +23,15 @@ func newCmdConfigCopy(f *factory.Factory) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "copy",
 		Short: "Copy configuration to other devices or groups",
-		Long:  "Copy a device or group configuration to one or more target devices or groups.",
+		Long: `Copy a device or group configuration to one or more targets.
+
+Supported combinations:
+  device -> devices   (--source with --target)
+  device -> groups    (--source with --target-group)
+  group  -> groups    (--source-group with --target-group)
+
+Copying a group configuration to devices is not supported; move the devices
+into the group instead. --target and --target-group cannot be combined.`,
 		Example: `  # Copy from device to device
   incloud device config copy --source DEV1 --target DEV2
 
@@ -49,20 +56,23 @@ func newCmdConfigCopy(f *factory.Factory) *cobra.Command {
 			if len(target) == 0 && len(targetGroup) == 0 {
 				return fmt.Errorf("at least one --target or --target-group is required")
 			}
+			if len(target) > 0 && len(targetGroup) > 0 {
+				return fmt.Errorf("--target and --target-group are mutually exclusive")
+			}
+			if sourceGroup != "" && len(target) > 0 {
+				return fmt.Errorf("copying a group config to devices is not supported; move the devices into the group instead")
+			}
 
 			if !yes {
 				sourceDesc := source
 				if sourceDesc == "" {
 					sourceDesc = "group " + sourceGroup
 				}
-				var parts []string
+				targetDesc := fmt.Sprintf("%d group(s)", len(targetGroup))
 				if len(target) > 0 {
-					parts = append(parts, fmt.Sprintf("%d device(s)", len(target)))
+					targetDesc = fmt.Sprintf("%d device(s)", len(target))
 				}
-				if len(targetGroup) > 0 {
-					parts = append(parts, fmt.Sprintf("%d group(s)", len(targetGroup)))
-				}
-				msg := fmt.Sprintf("Copy config from %s to %s?", sourceDesc, strings.Join(parts, " and "))
+				msg := fmt.Sprintf("Copy config from %s to %s?", sourceDesc, targetDesc)
 				confirmed, err := ui.Confirm(f, msg)
 				if err != nil {
 					return err
@@ -110,8 +120,8 @@ func newCmdConfigCopy(f *factory.Factory) *cobra.Command {
 
 	cmd.Flags().StringVar(&source, "source", "", "Source device ID")
 	cmd.Flags().StringVar(&sourceGroup, "source-group", "", "Source group ID (mutually exclusive with --source)")
-	cmd.Flags().StringArrayVar(&target, "target", nil, "Target device ID (can be repeated)")
-	cmd.Flags().StringArrayVar(&targetGroup, "target-group", nil, "Target group ID (can be repeated)")
+	cmd.Flags().StringArrayVar(&target, "target", nil, "Target device ID, only with --source (can be repeated; mutually exclusive with --target-group)")
+	cmd.Flags().StringArrayVar(&targetGroup, "target-group", nil, "Target group ID (can be repeated; mutually exclusive with --target)")
 
 	// Hidden aliases for backward compatibility
 	cmd.Flags().StringArrayVar(&target, "to", nil, "Target device ID (can be repeated)")
