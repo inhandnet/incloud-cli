@@ -17,7 +17,8 @@ func NewCmdFeedbackWithdraw(f *factory.Factory) *cobra.Command {
 		Long: `Withdraw a feedback entry you submitted.
 
 Only the submitter can withdraw, and only while the entry is still new (not yet
-handled). A withdrawn entry is marked ignored and carries a withdrawnAt time.`,
+handled). A withdrawn entry gets resolution withdrawn and a withdrawnAt time, and
+can no longer be edited.`,
 		Example: `  # Withdraw your own feedback
   incloud feedback withdraw 69c3e7bb828ddd389e530a57`,
 		Args: cobra.ExactArgs(1),
