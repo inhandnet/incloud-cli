@@ -1,3 +1,18 @@
+# 未发布
+
+## 新增命令
+
+- **`feedback withdraw <id>`** (IM-3505) — 撤回自己提交、仍为 `new` 的反馈。撤回后状态为 `ignored` 并记录 `withdrawnAt`；别人提交的或已处理的反馈会被拒绝。需要带撤回接口的 nezha-support 版本。
+
+## 新增参数
+
+- **`feedback create --app <star|devicelive>`** (IM-3505) — 反馈所属的 SaaS 应用。默认取 copilot 所在平台（`INCLOUD_AGENT_PLATFORM`），否则为 `star`。
+- **`feedback create --ai-diagnosis <文本|@文件>`** (IM-3505) — 在 InCloud Copilot 中提交（设置了 `INCLOUD_AGENT_SESSION_ID`）时，反馈标记为 AI 代提交，附带对话信息（session、trace、平台），AI 自己的分析与 `--content` 里的用户描述分开存放。在 copilot 之外使用会直接报错。需要支持 `source` / `aiContext` / `aiDiagnosis` 的 nezha-support 版本。
+
+## 改进
+
+- **`feedback list` 帮助与平台实际返回一致** (IM-3505) — 普通用户只看到自己提交的反馈，系统用户看到全部。`--resolution` 列出全部四个取值（`new`、`approved`、`resolved`、`ignored`）。
+
 # v0.13.0 (2026-11-17)
 
 ## 修复

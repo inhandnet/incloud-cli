@@ -23,12 +23,15 @@ func NewCmdFeedbackList(f *factory.Factory) *cobra.Command {
 	opts := &listOptions{}
 
 	cmd := &cobra.Command{
-		Use:     "list",
-		Args:    cobra.NoArgs,
-		Short:   "List feedback entries",
-		Long:    "List feedback entries with optional filtering and pagination. Use this command to review submitted feedback and check which entries have attachments.",
+		Use:   "list",
+		Args:  cobra.NoArgs,
+		Short: "List feedback entries",
+		Long: `List feedback entries with optional filtering and pagination. Use this command to review submitted feedback and check which entries have attachments.
+
+Regular users see only the feedback they submitted; system users see all feedback.
+Entries the submitter withdrew have resolution ignored and a withdrawnAt time (visible with -o json).`,
 		Aliases: []string{"ls"},
-		Example: `  # List all feedback
+		Example: `  # List feedback
   incloud feedback list
 
   # List feedback with attachments visible (default fields include attachments)
@@ -82,7 +85,7 @@ func NewCmdFeedbackList(f *factory.Factory) *cobra.Command {
 
 	opts.Register(cmd)
 	cmd.Flags().StringVar(&opts.App, "app", "", "Filter by app (e.g. star, portal)")
-	cmd.Flags().StringVar(&opts.Resolution, "resolution", "", "Filter by resolution status (new, resolved)")
+	cmd.Flags().StringVar(&opts.Resolution, "resolution", "", "Filter by resolution status (new, approved, resolved, ignored)")
 	cmd.Flags().StringVar(&opts.Type, "type", "", "Filter by feedback type (issue, question, comment, suggestion)")
 	opts.RegisterExpand(cmd, "user", "org")
 
