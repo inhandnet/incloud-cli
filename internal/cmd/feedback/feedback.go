@@ -16,6 +16,7 @@ func NewCmdFeedback(f *factory.Factory) *cobra.Command {
 	cmd.AddCommand(NewCmdFeedbackDownload(f))
 	cmd.AddCommand(NewCmdFeedbackList(f))
 	cmd.AddCommand(NewCmdFeedbackResolve(f))
+	cmd.AddCommand(NewCmdFeedbackWithdraw(f))
 
 	return cmd
 }
