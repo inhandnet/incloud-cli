@@ -1,3 +1,18 @@
+# Unreleased
+
+## New Commands
+
+- **`feedback withdraw <id>`** (IM-3505) — Withdraw feedback you submitted while it is still `new`. The entry becomes `ignored` and gets a `withdrawnAt` time; feedback someone else submitted, or that has already been handled, is rejected. Needs a nezha-support release with the withdraw endpoint.
+
+## New Flags
+
+- **`feedback create --app <star|devicelive>`** (IM-3505) — The SaaS app the feedback belongs to. Defaults to the copilot's platform (`INCLOUD_AGENT_PLATFORM`), otherwise `star`.
+- **`feedback create --ai-diagnosis <text|@file>`** (IM-3505) — When submitted from InCloud Copilot (`INCLOUD_AGENT_SESSION_ID` set), the feedback is marked as submitted by the AI agent and carries the conversation (session, trace, platform) and the agent's own findings apart from the user's report in `--content`. Outside the copilot the flag is rejected. Needs a nezha-support release that accepts `source` / `aiContext` / `aiDiagnosis`.
+
+## Improvements
+
+- **`feedback list` help matches what the platform returns** (IM-3505) — Regular users see only feedback they submitted; system users see all. `--resolution` lists all four values (`new`, `approved`, `resolved`, `ignored`).
+
 # v0.13.0 (2026-11-17)
 
 ## Bug Fixes
