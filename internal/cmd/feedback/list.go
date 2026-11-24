@@ -29,7 +29,7 @@ func NewCmdFeedbackList(f *factory.Factory) *cobra.Command {
 		Long: `List feedback entries with optional filtering and pagination. Use this command to review submitted feedback and check which entries have attachments.
 
 Regular users see only the feedback they submitted; system users see all feedback.
-Entries the submitter withdrew have resolution ignored and a withdrawnAt time (visible with -o json).`,
+Entries the submitter withdrew have resolution withdrawn and a withdrawnAt time (visible with -o json).`,
 		Aliases: []string{"ls"},
 		Example: `  # List feedback
   incloud feedback list
@@ -85,7 +85,7 @@ Entries the submitter withdrew have resolution ignored and a withdrawnAt time (v
 
 	opts.Register(cmd)
 	cmd.Flags().StringVar(&opts.App, "app", "", "Filter by app (e.g. star, portal)")
-	cmd.Flags().StringVar(&opts.Resolution, "resolution", "", "Filter by resolution status (new, approved, resolved, ignored)")
+	cmd.Flags().StringVar(&opts.Resolution, "resolution", "", "Filter by resolution status (new, approved, resolved, ignored, withdrawn)")
 	cmd.Flags().StringVar(&opts.Type, "type", "", "Filter by feedback type (issue, question, comment, suggestion)")
 	opts.RegisterExpand(cmd, "user", "org")
 

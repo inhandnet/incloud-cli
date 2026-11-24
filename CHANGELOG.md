@@ -2,7 +2,7 @@
 
 ## New Commands
 
-- **`feedback withdraw <id>`** (IM-3505) — Withdraw feedback you submitted while it is still `new`. The entry becomes `ignored` and gets a `withdrawnAt` time; feedback someone else submitted, or that has already been handled, is rejected. Needs a nezha-support release with the withdraw endpoint.
+- **`feedback withdraw <id>`** (IM-3505) — Withdraw feedback you submitted while it is still `new`. The entry becomes `withdrawn`, gets a `withdrawnAt` time and can no longer be edited; feedback someone else submitted, or that has already been handled, is rejected. Needs a nezha-support release with the withdraw endpoint.
 
 ## New Flags
 
@@ -11,7 +11,7 @@
 
 ## Improvements
 
-- **`feedback list` help matches what the platform returns** (IM-3505) — Regular users see only feedback they submitted; system users see all. `--resolution` lists all four values (`new`, `approved`, `resolved`, `ignored`).
+- **`feedback list` help matches what the platform returns** (IM-3505) — Regular users see only feedback they submitted; system users see all. `--resolution` lists every value (`new`, `approved`, `resolved`, `ignored`, `withdrawn`).
 
 # v0.13.0 (2026-11-17)
 
